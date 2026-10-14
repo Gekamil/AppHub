@@ -1,0 +1,219 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@theme {
+  --color-inverse-on-surface: #edf0ff;
+  --color-outline-variant: #c3c6d7;
+  --color-on-primary: #ffffff;
+  --color-tertiary: #006242;
+  --color-outline: #737686;
+  --color-on-secondary-container: #596372;
+  --color-primary-fixed: #dbe1ff;
+  --color-on-surface: #141b2b;
+  --color-tertiary-fixed: #6ffbbe;
+  --color-on-secondary: #ffffff;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed-dim: #b4c5ff;
+  --color-border-subtle: #E5E7EB;
+  --color-tertiary-fixed-dim: #4edea3;
+  --color-surface-tint: #0053db;
+  --color-secondary: #555f6d;
+  --color-tag-urgent-bg: #FEF2F2;
+  --color-surface-variant: #dce2f7;
+  --color-tag-personal-text: #C2410C;
+  --color-on-secondary-fixed: #121c28;
+  --color-tag-urgent-text: #B91C1C;
+  --color-secondary-container: #d6e0f1;
+  --color-on-primary-fixed-variant: #003ea8;
+  --color-primary-container: #2563eb;
+  --color-on-tertiary-fixed: #002113;
+  --color-on-secondary-fixed-variant: #3e4755;
+  --color-tag-health-text: #047857;
+  --color-surface-bright: #f9f9ff;
+  --color-tag-university-text: #1D4ED8;
+  --color-surface-pure: #FFFFFF;
+  --color-surface-container-high: #e1e8fd;
+  --color-error: #ba1a1a;
+  --color-tag-university-bg: #EFF6FF;
+  --color-on-primary-container: #eeefff;
+  --color-surface-container: #e9edff;
+  --color-on-tertiary-fixed-variant: #005236;
+  --color-secondary-fixed-dim: #bdc7d8;
+  --color-surface-dim: #d3daef;
+  --color-inverse-surface: #293040;
+  --color-surface-container-highest: #dce2f7;
+  --color-on-tertiary: #ffffff;
+  --color-on-primary-fixed: #00174b;
+  --color-on-tertiary-container: #bdffdb;
+  --color-surface-muted: #F3F4F6;
+  --color-on-surface-variant: #434655;
+  --color-inverse-primary: #b4c5ff;
+  --color-tertiary-container: #007d55;
+  --color-tag-health-bg: #ECFDF5;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-background: #141b2b;
+  --color-secondary-fixed: #d9e3f4;
+  --color-surface: #f9f9ff;
+  --color-surface-subtle: #F9FAFB;
+  --color-on-error: #ffffff;
+  --color-primary: #004ac6;
+  --color-border-strong: #D1D5DB;
+  --color-surface-container-low: #f1f3ff;
+  --color-error-container: #ffdad6;
+  --color-background: #f9f9ff;
+  --color-tag-personal-bg: #FFF7ED;
+
+  --spacing-margin-md: 1.5rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-xl: 1.5rem;
+  --spacing-gutter: 1rem;
+  --spacing-space-3xl: 3rem;
+  --spacing-margin-lg: 2rem;
+  --spacing-space-lg: 1rem;
+  --spacing-margin: 1rem;
+  --spacing-gutter-lg: 1.5rem;
+  --spacing-space-2xl: 2rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-md: 0.75rem;
+
+  --font-headline-md: "Inter", sans-serif;
+  --font-body-md: "Inter", sans-serif;
+  --font-code-sm: "JetBrains Mono", monospace;
+  --font-label-sm: "Inter", sans-serif;
+  --font-headline-lg: "Inter", sans-serif;
+  --font-label-md: "Inter", sans-serif;
+  --font-headline-xl: "Inter", sans-serif;
+  --font-headline-sm: "Inter", sans-serif;
+  --font-body-lg: "Inter", sans-serif;
+  --font-body-sm: "Inter", sans-serif;
+
+  --text-headline-md: 18px;
+  --text-headline-md--line-height: 26px;
+  --text-headline-md--letter-spacing: -0.01em;
+  --text-headline-md--font-weight: 600;
+
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+  --text-body-md--font-weight: 400;
+
+  --text-code-sm: 12px;
+  --text-code-sm--line-height: 16px;
+  --text-code-sm--font-weight: 400;
+
+  --text-label-sm: 11px;
+  --text-label-sm--line-height: 14px;
+  --text-label-sm--letter-spacing: 0.02em;
+  --text-label-sm--font-weight: 500;
+
+  --text-headline-lg: 24px;
+  --text-headline-lg--line-height: 32px;
+  --text-headline-lg--letter-spacing: -0.015em;
+  --text-headline-lg--font-weight: 600;
+
+  --text-label-md: 13px;
+  --text-label-md--line-height: 18px;
+  --text-label-md--letter-spacing: 0.01em;
+  --text-label-md--font-weight: 500;
+
+  --text-headline-xl: 32px;
+  --text-headline-xl--line-height: 40px;
+  --text-headline-xl--letter-spacing: -0.02em;
+  --text-headline-xl--font-weight: 600;
+
+  --text-headline-sm: 15px;
+  --text-headline-sm--line-height: 22px;
+  --text-headline-sm--letter-spacing: -0.005em;
+  --text-headline-sm--font-weight: 600;
+
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 24px;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 18px;
+  --text-body-sm--letter-spacing: 0.005em;
+  --text-body-sm--font-weight: 400;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body-md);
+  color: var(--color-on-surface);
+  background-color: var(--color-surface-subtle);
+  transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Rendimiento y aceleración para animaciones y scroll */
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+/* Transición fluida para modo claro / oscuro sin penalizar rendimiento de layout */
+header, aside, main, nav, footer, .theme-transition {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 250ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Desplazamiento nativo fluido con inercia para iOS y Android */
+[class*="overflow-y-auto"], [class*="overflow-x-auto"], .smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Scrollbars fluidas e invisibles */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animación de tick / checkmark trazado al completar tarea */
+@keyframes checkmarkStroke {
+  0% {
+    stroke-dashoffset: 24;
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    stroke-dashoffset: 0;
+    transform: scale(1);
+  }
+}
+
+.animate-checkmark-tick {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 0;
+  animation: checkmarkStroke 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center;
+}
+
+.dark {
+  --color-background: #0d111a;
+  --color-surface-pure: #151a26;
+  --color-surface-subtle: #0d111a;
+  --color-surface-muted: #1e2536;
+  --color-surface: #10141f;
+  --color-surface-bright: #1c2333;
+  --color-surface-container: #171d2b;
+  --color-surface-container-high: #20273a;
+  --color-surface-container-low: #111622;
+  --color-surface-container-lowest: #0b0e16;
+  --color-surface-variant: #222b3d;
+  --color-on-surface: #f3f6fc;
+  --color-on-surface-variant: #949db1;
+  --color-secondary: #949db1;
+  --color-secondary-container: #232c3d;
+  --color-on-secondary-container: #c4cddf;
+  --color-outline: #5c667a;
+  --color-outline-variant: #2d3548;
+  --color-border-subtle: #242c3d;
+  --color-border-strong: #364057;
+  color-scheme: dark;
+}

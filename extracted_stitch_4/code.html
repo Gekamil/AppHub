@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" fill="none">
+  <defs>
+    <!-- Gradiente profundo azul cobalto Focus Hub -->
+    <linearGradient id="botCoreGrad" x1="20" y1="16" x2="140" y2="144" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="50%" stop-color="#1D4ED8" />
+      <stop offset="100%" stop-color="#172554" />
+    </linearGradient>
+
+    <!-- Bisel de iluminación especular superior -->
+    <linearGradient id="rimLighting" x1="24" y1="20" x2="136" y2="136" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35" />
+      <stop offset="40%" stop-color="#60A5FA" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.05" />
+    </linearGradient>
+
+    <!-- Sombra flotante suave de botón elevado -->
+    <filter id="botShadow" x="-20%" y="-15%" width="140%" height="145%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1E3A8A" flood-opacity="0.32" />
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.12" />
+    </filter>
+
+    <!-- Gradiente para el visor del robot -->
+    <linearGradient id="visorGlass" x1="45" y1="52" x2="115" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Pulso del sensor de la antena -->
+    <radialGradient id="sensorPulse" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </radialGradient>
+  </defs>
+
+  <!-- Contenedor Base Squircle Apple Style -->
+  <rect x="22" y="20" width="116" height="116" rx="34" fill="url(#botCoreGrad)" filter="url(#botShadow)" />
+  <rect x="22.5" y="20.5" width="115" height="115" rx="33.5" stroke="url(#rimLighting)" stroke-width="1.2" />
+
+  <!-- Robot / AI Entity Emblem (Estilo Apple / Teenage Engineering: limpio, elegante, sin ser infantil) -->
+  <g transform="translate(80, 80)">
+    <!-- Antena / Sensor Neural Superior -->
+    <line x1="0" y1="-32" x2="0" y2="-21" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" />
+    <circle cx="0" cy="-34" r="3.5" fill="#FFFFFF" />
+    <circle cx="0" cy="-34" r="6" stroke="#93C5FD" stroke-width="1" stroke-opacity="0.5" />
+
+    <!-- Cabeza del Bot en Blanco Cerámico Puro con bisel redondeado -->
+    <rect x="-31" y="-21" width="62" height="46" rx="15" fill="#FFFFFF" />
+    <!-- Sutil bisel interior de contorno -->
+    <rect x="-30" y="-20" width="60" height="44" rx="14" stroke="#E2E8F0" stroke-width="1" />
+
+    <!-- Auriculares / Nodos laterales del robot -->
+    <rect x="-35.5" y="-10" width="5" height="18" rx="2.5" fill="#93C5FD" />
+    <rect x="30.5" y="-10" width="5" height="18" rx="2.5" fill="#93C5FD" />
+
+    <!-- Visor Inteligente de Vidrio Oscuro (OLED Display) -->
+    <rect x="-23" y="-14" width="46" height="24" rx="8" fill="url(#visorGlass)" />
+    
+    <!-- Ojos / Sensores de IA brillantes en azul cobalto vivo (Mirada inteligente y amable) -->
+    <!-- Ojo Izquierdo -->
+    <circle cx="-11" cy="-2" r="4.5" fill="#38BDF8" />
+    <circle cx="-11" cy="-2" r="2.2" fill="#FFFFFF" />
+    
+    <!-- Ojo Derecho -->
+    <circle cx="11" cy="-2" r="4.5" fill="#38BDF8" />
+    <circle cx="11" cy="-2" r="2.2" fill="#FFFFFF" />
+
+    <!-- Luz de refracción del visor -->
+    <path d="M-19 -11 L-5 -11 L-12 -6 L-21 -6 Z" fill="#FFFFFF" fill-opacity="0.15" />
+
+    <!-- Indicador de procesamiento / sonrisa geométrica minimalista -->
+    <path d="M-6 16 Q0 19 6 16" stroke="#2563EB" stroke-width="2" stroke-linecap="round" fill="none" />
+  </g>
+</svg>
