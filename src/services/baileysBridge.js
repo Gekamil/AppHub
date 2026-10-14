@@ -1,8 +1,11 @@
-// Servicio del Frontend para comunicarse con el Puente Local de WhatsApp Baileys
+// Servicio del Frontend para comunicarse con el Puente de WhatsApp Baileys
+// Compatible tanto con Web/PWA como con empaquetado nativo móvil (.APK en Android e iOS)
+
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || ''
 
 export async function getBaileysStatus() {
   try {
-    const res = await fetch('/api/baileys/status')
+    const res = await fetch(`${API_BASE}/api/baileys/status`)
     if (res.ok) {
       return await res.json()
     }
@@ -12,7 +15,7 @@ export async function getBaileysStatus() {
 
 export async function requestBaileysConnect() {
   try {
-    const res = await fetch('/api/baileys/connect', { method: 'POST' })
+    const res = await fetch(`${API_BASE}/api/baileys/connect`, { method: 'POST' })
     if (res.ok) {
       return await res.json()
     }
@@ -22,7 +25,7 @@ export async function requestBaileysConnect() {
 
 export async function requestBaileysDisconnect() {
   try {
-    const res = await fetch('/api/baileys/disconnect', { method: 'POST' })
+    const res = await fetch(`${API_BASE}/api/baileys/disconnect`, { method: 'POST' })
     if (res.ok) {
       return await res.json()
     }
@@ -32,7 +35,7 @@ export async function requestBaileysDisconnect() {
 
 export async function getBaileysRecentTasks() {
   try {
-    const res = await fetch('/api/baileys/recent-tasks')
+    const res = await fetch(`${API_BASE}/api/baileys/recent-tasks`)
     if (res.ok) {
       return await res.json()
     }
@@ -42,7 +45,7 @@ export async function getBaileysRecentTasks() {
 
 export async function sendBaileysMessage({ to, text }) {
   try {
-    const res = await fetch('/api/baileys/send', {
+    const res = await fetch(`${API_BASE}/api/baileys/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to, text }),
@@ -55,7 +58,7 @@ export async function sendBaileysMessage({ to, text }) {
 
 export async function syncBaileysTasks(tasks) {
   try {
-    const res = await fetch('/api/baileys/sync-tasks', {
+    const res = await fetch(`${API_BASE}/api/baileys/sync-tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tasks }),
@@ -68,7 +71,7 @@ export async function syncBaileysTasks(tasks) {
 
 export async function testBaileysChat(text) {
   try {
-    const res = await fetch('/api/baileys/chat-test', {
+    const res = await fetch(`${API_BASE}/api/baileys/chat-test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
@@ -81,7 +84,7 @@ export async function testBaileysChat(text) {
 
 export async function triggerMidnightBriefing() {
   try {
-    const res = await fetch('/api/baileys/trigger-midnight-briefing', {
+    const res = await fetch(`${API_BASE}/api/baileys/trigger-midnight-briefing`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     })

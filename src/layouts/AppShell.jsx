@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import FloatingAICopilot from '../components/FloatingAICopilot'
 import { syncTasksToCloud } from '../services/firebase'
+import { getBaileysRecentTasks } from '../services/baileysBridge'
 
 const DEFAULT_TASKS = [
   {
@@ -236,9 +237,7 @@ export default function AppShell() {
 
     const checkAndSyncWhatsApp = async () => {
       try {
-        const res = await fetch('/api/baileys/recent-tasks')
-        if (!res.ok) return
-        const syncedTasks = await res.json()
+        const syncedTasks = await getBaileysRecentTasks()
         if (isCancelled || !Array.isArray(syncedTasks) || syncedTasks.length === 0) return
 
         setGlobalTasks((prevTasks) => {
