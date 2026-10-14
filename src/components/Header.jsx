@@ -1,7 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import ProfilePopover from './ProfilePopover'
+import AccountModal from './AccountModal'
 import AIBotIcon from './AIBotIcon'
+import { getCurrentUser, isGuestUser } from '../services/firebase'
 
 const mobileNavItems = [
   { name: 'Calendario', shortName: 'Agenda', to: '/calendar', icon: 'calendar_today' },
@@ -22,9 +24,34 @@ export default function Header({
   const location = useLocation()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [user, setUser] = useState(getCurrentUser())
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
+  const [accountModalTab, setAccountModalTab] = useState('profile')
   const profileButtonRef = useRef(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
   const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'es')
+
+  const isGuest = isGuestUser(user)
+
+  // Escuchar cambios de autenticación
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setUser(getCurrentUser())
+    }
+    window.addEventListener('studenthub_auth_changed', handleAuthChange)
+    return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
+  }, [])
+
+  // Escuchar apertura remota del modal de cuentas desde cualquier parte
+  useEffect(() => {
+    const handleOpenAccountModal = (e) => {
+      setAccountModalTab(e.detail?.tab || 'profile')
+      setIsAccountModalOpen(true)
+      setIsProfileOpen(false)
+    }
+    window.addEventListener('studenthub_open_account_modal', handleOpenAccountModal)
+    return () => window.removeEventListener('studenthub_open_account_modal', handleOpenAccountModal)
+  }, [])
 
   const currentNavItems = aiAssistantMode === 'floating'
     ? mobileNavItems.filter((item) => item.to !== '/ai-assistant')
@@ -222,16 +249,42 @@ export default function Header({
             >
               <span className="material-symbols-outlined text-[18px]">settings</span>
             </button>
-            <button
-              ref={profileButtonRef}
-              type="button"
-              onClick={() => setIsProfileOpen((prev) => !prev)}
-              className="relative w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[11px] tracking-tight ml-1 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
-              title="Menú de perfil y cuenta (Focus Hub)"
-            >
-              JG
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#161b26]" />
-            </button>
+            {isGuest ? (
+              <button
+                ref={profileButtonRef}
+                type="button"
+                onClick={() => setIsProfileOpen((prev) => !prev)}
+                className="relative w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center ml-1 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                title="Modo Invitado (Sin sesión) • Pulsa para abrir menú o iniciar sesión"
+              >
+                <span className="material-symbols-outlined text-[18px]">person</span>
+                <span
+                  className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white dark:border-[#161b26]"
+                  title="Sin sesión iniciada"
+                />
+              </button>
+            ) : (
+              <button
+                ref={profileButtonRef}
+                type="button"
+                onClick={() => setIsProfileOpen((prev) => !prev)}
+                className="relative w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[11px] tracking-tight ml-1 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                title={`Conectado como ${user.displayName || 'Usuario'} (Sesión activa)`}
+              >
+                {user.displayName
+                  ? user.displayName
+                      .split(' ')
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()
+                  : 'JG'}
+                <span
+                  className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#161b26]"
+                  title="Sesión activa"
+                />
+              </button>
+            )}
           </div>
         </div>
 
@@ -519,6 +572,18 @@ export default function Header({
         onClose={() => setIsProfileOpen(false)}
         anchorRef={profileButtonRef}
         placement="header"
+        onOpenAccountModal={(tab) => {
+          setAccountModalTab(tab)
+          setIsAccountModalOpen(true)
+          setIsProfileOpen(false)
+        }}
+      />
+
+      {/* MODAL DE CUENTAS INDEPENDIENTE Y ESTABLE */}
+      <AccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        initialTab={accountModalTab}
       />
     </>
   )

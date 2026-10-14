@@ -69,6 +69,17 @@ const saveAllAccounts = (accounts) => {
   }
 }
 
+// Comprobar si el usuario actual está en modo invitado o sin sesión iniciada
+export const isGuestUser = (user) => {
+  if (!user) return true
+  return (
+    user.uid === 'guest' ||
+    user.isGuest === true ||
+    user.email === 'invitado@studenthub.app' ||
+    !user.email
+  )
+}
+
 // Obtener usuario actualmente activo
 export const getCurrentUser = () => {
   try {
@@ -82,7 +93,15 @@ export const getCurrentUser = () => {
   }
   // Por defecto, usar la primera cuenta registrada
   const accounts = getAllAccounts()
-  const defaultUser = accounts[0]
+  const defaultUser = accounts[0] || {
+    uid: 'guest',
+    displayName: 'Invitado',
+    email: '',
+    plan: 'Free',
+    isGuest: true,
+    focusStatus: 'Sin sesión',
+    location: 'Málaga, ES',
+  }
   localStorage.setItem(ACTIVE_USER_KEY, JSON.stringify(defaultUser))
   return defaultUser
 }
@@ -161,6 +180,23 @@ export const switchAccount = (uid) => {
   return getCurrentUser()
 }
 
+// Eliminar una cuenta guardada en el dispositivo
+export const deleteAccount = async (uid) => {
+  let accounts = getAllAccounts()
+  accounts = accounts.filter((a) => a.uid !== uid)
+  saveAllAccounts(accounts)
+  const current = getCurrentUser()
+  if (current.uid === uid) {
+    if (accounts.length > 0) {
+      setActiveUser(accounts[0])
+    } else {
+      await logoutUser()
+    }
+  } else {
+    window.dispatchEvent(new Event('studenthub_auth_changed'))
+  }
+}
+
 // Actualizar datos del perfil activo
 export const updateUserProfileData = async (data) => {
   const current = getCurrentUser()
@@ -178,15 +214,16 @@ export const updateUserProfileData = async (data) => {
   return updated
 }
 
-// Cerrar sesion (pasa a modo invitado o primer usuario)
+// Cerrar sesion (pasa a modo invitado sin sesion)
 export const logoutUser = async () => {
   const guestUser = {
     uid: 'guest',
     displayName: 'Invitado',
-    email: 'invitado@studenthub.app',
+    email: '',
     plan: 'Free',
-    focusStatus: 'En descanso',
+    focusStatus: 'Sin sesión',
     location: 'Málaga, ES',
+    isGuest: true,
   }
   return setActiveUser(guestUser)
 }

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import ProfilePopover from './ProfilePopover'
-import { getCurrentUser } from '../services/firebase'
+import { getCurrentUser, isGuestUser } from '../services/firebase'
 import AIBotIcon from './AIBotIcon'
 
 const DEFAULT_NAVIGATION = [
@@ -42,10 +42,19 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
   const activeTouchIndexRef = useRef(null)
 
   const [user, setUser] = useState(getCurrentUser())
+  const isGuest = isGuestUser(user)
 
   useEffect(() => {
     setUser(getCurrentUser())
   }, [isProfileOpen])
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setUser(getCurrentUser())
+    }
+    window.addEventListener('studenthub_auth_changed', handleAuthChange)
+    return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
+  }, [])
 
   // Iniciar temporizador de click mantenido (long-press 280ms)
   const startLongPress = (index) => {
@@ -247,35 +256,66 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
             className="p-space-md rounded-2xl bg-surface-subtle hover:bg-surface-muted/80 border border-slate-200/70 dark:border-slate-800 transition-all cursor-pointer shadow-2xs group"
             title="Abrir menú de perfil y cuenta Focus Hub"
           >
-            <div className="flex items-center gap-space-sm">
-              <div className="relative shrink-0">
-                <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-xs tracking-tight shadow-xs">
-                  {user.displayName
-                    ? user.displayName
-                        .split(' ')
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join('')
-                        .toUpperCase()
-                    : 'JG'}
+            {isGuest ? (
+              <div className="flex items-center gap-space-sm">
+                <div className="relative shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium flex items-center justify-center text-xs tracking-tight shadow-xs">
+                    <span className="material-symbols-outlined text-[17px]">person</span>
+                  </div>
+                  <span
+                    className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-slate-400 border border-white dark:border-[#161b26]"
+                    title="Sin sesión iniciada"
+                  />
                 </div>
-                <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-[#161b26]"></span>
-              </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-headline-sm text-body-sm text-on-surface font-semibold truncate">
-                    {user.displayName || 'Jorge'}
-                  </span>
-                  <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.2 rounded border border-blue-100/80 dark:border-blue-800/80">
-                    {user.plan || 'Pro'}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-headline-sm text-body-sm text-on-surface font-semibold truncate">
+                      Invitado
+                    </span>
+                    <span className="text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded border border-slate-200 dark:border-slate-700">
+                      Local
+                    </span>
+                  </div>
+                  <span className="font-label-sm text-[11px] text-primary flex items-center gap-1 truncate mt-0.5 font-medium">
+                    <span className="material-symbols-outlined text-[12px]">login</span>
+                    Iniciar sesión
                   </span>
                 </div>
-                <span className="font-label-sm text-[11px] text-tertiary flex items-center gap-1 truncate mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  {user.focusStatus || 'Deep Work Block'}
-                </span>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-space-sm">
+                <div className="relative shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-xs tracking-tight shadow-xs">
+                    {user.displayName
+                      ? user.displayName
+                          .split(' ')
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase()
+                      : 'JG'}
+                  </div>
+                  <span
+                    className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-[#161b26]"
+                    title="Sesión activa"
+                  />
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-headline-sm text-body-sm text-on-surface font-semibold truncate">
+                      {user.displayName || 'Jorge'}
+                    </span>
+                    <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.2 rounded border border-blue-100/80 dark:border-blue-800/80">
+                      {user.plan || 'Pro'}
+                    </span>
+                  </div>
+                  <span className="font-label-sm text-[11px] text-tertiary flex items-center gap-1 truncate mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {user.focusStatus || 'Deep Work Block'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Menú de Perfil desplegable hacia arriba desde el Sidebar */}
@@ -284,6 +324,11 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
             onClose={() => setIsProfileOpen(false)}
             anchorRef={profileSnippetRef}
             placement="sidebar"
+            onOpenAccountModal={(tab) => {
+              window.dispatchEvent(
+                new CustomEvent('studenthub_open_account_modal', { detail: { tab } })
+              )
+            }}
           />
         </div>
       </aside>
