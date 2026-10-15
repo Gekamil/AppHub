@@ -1,9 +1,9 @@
 // Servicio y Gestor de Temas, Fuentes y Estilos Visuales de AppHub Focus Hub
-// 4 Diseños Radicales e Inconfundibles con Tipografías Únicas:
-// 1. Clásica (Apple Cupertino): Limpia, rounded-2xl, fuente Inter
-// 2. Aura Rose & Velvet: Lujo editorial, Fraunces itálico + Outfit, seda y curvas de 26px
-// 3. The Architectural Ledger: Libro mayor de arquitectura y finanzas, Cinzel + Instrument Serif, papel pergamino y marcos milimétricos
-// 4. Neo-Brutalista Industrial: Esquinas estrictas a 0px, marcos de 2px, Syne 800 + Space Mono, sombras duras limpias sin solapar
+// 4 Diseños Radicales, Modernos e Inconfundibles con Tipografías Dedicadas:
+// 1. Clásica (Apple Cupertino): Limpia, rounded-2xl, fuente Inter, azul Apple
+// 2. Blossom Study (Pastel Aesthetic): Estilo Notion / Goodnotes, Fraunces itálico + Outfit, pastel y curvas de 32px
+// 3. Linear Obsidian Pro: Estilo Linear / Raycast, Sora + Space Mono, obsidiana profundo, borde láser y alta densidad
+// 4. Neo-Brutalista Industrial: Esquinas estrictas a 0px, marcos de 2px, Space Grotesk + Space Mono, sombras de bloque sin solapamiento
 
 const THEME_STORAGE_KEY = 'app_theme_style'
 
@@ -38,67 +38,67 @@ export const APP_THEMES = [
   },
   {
     id: 'aura',
-    name: 'Aura Rose & Velvet',
-    tag: 'Editorial & Soft',
-    description: 'Estética de revista de lujo, titulares en Fraunces itálico, fondo degradado seda/rosa, sombras etéreas y curvas de 26px.',
-    fontName: 'Fraunces / Outfit',
-    fontFamily: '"Fraunces", "Outfit", serif',
+    name: 'Blossom Study (Pastel Aesthetic)',
+    tag: 'Cozy & Aesthetic',
+    description: 'Estética de agenda pastel (Goodnotes / Notion): colores nube, fresa y lavanda, esquinas acolchadas de 32px y atmósfera dulce.',
+    fontName: 'Outfit / Fraunces',
+    fontFamily: '"Outfit", "Fraunces", sans-serif',
     accentColor: '#f43f5e',
     previewBadge: 'rounded-full px-2.5 py-0.5 bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300 text-xs font-semibold border border-rose-200/60 dark:border-rose-800/60',
     labels: {
-      appTitle: 'Aura Velvet Journal',
-      autoOrganizer: 'Ritmo Consciente & Flujo Diario',
-      autoOrganizerSubtitle: 'Equilibrio, bienestar y atención cuidada a tus momentos esenciales',
-      smartIngestion: 'Captura de Intenciones',
-      smartIngestionDesc: 'Anota tus propósitos con calma, belleza y fluidez',
-      timeline: 'Secuencia & Armonía del Día',
-      timelineDesc: 'Momentos organizados con delicadeza y tiempo para ti',
-      myHub: 'Santuario de Recursos & Inspiración',
-      myHubDesc: 'Tus lecturas favoritas, cuadernos de notas y espacios bellos',
-      filterContext: 'Espacios de Vida',
-      allContexts: 'Todas las Áreas',
+      appTitle: 'Blossom Study Journal',
+      autoOrganizer: 'Agenda Pastel & Hábitos Conscientes',
+      autoOrganizerSubtitle: 'Tu espacio acogedor y ordenado para estudiar, crear y descansar',
+      smartIngestion: 'Anotar Ideas & Tareas',
+      smartIngestionDesc: 'Escribe tus metas bonitas con calma y fluidez',
+      timeline: 'Ritmo Dulce del Día',
+      timelineDesc: 'Tus momentos organizados con suavidad y pausas bien merecidas',
+      myHub: 'Cajón de Inspiración & Apuntes',
+      myHubDesc: 'Lecturas recomendadas, enlaces favoritos y cuadernos de notas',
+      filterContext: 'Colecciones',
+      allContexts: 'Todo mi Día',
       todayTasks: 'Momentos para Hoy',
-      upcomingTasks: 'Próximas Jornadas',
-      calendarTitle: 'Agenda Serena & Ritmo Semanal',
-      calendarSubtitle: 'Visualiza tus semanas en armonía con bloques de concentración claros',
-      newAction: '+ Nueva Intención',
+      upcomingTasks: 'Próximos Días Bonitos',
+      calendarTitle: 'Calendario Pastel & Semanas',
+      calendarSubtitle: 'Organiza tus semanas con bloques de color dulce y claridad',
+      newAction: '+ Nueva Nota',
     },
   },
   {
-    id: 'executive',
-    name: 'The Architectural Ledger',
-    tag: 'Libro Mayor & Precisión',
-    description: 'Libro mayor de arquitectura y finanzas, titulares clásicos Cinzel, textura pergamino y marcos milimétricos de precisión.',
-    fontName: 'Cinzel / Instrument Serif',
-    fontFamily: '"Cinzel", "Instrument Serif", serif',
-    accentColor: '#1e3a5f',
-    previewBadge: 'rounded-xs px-2 py-0.5 bg-amber-50 text-amber-900 dark:bg-slate-800 dark:text-amber-200 text-xs font-semibold border border-amber-300/80 dark:border-slate-700',
+    id: 'linear',
+    name: 'Linear Obsidian Pro',
+    tag: 'Futuristic Tech',
+    description: 'Estilo Linear / Raycast: fondo obsidiana profundo, haces de luz láser, tipografía Sora y densidad técnica de Silicon Valley.',
+    fontName: 'Sora / Space Mono',
+    fontFamily: '"Sora", "Space Mono", sans-serif',
+    accentColor: '#38bdf8',
+    previewBadge: 'rounded-lg px-2 py-0.5 bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 text-xs font-medium',
     labels: {
-      appTitle: 'ARCHITECTURAL LEDGER // APPHUB',
-      autoOrganizer: 'Registro Maestro & Agenda Estratégica',
-      autoOrganizerSubtitle: 'Despacho de compromisos, hitos analíticos y ordenación cronológica',
-      smartIngestion: 'Indexación de Asignaciones & Hitos',
-      smartIngestionDesc: 'Anotación formal de compromisos con verificación directa',
-      timeline: 'Cronograma Diario de Asignaciones',
-      timelineDesc: 'Distribución horaria estructurada por ventana de ejecución',
-      myHub: 'Archivo Documental & Biblioteca Técnica',
-      myHubDesc: 'Fuentes de referencia, esquemas analíticos y repositorios',
-      filterContext: 'Carteras & Departamentos',
-      allContexts: 'Global Portfolios',
-      todayTasks: 'Entregables Clave de Hoy',
-      upcomingTasks: 'Horizonte Estratégico & Futuro',
-      calendarTitle: 'Plan Maestro & Matriz Cronológica',
-      calendarSubtitle: 'Mapeo semanal riguroso con sincronización de fuentes externas',
-      newAction: '+ Asignar Hito',
+      appTitle: 'LINEAR_HUB // OBSIDIAN',
+      autoOrganizer: 'COMMAND COCKPIT // SPRINT ENGINE',
+      autoOrganizerSubtitle: 'Despacho de misiones de alto rendimiento y telemetría de ejecución',
+      smartIngestion: 'QUICK DISPATCH // BUFFER',
+      smartIngestionDesc: 'Keyboard-first parsing · Fast ingestion engine v4.0',
+      timeline: 'SPRINT TIMELINE // 24H QUEUE',
+      timelineDesc: 'Cola de ejecución priorizada por criticidad e impacto',
+      myHub: 'KNOWLEDGE BASE & REPO VAULT',
+      myHubDesc: 'Nodos montados, documentación y accesos directos de equipo',
+      filterContext: 'WORKSPACES',
+      allContexts: 'ALL WORKSPACES',
+      todayTasks: 'ACTIVE SPRINT // TODAY',
+      upcomingTasks: 'BACKLOG & FUTURE SPRINTS',
+      calendarTitle: 'CHRONOS HUD // GRID MATRIX',
+      calendarSubtitle: 'Mapeo temporal con canales de telemetría y sincronización',
+      newAction: '+ DISPATCH ISSUE',
     },
   },
   {
     id: 'brutalista',
     name: 'Neo-Brutalista Industrial',
     tag: 'Radical & Táctico',
-    description: 'Esquinas rectas a 0px, marcos de 2px de trazo técnico, tipografía Syne 800 + Space Mono y sombras de impacto limpias sin solapamiento.',
-    fontName: 'Syne / Space Mono',
-    fontFamily: '"Syne", "Space Mono", monospace',
+    description: 'Esquinas rectas a 0px, marcos de 2px de trazo técnico, Space Grotesk + Space Mono y sombras de impacto limpias sin solapar.',
+    fontName: 'Space Grotesk / Space Mono',
+    fontFamily: '"Space Grotesk", "Space Mono", monospace',
     accentColor: '#eab308',
     previewBadge: 'rounded-none px-2 py-0.5 bg-yellow-300 text-slate-950 border-2 border-black text-xs font-bold uppercase',
     labels: {
@@ -125,8 +125,8 @@ export const APP_THEMES = [
 export function getAppTheme() {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY)
+    if (saved === 'executive' || saved === 'cyberpunk') return 'linear'
     if (saved === 'minimal') return 'aura'
-    if (saved === 'cyberpunk') return 'brutalista'
     if (saved && APP_THEMES.some((t) => t.id === saved)) {
       return saved
     }

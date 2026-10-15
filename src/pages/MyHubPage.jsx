@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Modal from '../components/Modal'
+import { getAppTheme, getAppThemeTokens } from '../services/appTheme'
 
 const INITIAL_RESOURCES = [
   {
@@ -206,6 +207,17 @@ export default function MyHubPage() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [resources, setResources] = useState(INITIAL_RESOURCES)
+  const [appTheme, setAppThemeState] = useState(() => getAppTheme())
+
+  useEffect(() => {
+    const handleThemeChange = (e) => {
+      setAppThemeState(e.detail || getAppTheme())
+    }
+    window.addEventListener('app_theme_changed', handleThemeChange)
+    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+  }, [])
+
+  const themeTokens = useMemo(() => getAppThemeTokens(appTheme), [appTheme])
 
   // Estados para Modal de Recurso
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -347,25 +359,35 @@ export default function MyHubPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-md pb-space-sm">
           <div className="flex flex-col gap-space-xs">
             <div className="flex items-center gap-space-xs text-secondary font-code-sm text-code-sm">
-              <span className="material-symbols-outlined text-[16px] text-primary-container">hub</span>
-              <span>WORKSPACE // KNOWLEDGE REPOSITORY</span>
+              <span className="material-symbols-outlined text-[16px] text-primary">hub</span>
+              <span>{appTheme === 'linear' ? 'WORKSPACE // KNOWLEDGE REPOSITORY' : appTheme === 'brutalista' ? '[DEPÓSITO DE PROTOCOLOS // LOCAL DB]' : appTheme === 'aura' ? '🌸 Cajón de Notas & Enlaces Bonitos' : 'Workspace • Knowledge Repository'}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
               <span className="text-tertiary">SYNCED WITH LOCAL DB</span>
             </div>
-            <h1 className="font-headline-xl text-headline-xl text-on-surface tracking-tight">My Hub</h1>
+            <h1 className="font-headline-xl text-headline-xl text-on-surface tracking-tight">
+              {themeTokens?.labels?.myHub || 'My Hub'}
+            </h1>
             <p className="font-body-md text-body-md text-secondary">
-              Saved links, documentation, and personal project notes curated for rapid context retrieval.
+              {themeTokens?.labels?.myHubDesc || 'Saved links, documentation, and personal project notes curated for rapid context retrieval.'}
             </p>
           </div>
           {/* Quick Metrics Pill Strip */}
           <div className="flex items-center gap-space-sm">
             <button
               onClick={handleOpenAddModal}
-              className="bg-primary-container text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg flex items-center gap-1.5 shadow-sm hover:opacity-95 transition-all cursor-pointer"
+              className={`font-label-md text-label-md px-space-md py-2 flex items-center gap-1.5 shadow-sm hover:opacity-95 transition-all cursor-pointer ${
+                appTheme === 'brutalista'
+                  ? 'rounded-none bg-yellow-300 text-black border-2 border-black font-bold uppercase shadow-[3px_3px_0px_#000]'
+                  : appTheme === 'linear'
+                  ? 'rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold border border-cyan-400/50'
+                  : appTheme === 'aura'
+                  ? 'rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white'
+                  : 'bg-primary-container text-on-primary rounded-lg'
+              }`}
               id="btnNewResource"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              <span>New Resource</span>
+              <span>{appTheme === 'brutalista' ? '[+] AÑADIR' : appTheme === 'linear' ? '+ DISPATCH DOC' : appTheme === 'aura' ? '+ Nueva Nota' : '+ New Resource'}</span>
             </button>
           </div>
         </div>

@@ -282,8 +282,8 @@ html[data-theme-style="brutalista"] h1,
 html[data-theme-style="brutalista"] h2,
 html[data-theme-style="brutalista"] h3,
 html[data-theme-style="brutalista"] h4 {
-  font-family: 'Syne', sans-serif !important;
-  font-weight: 800 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
   letter-spacing: -0.02em !important;
   text-transform: uppercase !important;
 }
@@ -326,7 +326,7 @@ html[data-theme-style="brutalista"] .bg-surface-pure.p-6,
 html[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-3xl"],
 html[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-2xl"],
 html[data-theme-style="brutalista"] .shadow-xl {
-  box-shadow: 5px 5px 0px 0px #000000 !important;
+  box-shadow: 4px 4px 0px 0px #000000 !important;
 }
 
 html.dark[data-theme-style="brutalista"] .bg-white.p-4,
@@ -338,9 +338,10 @@ html.dark[data-theme-style="brutalista"] .bg-surface-pure.p-6,
 html.dark[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-3xl"],
 html.dark[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-2xl"],
 html.dark[data-theme-style="brutalista"] .shadow-xl {
-  box-shadow: 5px 5px 0px 0px #ffffff !important;
+  box-shadow: 4px 4px 0px 0px #ffffff !important;
 }
 
+/* Desactivar sombras en badges, pills, spans y botones internos para evitar empalmes */
 html[data-theme-style="brutalista"] span,
 html[data-theme-style="brutalista"] .shadow-2xs,
 html[data-theme-style="brutalista"] .shadow-xs,
@@ -375,33 +376,33 @@ html.dark[data-theme-style="brutalista"] .scrollbar-thin {
 
 html[data-theme-style="brutalista"] div[style*="top:"][style*="height:"] {
   border: 2px solid #000000 !important;
-  box-shadow: 2px 2px 0px 0px #000000 !important;
+  box-shadow: none !important;
   font-weight: 700 !important;
 }
 
 html.dark[data-theme-style="brutalista"] div[style*="top:"][style*="height:"] {
   border: 2px solid #ffffff !important;
-  box-shadow: 2px 2px 0px 0px #ffffff !important;
+  box-shadow: none !important;
 }
 
 
 /* ==========================================================================
-   2. AURA ROSE & VELVET (Lujo Editorial, Fraunces Itálico, Seda & Curvas)
+   2. BLOSSOM STUDY // PASTEL AESTHETIC (Estilo Notion / Goodnotes / Digital Journal)
    ========================================================================== */
 html[data-theme-style="aura"],
 html[data-theme-style="aura"] body {
-  font-family: 'Outfit', -apple-system, sans-serif !important;
-  background: radial-gradient(circle at 10% 20%, #fff0f5 0%, #fdf2f8 40%, #faf5ff 100%) !important;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
+  background: radial-gradient(circle at 10% 10%, #fff0f3 0%, #fdf2f8 35%, #f5f3ff 70%, #faf5ff 100%) !important;
   background-attachment: fixed !important;
 }
 
 html.dark[data-theme-style="aura"],
 html.dark[data-theme-style="aura"] body {
-  background: radial-gradient(circle at 10% 20%, #170919 0%, #1b0e22 45%, #130718 100%) !important;
+  background: radial-gradient(circle at 10% 10%, #1f0f1d 0%, #170d19 40%, #100813 100%) !important;
   background-attachment: fixed !important;
 }
 
-/* Titulares en Fraunces itálico voluptuoso de alta costura */
+/* Titulares en Fraunces itálico acogedor de diario estético */
 html[data-theme-style="aura"] h1,
 html[data-theme-style="aura"] h2,
 html[data-theme-style="aura"] h3,
@@ -410,60 +411,76 @@ html[data-theme-style="aura"] h4 {
   font-style: italic !important;
   font-weight: 600 !important;
   letter-spacing: -0.015em !important;
+  color: #9f1239 !important;
 }
 
-/* Paneles con Glassmorphism suave y sombras etéreas rosa-seda */
+html.dark[data-theme-style="aura"] h1,
+html.dark[data-theme-style="aura"] h2,
+html.dark[data-theme-style="aura"] h3,
+html.dark[data-theme-style="aura"] h4 {
+  color: #fbcfe8 !important;
+}
+
+/* Tarjetas acolchadas tipo nube (28px de curvatura, marco pastel y sombra suave) */
 html[data-theme-style="aura"] .bg-white,
 html[data-theme-style="aura"] .bg-surface-pure {
-  background-color: rgba(255, 255, 255, 0.88) !important;
+  background-color: rgba(255, 255, 255, 0.94) !important;
   backdrop-filter: blur(14px) !important;
-  border: 1.5px solid rgba(244, 63, 94, 0.28) !important;
-  border-radius: 26px !important;
-  box-shadow: 0 16px 36px -8px rgba(244, 63, 94, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
+  border: 2px solid #fecdd3 !important;
+  border-radius: 28px !important;
+  box-shadow: 0 10px 30px -6px rgba(244, 63, 94, 0.08) !important;
 }
 
 html.dark[data-theme-style="aura"] .bg-white,
 html.dark[data-theme-style="aura"] .bg-surface-pure,
 html.dark[data-theme-style="aura"] .bg-\[\#161b26\] {
-  background-color: rgba(28, 16, 34, 0.88) !important;
+  background-color: rgba(26, 15, 30, 0.92) !important;
   backdrop-filter: blur(14px) !important;
-  border: 1.5px solid rgba(244, 63, 94, 0.22) !important;
-  border-radius: 26px !important;
-  box-shadow: 0 16px 36px -8px rgba(217, 70, 239, 0.16) !important;
+  border: 2px solid rgba(244, 63, 94, 0.28) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 10px 30px -6px rgba(217, 70, 239, 0.12) !important;
 }
 
-/* Botones en píldora con degradado de seda puesta de sol */
+/* Botones en píldora con degradado fresa pastel y tacto amable */
 html[data-theme-style="aura"] button {
   border-radius: 9999px !important;
 }
 
 html[data-theme-style="aura"] .bg-primary,
 html[data-theme-style="aura"] .bg-primary-container {
-  background: linear-gradient(135deg, #f43f5e 0%, #c026d3 100%) !important;
+  background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%) !important;
   color: #ffffff !important;
   border: none !important;
-  box-shadow: 0 8px 24px -4px rgba(244, 63, 94, 0.45) !important;
+  box-shadow: 0 6px 18px -4px rgba(244, 63, 94, 0.35) !important;
 }
 
-/* Calendario en Aura: Celdas sedosas y tarjetas de evento flotantes */
+/* Calendario en Blossom Study: Notas adhesivas pastel y esquinas redondeadas suaves */
 html[data-theme-style="aura"] .border-slate-200,
 html[data-theme-style="aura"] .border-slate-200\/80 {
-  border-color: rgba(244, 63, 94, 0.2) !important;
+  border-color: rgba(253, 164, 175, 0.4) !important;
 }
 
 html.dark[data-theme-style="aura"] .border-slate-800,
 html.dark[data-theme-style="aura"] .border-slate-700 {
-  border-color: rgba(244, 63, 94, 0.18) !important;
+  border-color: rgba(244, 63, 94, 0.22) !important;
 }
 
 html[data-theme-style="aura"] div[style*="top:"][style*="height:"] {
-  border-radius: 18px !important;
-  border: 1.5px solid rgba(244, 63, 94, 0.35) !important;
-  box-shadow: 0 4px 15px -2px rgba(244, 63, 94, 0.2) !important;
+  border-radius: 16px !important;
+  border: 1.5px solid #fbcfe8 !important;
+  background: linear-gradient(135deg, #fff1f2 0%, #fdf4ff 100%) !important;
+  color: #9f1239 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 14px -2px rgba(244, 63, 94, 0.15) !important;
   font-family: 'Outfit', sans-serif !important;
 }
 
-/* Números de día en burbujas suaves */
+html.dark[data-theme-style="aura"] div[style*="top:"][style*="height:"] {
+  background: linear-gradient(135deg, #381528 0%, #2e1136 100%) !important;
+  color: #fecdd3 !important;
+  border-color: rgba(244, 63, 94, 0.45) !important;
+}
+
 html[data-theme-style="aura"] .font-headline-md.text-headline-md {
   font-family: 'Fraunces', serif !important;
   font-style: italic !important;
@@ -471,113 +488,107 @@ html[data-theme-style="aura"] .font-headline-md.text-headline-md {
 
 
 /* ==========================================================================
-   3. THE ARCHITECTURAL LEDGER (Libro Mayor de Finanzas & Planos Técnicos)
+   3. LINEAR OBSIDIAN PRO (Sleek Silicon Valley Tech, Sora + Space Mono HUD)
    ========================================================================== */
-html[data-theme-style="executive"],
-html[data-theme-style="executive"] body {
-  font-family: 'Instrument Serif', Georgia, serif !important;
-  background-color: #f7f5ee !important;
-  background-image: radial-gradient(#d6ceb8 0.85px, transparent 0.85px) !important;
-  background-size: 24px 24px !important;
+html[data-theme-style="linear"],
+html[data-theme-style="linear"] body {
+  font-family: 'Sora', system-ui, -apple-system, sans-serif !important;
+  background-color: #08090d !important;
+  background-image: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.07) 0%, transparent 60%) !important;
   background-attachment: fixed !important;
+  color: #f1f5f9 !important;
 }
 
-html.dark[data-theme-style="executive"],
-html.dark[data-theme-style="executive"] body {
-  background-color: #0b1019 !important;
-  background-image: radial-gradient(#1f293d 0.85px, transparent 0.85px) !important;
-  background-size: 24px 24px !important;
-  background-attachment: fixed !important;
+html:not(.dark)[data-theme-style="linear"],
+html:not(.dark)[data-theme-style="linear"] body {
+  background-color: #f8fafc !important;
+  background-image: radial-gradient(circle at 50% 0%, rgba(2, 132, 199, 0.05) 0%, transparent 60%) !important;
+  color: #0f172a !important;
 }
 
-/* Titulares con clase imperial Cinzel en mayúsculas sobrias */
-html[data-theme-style="executive"] h1,
-html[data-theme-style="executive"] h2,
-html[data-theme-style="executive"] h3,
-html[data-theme-style="executive"] h4 {
-  font-family: 'Cinzel', Georgia, serif !important;
+/* Titulares con clase técnica Sora de Silicon Valley */
+html[data-theme-style="linear"] h1,
+html[data-theme-style="linear"] h2,
+html[data-theme-style="linear"] h3,
+html[data-theme-style="linear"] h4 {
+  font-family: 'Sora', sans-serif !important;
   font-weight: 700 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase !important;
+  letter-spacing: -0.025em !important;
+  color: #f8fafc !important;
 }
 
-/* Paneles tipo libro mayor: marcos finos de 1px en pergamino con borde superior azul marino */
-html[data-theme-style="executive"] .bg-white,
-html[data-theme-style="executive"] .bg-surface-pure {
-  background-color: #ffffff !important;
-  border: 1px solid #d5cbaf !important;
-  border-top: 3px solid #1e3a5f !important;
-  border-radius: 3px !important;
-  box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.05) !important;
+html:not(.dark)[data-theme-style="linear"] h1,
+html:not(.dark)[data-theme-style="linear"] h2,
+html:not(.dark)[data-theme-style="linear"] h3,
+html:not(.dark)[data-theme-style="linear"] h4 {
+  color: #0f172a !important;
 }
 
-html.dark[data-theme-style="executive"] .bg-white,
-html.dark[data-theme-style="executive"] .bg-surface-pure,
-html.dark[data-theme-style="executive"] .bg-\[\#161b26\] {
-  background-color: #121824 !important;
-  border: 1px solid #28364c !important;
-  border-top: 3px solid #3b82f6 !important;
-  border-radius: 3px !important;
-  box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.3) !important;
+/* Tarjetas con cristal obsidiana limpio y sutil (sin barras artificiales) */
+html[data-theme-style="linear"] .bg-white,
+html[data-theme-style="linear"] .bg-surface-pure,
+html[data-theme-style="linear"] .bg-\[\#161b26\] {
+  background-color: rgba(13, 16, 23, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Curvatura mínima y uniforme de 2px a 4px */
-html[data-theme-style="executive"] .rounded-3xl,
-html[data-theme-style="executive"] .rounded-2xl,
-html[data-theme-style="executive"] .rounded-xl,
-html[data-theme-style="executive"] .rounded-lg {
-  border-radius: 3px !important;
+html:not(.dark)[data-theme-style="linear"] .bg-white,
+html:not(.dark)[data-theme-style="linear"] .bg-surface-pure {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06) !important;
 }
 
-/* Botones institucionales de alta precisión */
-html[data-theme-style="executive"] button {
-  border-radius: 3px !important;
-  font-family: 'Cinzel', serif !important;
-  letter-spacing: 0.06em !important;
-  font-size: 11px !important;
-  text-transform: uppercase !important;
+/* Botones compactos de alta densidad */
+html[data-theme-style="linear"] button {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: -0.01em !important;
 }
 
-html[data-theme-style="executive"] .bg-primary,
-html[data-theme-style="executive"] .bg-primary-container {
-  background-color: #1e3a5f !important;
+html[data-theme-style="linear"] .bg-primary,
+html[data-theme-style="linear"] .bg-primary-container {
+  background: #0284c7 !important;
   color: #ffffff !important;
-  border: 1px solid #0f243d !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.25) !important;
 }
 
-html.dark[data-theme-style="executive"] .bg-primary,
-html.dark[data-theme-style="executive"] .bg-primary-container {
-  background-color: #1e3a5f !important;
-  border-color: #3b82f6 !important;
+/* Calendario en Linear Pro: HUD oscuro con tarjetas estilo Linear issues */
+html[data-theme-style="linear"] .border-slate-200,
+html[data-theme-style="linear"] .border-slate-200\/80 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Calendario en The Architectural Ledger: Cuadrícula milimétrica sepia / plano técnico */
-html[data-theme-style="executive"] .border-slate-200,
-html[data-theme-style="executive"] .border-slate-200\/80 {
-  border-color: #ded6c3 !important;
+html:not(.dark)[data-theme-style="linear"] .border-slate-200,
+html:not(.dark)[data-theme-style="linear"] .border-slate-200\/80 {
+  border-color: #e2e8f0 !important;
 }
 
-html.dark[data-theme-style="executive"] .border-slate-800,
-html.dark[data-theme-style="executive"] .border-slate-700 {
-  border-color: #232d3f !important;
+html[data-theme-style="linear"] div[style*="top:"][style*="height:"] {
+  border-radius: 8px !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #f8fafc !important;
+  font-family: 'Sora', sans-serif !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
 }
 
-html[data-theme-style="executive"] div[style*="top:"][style*="height:"] {
-  border-radius: 2px !important;
-  border: 1px solid #b8a989 !important;
-  background-color: #faf8f2 !important;
-  color: #1e3a5f !important;
-  font-family: 'Instrument Serif', Georgia, serif !important;
-  font-size: 13.5px !important;
-  box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 0.08) !important;
+html:not(.dark)[data-theme-style="linear"] div[style*="top:"][style*="height:"] {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
-html.dark[data-theme-style="executive"] div[style*="top:"][style*="height:"] {
-  background-color: #162030 !important;
-  border-color: #384b66 !important;
-  color: #93c5fd !important;
-  box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 0.3) !important;
+/* Columna de horas en Space Mono de alta fidelidad */
+html[data-theme-style="linear"] .font-code-sm {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 11px !important;
 }
 
 

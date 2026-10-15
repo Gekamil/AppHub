@@ -1052,6 +1052,69 @@ export default function AutoOrganizerPage() {
           </div>
         </section>
 
+        {/* Banner Temático Dedicado (Transforma la atmósfera del organizador) */}
+        {appTheme === 'aura' && (
+          <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-r from-rose-100/90 via-pink-50/90 to-purple-100/90 dark:from-[#2a1322] dark:via-[#20101d] dark:to-[#1a1226] border-2 border-rose-200/80 dark:border-rose-900/40 shadow-xs animate-in fade-in duration-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-white/90 dark:bg-black/30 text-rose-500 dark:text-rose-300 flex items-center justify-center shrink-0 shadow-xs">
+                  <span className="material-symbols-outlined text-[24px]">local_florist</span>
+                </div>
+                <div>
+                  <h2 className="font-serif italic text-base sm:text-lg font-bold text-rose-950 dark:text-rose-100">
+                    Cuaderno de Hábitos & Estudio Sereno
+                  </h2>
+                  <p className="text-xs text-rose-700/90 dark:text-rose-300/80 font-medium">
+                    Hoy es un día para avanzar a tu propio ritmo, con calma y cariño en cada momento.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-black/40 text-rose-700 dark:text-rose-200 border border-rose-200/60 dark:border-rose-800/60 font-semibold shadow-2xs">
+                  🌸 {pendingThisWeekCount} momentos pendientes
+                </span>
+                <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-black/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 font-semibold shadow-2xs">
+                  ✨ {completedThisWeekCount} completados
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {appTheme === 'linear' && (
+          <div className="rounded-xl px-4 py-2.5 bg-[#0b0e14] border border-cyan-500/30 shadow-[0_0_20px_rgba(56,189,248,0.08)] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono animate-in fade-in duration-200">
+            <div className="flex items-center gap-3">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span className="text-cyan-400 font-bold tracking-wider">CHRONOS_KERNEL // SPRINT v4.2</span>
+              <span className="text-slate-600">|</span>
+              <span className="text-slate-300">QUEUE: {pendingThisWeekCount}</span>
+              <span className="text-slate-600">|</span>
+              <span className="text-emerald-400">SHIPPED: {completedThisWeekCount}</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-400 text-[11px]">
+              <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300">
+                VELOCITY: 94%
+              </span>
+              <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                LATENCY: 12ms
+              </span>
+            </div>
+          </div>
+        )}
+
+        {appTheme === 'brutalista' && (
+          <div className="p-3 bg-yellow-300 text-black border-2 border-black shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] flex flex-col md:flex-row md:items-center justify-between gap-2 uppercase font-black text-xs tracking-wider animate-in fade-in duration-200">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-base">terminal</span>
+              <span>[PROTOCOLO DE ACCIÓN INDUSTRIAL // RADAR TÁCTICO ACTIVO]</span>
+            </div>
+            <div className="flex items-center gap-3 font-mono font-bold text-[11px]">
+              <span>// PENDIENTES: {pendingThisWeekCount}</span>
+              <span>// EJECUTADAS: {completedThisWeekCount}</span>
+            </div>
+          </div>
+        )}
+
         {/* Notificación Discreta en la cabecera */}
         {aiNotification && (
           <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-medium animate-in fade-in duration-200">
@@ -1102,22 +1165,56 @@ export default function AutoOrganizerPage() {
           {/* COLUMNA IZQUIERDA: Barra de Ingesta Rápida + Centro de Enfoque de Hoy (Llena el espacio vacío con utilidad real) */}
           <div className="w-full space-y-4">
             {/* 1. Barra de Entrada Rápida con Ingesta Directa por IA */}
-            <div className="bg-white dark:bg-[#161b26] rounded-2xl p-1.5 sm:p-2 border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className={`p-1.5 sm:p-2 border transition-all ${
+              appTheme === 'brutalista'
+                ? 'rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]'
+                : appTheme === 'linear'
+                ? 'rounded-xl bg-[#0c1017]/90 border border-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.4)] focus-within:border-cyan-500/50'
+                : appTheme === 'aura'
+                ? 'rounded-3xl bg-white/95 dark:bg-[#1c1020]/95 border-2 border-rose-200/80 dark:border-rose-900/40 shadow-xs focus-within:border-rose-400'
+                : 'rounded-2xl bg-white dark:bg-[#161b26] border-slate-200/80 dark:border-slate-800 shadow-2xs focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20'
+            }`}>
               <form onSubmit={handleDirectSmartIngestion} className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-slate-400 dark:text-slate-500 text-[20px] ml-2 shrink-0">
-                  add_task
+                <span className={`text-[20px] ml-2 shrink-0 ${
+                  appTheme === 'aura'
+                    ? 'material-symbols-outlined text-rose-500'
+                    : appTheme === 'linear'
+                    ? 'font-mono text-cyan-400 font-bold text-sm'
+                    : appTheme === 'brutalista'
+                    ? 'material-symbols-outlined text-black dark:text-white'
+                    : 'material-symbols-outlined text-slate-400 dark:text-slate-500'
+                }`}>
+                  {appTheme === 'linear' ? '>' : appTheme === 'aura' ? 'local_florist' : 'add_task'}
                 </span>
                 <input
                   type="text"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="¿Qué necesitas hacer? (ej. Deberes de sistemas el viernes, Gimnasio todos los martes...)"
-                  className="flex-1 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none py-1.5 px-1 min-w-0"
+                  placeholder={
+                    appTheme === 'aura'
+                      ? '🌸 Anotar una nueva intención o tarea con calma...'
+                      : appTheme === 'linear'
+                      ? 'quick dispatch issue --priority [P1] (ej. Deploy sprint, study AI models...)'
+                      : appTheme === 'brutalista'
+                      ? '// INGRESO DE PROTOCOLO O MISIÓN OPERATIVA...'
+                      : '¿Qué necesitas hacer? (ej. Deberes de sistemas el viernes, Gimnasio todos los martes...)'
+                  }
+                  className={`flex-1 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none py-1.5 px-1 min-w-0 ${
+                    appTheme === 'linear' || appTheme === 'brutalista' ? 'font-mono' : ''
+                  }`}
                 />
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}
-                  className="h-7 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0"
+                  className={`h-7 px-2.5 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0 ${
+                    appTheme === 'brutalista'
+                      ? 'rounded-none bg-slate-100 hover:bg-yellow-200 text-black border border-black'
+                      : appTheme === 'linear'
+                      ? 'rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-mono text-[11px]'
+                      : appTheme === 'aura'
+                      ? 'rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-200 border border-rose-200/60'
+                      : 'rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}
                   title="Configuración manual con todos los campos"
                 >
                   <span className="material-symbols-outlined text-[13px]">tune</span>
@@ -1126,10 +1223,28 @@ export default function AutoOrganizerPage() {
                 <button
                   type="submit"
                   disabled={isAiLoading || !newTaskTitle.trim()}
-                  className="h-7 px-3 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0 disabled:opacity-50"
+                  className={`h-7 px-3.5 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0 disabled:opacity-50 ${
+                    appTheme === 'brutalista'
+                      ? 'rounded-none bg-yellow-300 hover:bg-yellow-400 text-black font-mono font-bold uppercase border-2 border-black shadow-[2px_2px_0px_#000]'
+                      : appTheme === 'linear'
+                      ? 'rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold border border-cyan-400/50 shadow-[0_0_12px_rgba(56,189,248,0.3)]'
+                      : appTheme === 'aura'
+                      ? 'rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-xs'
+                      : 'rounded-lg bg-primary hover:bg-primary/90 text-white shadow-2xs'
+                  }`}
                   title="Añadir directamente con IA (Enter)"
                 >
-                  <span>{isAiLoading ? 'Procesando...' : 'Añadir'}</span>
+                  <span>
+                    {isAiLoading
+                      ? 'Procesando...'
+                      : appTheme === 'brutalista'
+                      ? '[+] ASIGNAR'
+                      : appTheme === 'linear'
+                      ? 'DISPATCH'
+                      : appTheme === 'aura'
+                      ? 'Anotar'
+                      : 'Añadir'}
+                  </span>
                   <kbd className="hidden sm:inline-block px-1 py-0.2 rounded bg-black/20 text-[10px] font-mono leading-none">
                     ↵
                   </kbd>
@@ -1333,30 +1448,82 @@ export default function AutoOrganizerPage() {
                       key={day.date}
                       type="button"
                       onClick={() => setSelectedRadarDate(day.date)}
-                      className={`flex flex-col items-center py-2 px-1 rounded-2xl transition-all cursor-pointer relative ${
-                        isSelected
-                          ? 'bg-blue-500/10 dark:bg-blue-500/15 ring-2 ring-[#0071E3]/50 shadow-xs'
+                      className={`flex flex-col items-center py-2 px-1 transition-all cursor-pointer relative ${
+                        appTheme === 'brutalista'
+                          ? `rounded-none border-2 border-black dark:border-white ${
+                              isSelected
+                                ? 'bg-yellow-300 text-black font-bold'
+                                : isToday
+                                ? 'bg-yellow-100 dark:bg-yellow-950/40 text-black dark:text-white'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`
+                          : appTheme === 'linear'
+                          ? `rounded-lg ${
+                              isSelected
+                                ? 'bg-cyan-950/80 text-cyan-300 ring-1 ring-cyan-500/50'
+                                : isToday
+                                ? 'bg-slate-800/80 text-cyan-400'
+                                : 'hover:bg-slate-800/40 text-slate-400'
+                            }`
+                          : appTheme === 'aura'
+                          ? `rounded-2xl ${
+                              isSelected
+                                ? 'bg-rose-100/90 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 ring-2 ring-rose-400/60 shadow-xs'
+                                : isToday
+                                ? 'bg-rose-50/70 dark:bg-rose-950/30 text-rose-600'
+                                : 'hover:bg-rose-50/40 text-slate-500'
+                            }`
+                          : isSelected
+                          ? 'rounded-2xl bg-blue-500/10 dark:bg-blue-500/15 ring-2 ring-[#0071E3]/50 shadow-xs'
                           : isToday
-                          ? 'bg-slate-100/90 dark:bg-slate-800/80 hover:bg-slate-200/70'
-                          : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
+                          ? 'rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 hover:bg-slate-200/70'
+                          : 'rounded-2xl hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
                       }`}
                     >
                       <span
                         className={`text-[10px] font-semibold tracking-wider uppercase ${
-                          isToday ? 'text-[#0071E3] dark:text-blue-400 font-bold' : 'text-slate-400 dark:text-slate-500'
+                          appTheme === 'linear'
+                            ? 'font-mono text-slate-400'
+                            : isToday
+                            ? appTheme === 'aura' ? 'text-rose-600 font-bold' : appTheme === 'brutalista' ? 'text-black dark:text-white font-bold' : 'text-[#0071E3] dark:text-blue-400 font-bold'
+                            : 'text-slate-400 dark:text-slate-500'
                         }`}
                       >
                         {day.label}
                       </span>
 
-                      {/* Círculo del número del día */}
+                      {/* Círculo / Forma del número del día */}
                       <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs my-1 transition-all ${
-                          isToday
-                            ? 'bg-[#0071E3] text-white shadow-xs font-bold'
+                        className={`w-7 h-7 flex items-center justify-center text-xs my-1 transition-all ${
+                          appTheme === 'brutalista'
+                            ? `rounded-none font-mono font-black ${
+                                isSelected
+                                  ? 'bg-black text-yellow-300'
+                                  : isToday
+                                  ? 'bg-yellow-300 text-black border border-black'
+                                  : 'text-black dark:text-white'
+                              }`
+                            : appTheme === 'linear'
+                            ? `rounded-md font-mono ${
+                                isToday
+                                  ? 'bg-cyan-500 text-slate-950 font-bold'
+                                  : isSelected
+                                  ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/40'
+                                  : 'text-slate-300'
+                              }`
+                            : appTheme === 'aura'
+                            ? `rounded-full ${
+                                isToday
+                                  ? 'bg-rose-500 text-white font-bold shadow-xs'
+                                  : isSelected
+                                  ? 'bg-rose-200/60 text-rose-800 dark:text-rose-200 font-bold'
+                                  : 'text-slate-700 dark:text-slate-300 font-medium'
+                              }`
+                            : isToday
+                            ? 'rounded-full bg-[#0071E3] text-white shadow-xs font-bold'
                             : isSelected
-                            ? 'bg-blue-500/20 text-[#0071E3] dark:text-blue-400 font-bold'
-                            : 'text-slate-700 dark:text-slate-300 font-medium'
+                            ? 'rounded-full bg-blue-500/20 text-[#0071E3] dark:text-blue-400 font-bold'
+                            : 'rounded-full text-slate-700 dark:text-slate-300 font-medium'
                         }`}
                       >
                         {day.dayNum}
@@ -1654,6 +1821,7 @@ export default function AutoOrganizerPage() {
                   onEdit={handleOpenEditModal}
                   onDelete={handleDeleteTask}
                   onStartFocus={startFocusTimer}
+                  appTheme={appTheme}
                 />
               ))}
               {tasksToday.length === 0 && (
@@ -1682,6 +1850,7 @@ export default function AutoOrganizerPage() {
                   onEdit={handleOpenEditModal}
                   onDelete={handleDeleteTask}
                   onStartFocus={startFocusTimer}
+                  appTheme={appTheme}
                 />
               ))}
               {tasksRestOfWeek.length === 0 && (
@@ -1723,6 +1892,7 @@ export default function AutoOrganizerPage() {
                     onEdit={handleOpenEditModal}
                     onDelete={handleDeleteTask}
                     onStartFocus={startFocusTimer}
+                    appTheme={appTheme}
                   />
                 ))}
               </div>
@@ -1768,6 +1938,7 @@ export default function AutoOrganizerPage() {
                     onEdit={handleOpenEditModal}
                     onDelete={handleDeleteTask}
                     onStartFocus={startFocusTimer}
+                    appTheme={appTheme}
                   />
                 ))}
               </div>
@@ -2712,7 +2883,296 @@ export default function AutoOrganizerPage() {
 }
 
 // Componente Tarjeta de Tarea Individual con Animación de Checkmark y Botón Focus Centrado
-function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus }) {
+// Componente Tarjeta de Tarea Individual Adaptado Radicalmente al Diseño Visual Seleccionado
+function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme }) {
+  const currentTheme = appTheme || 'clasica'
+
+  // --- 1. BLOSSOM STUDY (PASTEL AESTHETIC / NOTION / GOODNOTES) ---
+  if (currentTheme === 'aura') {
+    const pastelContextColors = {
+      University: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border-indigo-200/70',
+      'Health & Gym': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200/70',
+      Personal: 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/70',
+      Projects: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/70',
+    }
+
+    return (
+      <div
+        className={`p-3.5 sm:p-4 rounded-3xl bg-white/95 dark:bg-[#1a0f1d]/95 backdrop-blur-md border-2 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-xs hover:shadow-md group ${
+          task.completed
+            ? 'opacity-60 border-rose-200/40 dark:border-rose-900/30 bg-rose-50/30'
+            : 'border-rose-200/80 dark:border-rose-900/50 hover:border-rose-300'
+        }`}
+      >
+        <div className="flex items-start gap-3.5 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => onToggle(task.id)}
+            className={`w-6 h-6 mt-0.5 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 border-2 transform active:scale-90 ${
+              task.completed
+                ? 'bg-rose-500 border-rose-500 text-white shadow-xs'
+                : 'border-rose-300 dark:border-rose-700 hover:border-rose-500 hover:bg-rose-50/50'
+            }`}
+            title={task.completed ? 'Marcar como pendiente' : 'Marcar como completada'}
+          >
+            {task.completed && (
+              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" className="animate-checkmark-tick" />
+              </svg>
+            )}
+          </button>
+
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap text-xs">
+              <span className="inline-flex items-center gap-1 font-medium text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-800/60 text-[11px]">
+                <span className="material-symbols-outlined text-[13px] text-rose-500">schedule</span>
+                <span>{task.time || '10:00'}</span>
+              </span>
+              {task.est && (
+                <span className="inline-flex items-center gap-1 text-slate-500 dark:text-rose-300/70 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-full text-[11px]">
+                  <span>✨ {task.est}</span>
+                </span>
+              )}
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${pastelContextColors[task.context] || 'bg-rose-50 text-rose-700 border-rose-200/60'}`}>
+                {task.context}
+              </span>
+              {isSportActivity(task) && (
+                <span className="px-2.5 py-0.5 rounded-full font-semibold border bg-rose-100/80 text-rose-800 dark:bg-rose-950/80 dark:text-rose-200 border-rose-200 flex items-center gap-1 text-[11px]">
+                  <span className="material-symbols-outlined text-[12px]">fitness_center</span>
+                  Deporte
+                </span>
+              )}
+            </div>
+
+            <h4 className={`font-semibold text-sm text-slate-900 dark:text-rose-50 leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+              {task.title}
+            </h4>
+
+            {task.description && (
+              <p className="text-xs text-slate-500 dark:text-rose-300/80 line-clamp-1">{task.description}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-3 self-stretch sm:self-center shrink-0">
+          {!task.completed ? (
+            <button
+              type="button"
+              onClick={() => onStartFocus(task)}
+              className="h-7.5 px-3.5 rounded-full bg-rose-50 hover:bg-rose-500 hover:text-white dark:bg-rose-950/60 dark:hover:bg-rose-600 text-rose-700 dark:text-rose-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 border border-rose-200/70 dark:border-rose-800/70"
+            >
+              <span className="material-symbols-outlined text-[14px]">local_florist</span>
+              <span>Enfocar</span>
+            </button>
+          ) : (
+            <span className="text-[11px] text-rose-600 dark:text-rose-300 font-semibold px-2.5 py-0.5 rounded-full bg-rose-100/70 dark:bg-rose-950/60">
+              Hecho con calma
+            </span>
+          )}
+
+          <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={() => onEdit(task)}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors cursor-pointer"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-[15px]">edit</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(task.id)}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors cursor-pointer"
+              title="Eliminar"
+            >
+              <span className="material-symbols-outlined text-[15px]">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // --- 2. LINEAR OBSIDIAN PRO (SILICON VALLEY ISSUE ROW / HIGH-DENSITY HUD) ---
+  if (currentTheme === 'linear') {
+    const issueCode = `APP-${((Math.abs(Number(task.id) || 100)) % 900) + 100}`
+    const priorityLabel = task.effort === 'High' ? 'P0' : task.effort === 'Medium' ? 'P1' : 'P2'
+
+    return (
+      <div
+        className={`py-2 px-3 sm:px-3.5 rounded-xl bg-[#0c0f17]/90 dark:bg-[#0c0f17]/90 border transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-2.5 group shadow-[0_2px_8px_rgba(0,0,0,0.5)] ${
+          task.completed
+            ? 'opacity-50 border-slate-800/60 bg-slate-950/40'
+            : 'border-slate-800 hover:border-cyan-500/50 hover:bg-[#101522]'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => onToggle(task.id)}
+            className={`w-4 h-4 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
+              task.completed
+                ? 'bg-cyan-500 border-cyan-500 text-slate-950'
+                : 'border-slate-700 bg-slate-900 hover:border-cyan-400'
+            }`}
+            title={task.completed ? 'Reabrir issue' : 'Cerrar issue'}
+          >
+            {task.completed && (
+              <svg className="w-3 h-3 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </button>
+
+          <span className="font-mono text-[11px] font-bold text-cyan-400 shrink-0 tracking-tight">
+            [{issueCode}]
+          </span>
+
+          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-slate-300 shrink-0 font-bold">
+            {priorityLabel}
+          </span>
+
+          <span className="font-mono text-[11px] text-slate-500 shrink-0 hidden sm:inline">
+            // {task.time || '10:00'} · {task.est || '30m'}
+          </span>
+
+          <h4 className={`font-sans font-medium text-xs sm:text-sm text-slate-100 truncate flex-1 min-w-0 ${task.completed ? 'line-through text-slate-500' : ''}`}>
+            {task.title}
+          </h4>
+
+          <span className="font-mono text-[10px] text-slate-400 border border-slate-800 px-1.5 py-0.2 rounded shrink-0 hidden md:inline">
+            {task.context}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 self-end sm:self-center">
+          {!task.completed ? (
+            <button
+              type="button"
+              onClick={() => onStartFocus(task)}
+              className="h-6.5 px-2.5 rounded bg-cyan-950 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 text-[10px] font-mono font-bold border border-cyan-500/40 transition-all flex items-center gap-1 cursor-pointer shadow-[0_0_8px_rgba(56,189,248,0.2)]"
+            >
+              <span className="material-symbols-outlined text-[13px]">play_arrow</span>
+              <span>RUN</span>
+            </button>
+          ) : (
+            <span className="font-mono text-[10px] text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/40">
+              RESOLVED
+            </span>
+          )}
+
+          <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={() => onEdit(task)}
+              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-[13px]">tune</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(task.id)}
+              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Eliminar"
+            >
+              <span className="material-symbols-outlined text-[13px]">close</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // --- 3. NEO-BRUTALISTA INDUSTRIAL (PUNCH-CARD TÁCTICO // 0PX // 2PX BORDER // SIN SOMBRAS SOLAPADAS) ---
+  if (currentTheme === 'brutalista') {
+    return (
+      <div
+        className={`p-3 sm:p-3.5 rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 group ${
+          task.completed ? 'opacity-50 line-through bg-slate-100 dark:bg-slate-900' : ''
+        }`}
+      >
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => onToggle(task.id)}
+            className={`w-5 h-5 mt-0.5 rounded-none border-2 border-black dark:border-white flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+              task.completed ? 'bg-yellow-400 text-black' : 'bg-transparent hover:bg-yellow-100'
+            }`}
+            title={task.completed ? 'Marcar pendiente' : 'Marcar ejecutada'}
+          >
+            {task.completed && (
+              <span className="font-mono font-black text-xs text-black">✓</span>
+            )}
+          </button>
+
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap text-xs">
+              <span className="rounded-none px-2 py-0.2 bg-yellow-300 text-black border-2 border-black font-bold uppercase text-[10px] tracking-wider font-mono">
+                [MISIÓN // {task.effort === 'High' ? 'CRÍTICA' : task.effort === 'Medium' ? 'MEDIA' : 'BAJA'}]
+              </span>
+              <span className="font-mono font-bold text-[11px] text-black dark:text-white uppercase">
+                // {task.time || '10:00'} // EST: {task.est || '30M'}
+              </span>
+              <span className="rounded-none px-2 py-0.2 bg-black text-white dark:bg-white dark:text-black font-bold uppercase text-[10px] font-mono">
+                {task.context}
+              </span>
+              {isSportActivity(task) && (
+                <span className="rounded-none px-2 py-0.2 bg-emerald-400 text-black border-2 border-black font-bold uppercase text-[10px] font-mono">
+                  DEPORTE
+                </span>
+              )}
+            </div>
+
+            <h4 className="font-bold text-xs sm:text-sm text-black dark:text-white uppercase tracking-tight truncate">
+              {task.title}
+            </h4>
+
+            {task.description && (
+              <p className="font-mono text-xs text-slate-600 dark:text-slate-400 line-clamp-1">{task.description}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 self-end sm:self-center">
+          {!task.completed ? (
+            <button
+              type="button"
+              onClick={() => onStartFocus(task)}
+              className="h-7 px-3 rounded-none bg-yellow-300 hover:bg-yellow-400 text-black font-mono font-black text-xs uppercase border-2 border-black transition-all flex items-center gap-1 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+            >
+              <span>[+] EJECUTAR</span>
+            </button>
+          ) : (
+            <span className="font-mono font-black text-xs px-2 py-0.5 bg-black text-yellow-300 uppercase">
+              FINALIZADO
+            </span>
+          )}
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onEdit(task)}
+              className="w-6 h-6 rounded-none border border-black dark:border-white flex items-center justify-center text-black dark:text-white hover:bg-yellow-200 transition-colors cursor-pointer"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-[13px]">edit</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(task.id)}
+              className="w-6 h-6 rounded-none border border-black dark:border-white flex items-center justify-center text-rose-600 hover:bg-rose-200 transition-colors cursor-pointer"
+              title="Eliminar"
+            >
+              <span className="material-symbols-outlined text-[13px]">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // --- 4. CLÁSICA (APPLE CUPERTINO / DEFAULT) ---
   const effortBadges = {
     High: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/80',
     Medium: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200/80 dark:border-amber-800/80',
@@ -2734,9 +3194,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus }) {
           : 'border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
       }`}
     >
-      {/* Sección Izquierda: Checkbox con Dibujo de Tick Animado + Info */}
       <div className="flex items-start gap-3 min-w-0 flex-1">
-        {/* Checkbox con animación SVG stroke cuando se marca hecha */}
         <button
           type="button"
           onClick={() => onToggle(task.id)}
@@ -2807,7 +3265,6 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus }) {
         </div>
       </div>
 
-      {/* Sección Central: Botón de Focus Elegante y Discreto */}
       <div className="flex items-center justify-center shrink-0 px-1 self-start sm:self-center">
         {!task.completed ? (
           <button
@@ -2828,7 +3285,6 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus }) {
         )}
       </div>
 
-      {/* Sección Derecha: Iconos Reducidos y Discretos para Editar y Borrar */}
       <div className="flex items-center gap-1 self-end sm:self-center shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
         <button
           type="button"
