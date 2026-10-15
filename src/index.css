@@ -524,7 +524,7 @@ html.dark[data-theme-style="aura"] div[style*="top:"][style*="height:"] {
 
 
 /* ==========================================================================
-   3. PROFESIONAL EJECUTIVO (Despacho Corporativo, Barras Coloreadas & Alta Claridad)
+   3. PROFESIONAL EJECUTIVO (Gama Grises, Grafito y Blanco para Entornos de Trabajo)
    ========================================================================== */
 html[data-theme-style="executive"],
 html[data-theme-style="executive"] body {
@@ -541,7 +541,7 @@ html.dark[data-theme-style="executive"] body {
   color: #f1f5f9 !important;
 }
 
-/* Titulares ejecutivos con sobriedad y trazo corporativo */
+/* Titulares ejecutivos con tipografía sobria y trazo corporativo */
 html[data-theme-style="executive"] h1,
 html[data-theme-style="executive"] h2,
 html[data-theme-style="executive"] h3,
@@ -559,191 +559,13 @@ html.dark[data-theme-style="executive"] h4 {
   color: #f8fafc !important;
 }
 
-/* 1. BARRA DE CABECERA SUPERIOR EJECUTIVA (Grafito pizarra profundo y cápsula corporativa) */
-html[data-theme-style="executive"] header {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border-bottom: 1px solid #1e293b !important;
-  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.22) !important;
-}
-
-html[data-theme-style="executive"] header .text-on-surface,
-html[data-theme-style="executive"] header .font-bold,
-html[data-theme-style="executive"] header h1 {
-  color: #ffffff !important;
-}
-
-html[data-theme-style="executive"] header .text-secondary,
-html[data-theme-style="executive"] header .text-on-surface-variant {
-  color: #94a3b8 !important;
-}
-
-/* Cápsula de navegación en cabecera ejecutiva */
-html[data-theme-style="executive"] header nav {
-  background-color: #1e293b !important;
-  border: 1px solid #334155 !important;
-}
-
-html[data-theme-style="executive"] header nav a {
-  color: #94a3b8 !important;
-}
-
-html[data-theme-style="executive"] header nav a:hover {
-  color: #ffffff !important;
-}
-
-html[data-theme-style="executive"] header nav a.text-on-surface,
-html[data-theme-style="executive"] header nav a.font-bold {
-  color: #0f172a !important;
-}
-
-/* Pastilla deslizante de navegación activa en cabecera */
-html[data-theme-style="executive"] header nav > div[class*="absolute"] {
-  background-color: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* Barra de navegación móvil en cabecera */
-html[data-theme-style="executive"] header .md\:hidden > div {
-  background-color: #1e293b !important;
-  border: 1px solid #334155 !important;
-}
-
-html[data-theme-style="executive"] header .md\:hidden a {
-  color: #94a3b8 !important;
-}
-
-html[data-theme-style="executive"] header .md\:hidden a.text-white {
-  color: #ffffff !important;
-}
-
-/* 2. BARRA DE COMANDO CENTRAL DEL CALENDARIO (Fila 1: Periodo, Controles y Vistas) */
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3.bg-white,
-html.dark[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3.bg-\[\#161b26\] {
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
-  border: 1px solid #334155 !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.25) !important;
-}
-
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 span,
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 h2 {
-  color: #ffffff !important;
-}
-
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .text-secondary {
-  color: #cbd5e1 !important;
-}
-
-/* Botones dentro de la barra de comando (flechas anterior/siguiente, Hoy, Selector de calendario) */
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .bg-surface-muted {
-  background-color: #334155 !important;
-  border-color: #475569 !important;
-  color: #ffffff !important;
-}
-
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 button {
-  color: #ffffff !important;
-}
-
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 button:hover {
-  background-color: #475569 !important;
-  color: #ffffff !important;
-}
-
-/* Segmented View Toggle (Día | Sem | Mes) en la barra ejecutiva */
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .bg-slate-100\/90,
-html.dark[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .bg-\[\#1a2130\] {
-  background-color: #0f172a !important;
-  border: 1px solid #334155 !important;
-}
-
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .bg-white.shadow-sm,
-html.dark[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .bg-\[\#161b26\].shadow-sm {
-  background-color: #ffffff !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
-}
-
-html[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .text-slate-900.font-bold,
-html.dark[data-theme-style="executive"] .flex.flex-col.sm\:flex-row.sm\:items-center.justify-between.gap-3 .text-white.font-bold {
-  color: #0f172a !important;
-  font-weight: 700 !important;
-}
-
-/* 3. BARRA DE FILTROS Y CATEGORÍAS (Fila 2: Etiquetas estructuradas) */
-html[data-theme-style="executive"] .bg-slate-100\/70.border-slate-200\/80 {
-  background-color: #f1f5f9 !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
-}
-
-html.dark[data-theme-style="executive"] .bg-\[\#121620\].border-slate-800 {
-  background-color: #121824 !important;
-  border: 1px solid #1e293b !important;
-}
-
-/* 4. CABECERA DE DÍAS DEL CALENDARIO (Barra sólida pizarra en Mes y Semana) */
-html[data-theme-style="executive"] .grid-cols-7.bg-slate-100\/90,
-html[data-theme-style="executive"] .grid-cols-7.border-b,
-html[data-theme-style="executive"] .grid.bg-slate-100\/90.border-b {
-  background-color: #0f172a !important;
-  border-bottom: 2px solid #334155 !important;
-}
-
-html[data-theme-style="executive"] .grid-cols-7.bg-slate-100\/90 span,
-html[data-theme-style="executive"] .grid-cols-7.border-b span,
-html[data-theme-style="executive"] .grid.bg-slate-100\/90.border-b span {
-  color: #f8fafc !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.05em !important;
-}
-
-/* Fila All Day en vista semanal */
-html[data-theme-style="executive"] .grid.bg-slate-100\/60.border-b,
-html.dark[data-theme-style="executive"] .grid.bg-\[\#121622\].border-b {
-  background-color: #1e293b !important;
-  border-bottom: 1px solid #334155 !important;
-  color: #cbd5e1 !important;
-}
-
-/* 5. FRANJA SUPERIOR DISTINTIVA DE CALENDARIO ACTIVO (Ribbon Corporativo) */
-html[data-theme-style="executive"] .hidden.sm\:flex.px-5.py-3\.5.border-b {
-  background: #0f172a !important;
-  border-top: 4px solid #475569 !important;
-  border-bottom: 1px solid #1e293b !important;
-  color: #ffffff !important;
-}
-
-html[data-theme-style="executive"] .hidden.sm\:flex.px-5.py-3\.5.border-b h2,
-html[data-theme-style="executive"] .hidden.sm\:flex.px-5.py-3\.5.border-b span {
-  color: #ffffff !important;
-}
-
-html[data-theme-style="executive"] .hidden.sm\:flex.px-5.py-3\.5.border-b button {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  font-weight: 700 !important;
-  border: 1px solid #ffffff !important;
-}
-
-/* 6. CONTRASTE DE FIN DE SEMANA (Sábado y Domingo diferenciados de la semana laboral) */
-html[data-theme-style="executive"] .grid-cols-7 > div:nth-child(7n+6),
-html[data-theme-style="executive"] .grid-cols-7 > div:nth-child(7n) {
-  background-color: #f1f5f9 !important;
-}
-
-html.dark[data-theme-style="executive"] .grid-cols-7 > div:nth-child(7n+6),
-html.dark[data-theme-style="executive"] .grid-cols-7 > div:nth-child(7n) {
-  background-color: #0d121c !important;
-}
-
-/* 7. TARJETAS Y WIDGETS EJECUTIVOS */
+/* Tarjetas ejecutivas en blanco puro con marco gris sutil y elegante */
 html[data-theme-style="executive"] .bg-white,
 html[data-theme-style="executive"] .bg-surface-pure {
   background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 12px !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02) !important;
 }
 
 html.dark[data-theme-style="executive"] .bg-white,
@@ -755,13 +577,59 @@ html.dark[data-theme-style="executive"] .bg-\[\#161b26\] {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Widgets del lateral derecho con cabecera de acento corporativo */
-html[data-theme-style="executive"] .xl\:col-span-3 .bg-white,
-html[data-theme-style="executive"] .xl\:col-span-3 .bg-surface-pure {
-  border-top: 3px solid #1e293b !important;
+/* Sustitución de acentos azules clásicos (#0071E3) por tonos grises corporativos (Slate / Pizarra) */
+html[data-theme-style="executive"] .text-primary,
+html[data-theme-style="executive"] .text-\[\#0071E3\],
+html[data-theme-style="executive"] .text-blue-500,
+html[data-theme-style="executive"] .text-blue-600,
+html[data-theme-style="executive"] .text-blue-400 {
+  color: #334155 !important;
 }
 
-/* Grid normal continuo del calendario en Ejecutivo */
+html.dark[data-theme-style="executive"] .text-primary,
+html.dark[data-theme-style="executive"] .text-\[\#0071E3\],
+html.dark[data-theme-style="executive"] .text-blue-500,
+html.dark[data-theme-style="executive"] .text-blue-600,
+html.dark[data-theme-style="executive"] .text-blue-400 {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme-style="executive"] .bg-primary,
+html[data-theme-style="executive"] .bg-primary-container,
+html[data-theme-style="executive"] .bg-\[\#0071E3\],
+html[data-theme-style="executive"] .bg-blue-500,
+html[data-theme-style="executive"] .bg-blue-600 {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+html.dark[data-theme-style="executive"] .bg-primary,
+html.dark[data-theme-style="executive"] .bg-primary-container,
+html.dark[data-theme-style="executive"] .bg-\[\#0071E3\],
+html.dark[data-theme-style="executive"] .bg-blue-500,
+html.dark[data-theme-style="executive"] .bg-blue-600 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme-style="executive"] .border-primary,
+html[data-theme-style="executive"] .border-\[\#0071E3\],
+html[data-theme-style="executive"] .border-blue-500 {
+  border-color: #334155 !important;
+}
+
+html[data-theme-style="executive"] .ring-primary,
+html[data-theme-style="executive"] .ring-\[\#0071E3\] {
+  --tw-ring-color: rgba(51, 65, 85, 0.3) !important;
+}
+
+html[data-theme-style="executive"] .bg-primary-fixed,
+html[data-theme-style="executive"] .bg-blue-50 {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+/* Grid normal continuo del calendario con bordes finos grises */
 html[data-theme-style="executive"] .grid-cols-7 > div {
   border-radius: 0px !important;
   border: none !important;
@@ -776,11 +644,39 @@ html[data-theme-style="executive"] .grid-cols-7 > div.bg-white {
   background-color: #ffffff !important;
 }
 
+html[data-theme-style="executive"] .grid-cols-7 > div.bg-white:hover {
+  background-color: #f8fafc !important;
+}
+
 html[data-theme-style="executive"] .grid-cols-7 > div.bg-slate-50\/70 {
   background-color: #f8fafc !important;
 }
 
-/* Tono gris pizarra elegante en widgets e información secundaria */
+/* Cabecera de días del calendario en gris neutro profesional (L, M, X, J, V, S, D) */
+html[data-theme-style="executive"] .grid-cols-7.bg-slate-100\/90,
+html[data-theme-style="executive"] .grid-cols-7.border-b {
+  background-color: #f1f5f9 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+html[data-theme-style="executive"] .grid-cols-7.bg-slate-100\/90 span,
+html[data-theme-style="executive"] .grid-cols-7.border-b span {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+html.dark[data-theme-style="executive"] .grid-cols-7.bg-slate-100\/90,
+html.dark[data-theme-style="executive"] .grid-cols-7.border-b {
+  background-color: #161c28 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+html.dark[data-theme-style="executive"] .grid-cols-7.bg-slate-100\/90 span,
+html.dark[data-theme-style="executive"] .grid-cols-7.border-b span {
+  color: #94a3b8 !important;
+}
+
+/* Tonos grises en widgets e información secundaria */
 html[data-theme-style="executive"] .bg-surface-subtle,
 html[data-theme-style="executive"] .bg-surface-muted,
 html[data-theme-style="executive"] .bg-slate-50,
@@ -790,30 +686,12 @@ html[data-theme-style="executive"] .bg-slate-50\/70 {
   border-color: #cbd5e1 !important;
 }
 
-/* Botones ejecutivos sobrios: grafito pizarra oscuro corporativo */
+/* Botones ejecutivos sobrios con radio de curvatura profesional de 8px */
 html[data-theme-style="executive"] button {
   border-radius: 8px !important;
-  font-weight: 600 !important;
-  font-size: 12px !important;
-  letter-spacing: -0.01em !important;
 }
 
-html[data-theme-style="executive"] .bg-primary,
-html[data-theme-style="executive"] .bg-primary-container {
-  background: #0f172a !important;
-  color: #ffffff !important;
-  border: 1px solid #0f172a !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-}
-
-html.dark[data-theme-style="executive"] .bg-primary,
-html.dark[data-theme-style="executive"] .bg-primary-container {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  border: 1px solid #f1f5f9 !important;
-}
-
-/* Líneas y diseño con acentos grises en eventos y tareas */
+/* Eventos del calendario en tonos pizarra/gris profesional */
 html[data-theme-style="executive"] div[style*="top:"][style*="height:"] {
   border-radius: 6px !important;
   border: 1px solid #cbd5e1 !important;
