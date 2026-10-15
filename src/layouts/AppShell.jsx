@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import FloatingAICopilot from '../components/FloatingAICopilot'
 import { syncTasksToCloud } from '../services/firebase'
-import { getBaileysRecentTasks } from '../services/baileysBridge'
+import {
+  getBaileysRecentTasks,
+  syncBaileysTasks,
+  subscribeToBaileysLiveUpdates,
+} from '../services/baileysBridge'
 
 const DEFAULT_TASKS = [
   {
@@ -207,12 +211,33 @@ export default function AppShell() {
     return DEFAULT_TASKS
   })
 
-  // Sincronizar tareas persistentemente con localStorage y la nube
+  // Control para evitar rebotes de sincronización remota
+  const isRemoteSyncRef = useRef(false)
+  const lastPushedTasksJsonRef = useRef('')
+
+  // Sincronizar tareas persistentemente con localStorage, cuenta de usuario y servidor en la nube
   useEffect(() => {
     try {
       localStorage.setItem('app_global_tasks', JSON.stringify(globalTasks))
       syncTasksToCloud(globalTasks)
     } catch (e) {}
+
+    // Si la actualización procedió de una sincronización remota (SSE o poll), no rebotar hacia el servidor
+    if (isRemoteSyncRef.current) {
+      isRemoteSyncRef.current = false
+      return
+    }
+
+    const currentJson = JSON.stringify(globalTasks)
+    if (lastPushedTasksJsonRef.current === currentJson) return
+
+    // Debounce de 300ms para enviar inmediatamente al puente en Render
+    const timer = setTimeout(() => {
+      lastPushedTasksJsonRef.current = currentJson
+      syncBaileysTasks(globalTasks).catch(() => {})
+    }, 300)
+
+    return () => clearTimeout(timer)
   }, [globalTasks])
 
   // Escuchar eventos de actualización externa o entre pestañas
@@ -231,108 +256,130 @@ export default function AppShell() {
     return () => window.removeEventListener('global_tasks_updated', handleStorageUpdate)
   }, [])
 
-  // Sincronización continua y global de tareas de WhatsApp Baileys con el estado de toda la aplicación
+  // Función de mezcla atómica de tareas entrantes desde el servidor (SSE / Polling)
+  const mergeRemoteTasks = useCallback((syncedTasks) => {
+    if (!Array.isArray(syncedTasks) || syncedTasks.length === 0) return
+
+    setGlobalTasks((prevTasks) => {
+      let hasModifications = false
+      const remoteMap = new Map()
+      syncedTasks.forEach((st) => {
+        if (st.id) remoteMap.set(String(st.id), st)
+      })
+
+      // 1. Detectar actualizaciones en tareas existentes (renombrado, horas, notas, est, completado...)
+      let updatedExisting = prevTasks.map((t) => {
+        const remote = remoteMap.get(String(t.id))
+        if (remote) {
+          const titleChanged = remote.title && remote.title !== t.title
+          const timeChanged = remote.time && remote.time !== t.time
+          const dateChanged = remote.date && remote.date !== t.date
+          const descChanged = remote.description !== undefined && remote.description !== t.description
+          const estChanged = remote.est && remote.est !== t.est
+          const effortChanged = remote.effort && remote.effort !== t.effort
+          const contextChanged = remote.context && remote.context !== t.context
+          const completedChanged = remote.completed !== undefined && remote.completed !== t.completed
+
+          if (titleChanged || timeChanged || dateChanged || descChanged || estChanged || effortChanged || contextChanged || completedChanged) {
+            hasModifications = true
+            return {
+              ...t,
+              title: remote.title || t.title,
+              time: remote.time || t.time,
+              date: remote.date || t.date,
+              description: remote.description !== undefined ? remote.description : t.description,
+              est: remote.est || t.est,
+              effort: remote.effort || t.effort,
+              context: remote.context || t.context,
+              color: remote.color || t.color,
+              completed: remote.completed !== undefined ? remote.completed : t.completed,
+            }
+          }
+        }
+        return t
+      })
+
+      // 2. Eliminar tareas marcadas como eliminadas en WhatsApp o en otro dispositivo (por ID o por Título)
+      const deletedTasks = syncedTasks.filter((st) => st._deleted)
+      const deletedIds = new Set(deletedTasks.filter((st) => st.id).map((st) => String(st.id)))
+      const deletedTitles = deletedTasks
+        .filter((st) => st.title)
+        .map((st) => st.title.trim().toLowerCase())
+
+      const filteredExisting = updatedExisting.filter((t) => {
+        if (deletedIds.has(String(t.id))) {
+          hasModifications = true
+          return false
+        }
+        const tTitle = (t.title || '').trim().toLowerCase()
+        if (
+          tTitle &&
+          deletedTitles.some(
+            (dt) => dt === tTitle || tTitle.includes(dt) || dt.includes(tTitle)
+          )
+        ) {
+          hasModifications = true
+          return false
+        }
+        return true
+      })
+
+      // 3. Incorporar tareas recién añadidas desde WhatsApp o desde otro dispositivo
+      const existingIds = new Set(filteredExisting.map((t) => String(t.id)))
+      const existingKeys = new Set(
+        filteredExisting.map((t) => `${t.title?.trim().toLowerCase()}_${t.date}_${t.time}`)
+      )
+      const newlyAdded = syncedTasks.filter(
+        (st) =>
+          !st._deleted &&
+          !existingIds.has(String(st.id)) &&
+          !existingKeys.has(`${st.title?.trim().toLowerCase()}_${st.date}_${st.time}`)
+      )
+
+      if (newlyAdded.length > 0 || hasModifications) {
+        const result = [...newlyAdded, ...filteredExisting]
+        isRemoteSyncRef.current = true
+        lastPushedTasksJsonRef.current = JSON.stringify(result)
+        try {
+          localStorage.setItem('app_global_tasks', JSON.stringify(result))
+        } catch (e) {}
+        return result
+      }
+      return prevTasks
+    })
+  }, [])
+
+  // Sincronización en tiempo real ultra rápida (<50ms) mediante Server-Sent Events (SSE)
+  // con respaldo periódico por sondeo (8s) ante suspensiones en móviles
   useEffect(() => {
     let isCancelled = false
 
-    const checkAndSyncWhatsApp = async () => {
+    // 1. Suscripción en tiempo real vía Server-Sent Events
+    const unsubscribe = subscribeToBaileysLiveUpdates((remoteTasks) => {
+      if (!isCancelled) {
+        mergeRemoteTasks(remoteTasks)
+      }
+    })
+
+    // 2. Carga inicial inmediata y sondeo de respaldo
+    const fallbackSync = async () => {
       try {
         const syncedTasks = await getBaileysRecentTasks()
-        if (isCancelled || !Array.isArray(syncedTasks) || syncedTasks.length === 0) return
-
-        setGlobalTasks((prevTasks) => {
-          let hasModifications = false
-          const remoteMap = new Map()
-          syncedTasks.forEach((st) => {
-            if (st.id) remoteMap.set(String(st.id), st)
-          })
-
-          // 1. Detectar actualizaciones en tareas existentes (renombrado, horas, notas, est...)
-          let updatedExisting = prevTasks.map((t) => {
-            const remote = remoteMap.get(String(t.id))
-            if (remote) {
-              const titleChanged = remote.title && remote.title !== t.title
-              const timeChanged = remote.time && remote.time !== t.time
-              const dateChanged = remote.date && remote.date !== t.date
-              const descChanged = remote.description !== undefined && remote.description !== t.description
-              const estChanged = remote.est && remote.est !== t.est
-              const effortChanged = remote.effort && remote.effort !== t.effort
-              const contextChanged = remote.context && remote.context !== t.context
-
-              if (titleChanged || timeChanged || dateChanged || descChanged || estChanged || effortChanged || contextChanged) {
-                hasModifications = true
-                return {
-                  ...t,
-                  title: remote.title || t.title,
-                  time: remote.time || t.time,
-                  date: remote.date || t.date,
-                  description: remote.description !== undefined ? remote.description : t.description,
-                  est: remote.est || t.est,
-                  effort: remote.effort || t.effort,
-                  context: remote.context || t.context,
-                  color: remote.color || t.color,
-                }
-              }
-            }
-            return t
-          })
-
-          // 2. Eliminar tareas marcadas como eliminadas en WhatsApp (por ID o por Título)
-          const deletedTasks = syncedTasks.filter((st) => st._deleted)
-          const deletedIds = new Set(deletedTasks.filter((st) => st.id).map((st) => String(st.id)))
-          const deletedTitles = deletedTasks
-            .filter((st) => st.title)
-            .map((st) => st.title.trim().toLowerCase())
-
-          const filteredExisting = updatedExisting.filter((t) => {
-            if (deletedIds.has(String(t.id))) {
-              hasModifications = true
-              return false
-            }
-            const tTitle = (t.title || '').trim().toLowerCase()
-            if (
-              tTitle &&
-              deletedTitles.some(
-                (dt) => dt === tTitle || tTitle.includes(dt) || dt.includes(tTitle)
-              )
-            ) {
-              hasModifications = true
-              return false
-            }
-            return true
-          })
-
-          // 3. Incorporar tareas recién añadidas desde WhatsApp
-          const existingIds = new Set(filteredExisting.map((t) => String(t.id)))
-          const existingKeys = new Set(
-            filteredExisting.map((t) => `${t.title?.trim().toLowerCase()}_${t.date}_${t.time}`)
-          )
-          const newlyAdded = syncedTasks.filter(
-            (st) =>
-              !st._deleted &&
-              !existingIds.has(String(st.id)) &&
-              !existingKeys.has(`${st.title?.trim().toLowerCase()}_${st.date}_${st.time}`)
-          )
-
-          if (newlyAdded.length > 0 || hasModifications) {
-            const result = [...newlyAdded, ...filteredExisting]
-            try {
-              localStorage.setItem('app_global_tasks', JSON.stringify(result))
-            } catch (e) {}
-            return result
-          }
-          return prevTasks
-        })
+        if (!isCancelled && Array.isArray(syncedTasks) && syncedTasks.length > 0) {
+          mergeRemoteTasks(syncedTasks)
+        }
       } catch (err) {}
     }
 
-    checkAndSyncWhatsApp()
-    const interval = setInterval(checkAndSyncWhatsApp, 2500)
+    fallbackSync()
+    const interval = setInterval(fallbackSync, 8000)
+
     return () => {
       isCancelled = true
+      unsubscribe()
       clearInterval(interval)
     }
-  }, [])
+  }, [mergeRemoteTasks])
 
   const [hubCategories, setHubCategories] = useState([
     { id: 'all', label: 'All Resources' },

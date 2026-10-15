@@ -27,6 +27,7 @@ import {
   sendBaileysMessage,
   syncBaileysTasks,
   testBaileysChat,
+  subscribeToBaileysLiveUpdates,
 } from '../services/baileysBridge'
 
 export default function AutoOrganizerPage() {
@@ -106,11 +107,11 @@ export default function AutoOrganizerPage() {
     return () => window.removeEventListener('shared_roles_updated', handleRolesUpdated)
   }, [])
 
-  // Sondeo periódico de estado y tareas recibidas por WhatsApp Web (Baileys)
+  // Suscripción en tiempo real al estado de WhatsApp Web (Baileys) mediante SSE
   useEffect(() => {
     let isCancelled = false
 
-    const checkStatusAndSync = async () => {
+    const checkStatus = async () => {
       try {
         const statusData = await getBaileysStatus()
         if (!isCancelled && statusData) {
@@ -125,114 +126,27 @@ export default function AutoOrganizerPage() {
             return prev
           })
         }
-
-        const syncedTasks = await getBaileysRecentTasks()
-        if (!isCancelled && Array.isArray(syncedTasks) && syncedTasks.length > 0) {
-          setGlobalTasks((prevTasks) => {
-            let hasModifications = false
-            const remoteMap = new Map()
-            syncedTasks.forEach((st) => {
-              if (st.id) remoteMap.set(String(st.id), st)
-            })
-
-            // 1. Detectar actualizaciones en tareas existentes (renombrado, horas, fecha, notas, est...)
-            let updatedExisting = prevTasks.map((t) => {
-              const remote = remoteMap.get(String(t.id))
-              if (remote) {
-                const titleChanged = remote.title && remote.title !== t.title
-                const timeChanged = remote.time && remote.time !== t.time
-                const dateChanged = remote.date && remote.date !== t.date
-                const descChanged = remote.description !== undefined && remote.description !== t.description
-                const estChanged = remote.est && remote.est !== t.est
-                const effortChanged = remote.effort && remote.effort !== t.effort
-                const contextChanged = remote.context && remote.context !== t.context
-
-                if (titleChanged || timeChanged || dateChanged || descChanged || estChanged || effortChanged || contextChanged) {
-                  hasModifications = true
-                  return {
-                    ...t,
-                    title: remote.title || t.title,
-                    time: remote.time || t.time,
-                    date: remote.date || t.date,
-                    description: remote.description !== undefined ? remote.description : t.description,
-                    est: remote.est || t.est,
-                    effort: remote.effort || t.effort,
-                    context: remote.context || t.context,
-                    color: remote.color || t.color,
-                  }
-                }
-              }
-              return t
-            })
-
-            // 2. Eliminar tareas marcadas como eliminadas en el puente (por ID o por Título)
-            const deletedTasks = syncedTasks.filter((st) => st._deleted)
-            const deletedIds = new Set(deletedTasks.filter((st) => st.id).map((st) => String(st.id)))
-            const deletedTitles = deletedTasks
-              .filter((st) => st.title)
-              .map((st) => st.title.trim().toLowerCase())
-
-            const filteredExisting = updatedExisting.filter((t) => {
-              if (deletedIds.has(String(t.id))) {
-                hasModifications = true
-                return false
-              }
-              const tTitle = (t.title || '').trim().toLowerCase()
-              if (
-                tTitle &&
-                deletedTitles.some(
-                  (dt) => dt === tTitle || tTitle.includes(dt) || dt.includes(tTitle)
-                )
-              ) {
-                hasModifications = true
-                return false
-              }
-              return true
-            })
-
-            // 3. Incorporar tareas recién añadidas desde WhatsApp
-            const existingIds = new Set(filteredExisting.map((t) => String(t.id)))
-            const existingKeys = new Set(
-              filteredExisting.map((t) => `${t.title?.trim().toLowerCase()}_${t.date}_${t.time}`)
-            )
-            const newlyAdded = syncedTasks.filter(
-              (st) =>
-                !st._deleted &&
-                !existingIds.has(String(st.id)) &&
-                !existingKeys.has(`${st.title?.trim().toLowerCase()}_${st.date}_${st.time}`)
-            )
-
-            if (newlyAdded.length > 0 || hasModifications) {
-              const msg =
-                newlyAdded.length > 0
-                  ? `${newlyAdded.length} tarea(s) sincronizada(s) desde WhatsApp`
-                  : 'Agenda actualizada desde WhatsApp'
-              setAiNotification(msg)
-              setTimeout(() => setAiNotification(''), 5000)
-              return [...newlyAdded, ...filteredExisting]
-            }
-            return prevTasks
-          })
-        }
       } catch (err) {}
     }
 
-    checkStatusAndSync()
-    const intervalTime = isWhatsAppModalOpen ? 2500 : 8000
-    const interval = setInterval(checkStatusAndSync, intervalTime)
+    checkStatus()
+
+    // Escucha en tiempo real instantánea (<50ms) de cambios de estado (QR generado, conectado, desconectado)
+    const unsubscribe = subscribeToBaileysLiveUpdates(null, (newStatus) => {
+      if (!isCancelled && newStatus) {
+        setBaileysState((prev) => ({ ...prev, ...newStatus }))
+      }
+    })
+
+    const intervalTime = isWhatsAppModalOpen ? 3000 : 15000
+    const interval = setInterval(checkStatus, intervalTime)
 
     return () => {
       isCancelled = true
+      unsubscribe()
       clearInterval(interval)
     }
-  }, [isWhatsAppModalOpen, setGlobalTasks])
-
-  // Sincronizar agenda completa con el puente local del bot de WhatsApp
-  useEffect(() => {
-    if (Array.isArray(globalTasks) && globalTasks.length > 0) {
-      syncBaileysTasks(globalTasks)
-    }
-  }, [globalTasks])
+  }, [isWhatsAppModalOpen])
 
   // Estado de Organización con IA (Groq)
   const [isAiLoading, setIsAiLoading] = useState(false)

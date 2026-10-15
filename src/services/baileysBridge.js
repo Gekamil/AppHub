@@ -94,3 +94,66 @@ export async function triggerMidnightBriefing() {
   }
 }
 
+// Suscribirse a actualizaciones en tiempo real instantáneas (<50ms) vía Server-Sent Events
+export function subscribeToBaileysLiveUpdates(onTasksUpdated, onStatusUpdated) {
+  if (typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
+    return () => {}
+  }
+
+  let es = null
+  let reconnectTimeout = null
+  let isClosed = false
+
+  function connect() {
+    if (isClosed) return
+    try {
+      const url = `${API_BASE}/api/baileys/events-stream`
+      es = new EventSource(url)
+
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'tasks_updated' && Array.isArray(data.tasks)) {
+            if (typeof onTasksUpdated === 'function') {
+              onTasksUpdated(data.tasks)
+            }
+          } else if (data.type === 'status_updated' && data.status) {
+            if (typeof onStatusUpdated === 'function') {
+              onStatusUpdated(data.status)
+            }
+          }
+        } catch (e) {}
+      }
+
+      es.onerror = () => {
+        if (es) {
+          try {
+            es.close()
+          } catch (e) {}
+          es = null
+        }
+        if (!isClosed) {
+          reconnectTimeout = setTimeout(connect, 3000)
+        }
+      }
+    } catch (err) {
+      if (!isClosed) {
+        reconnectTimeout = setTimeout(connect, 3000)
+      }
+    }
+  }
+
+  connect()
+
+  return () => {
+    isClosed = true
+    if (reconnectTimeout) clearTimeout(reconnectTimeout)
+    if (es) {
+      try {
+        es.close()
+      } catch (e) {}
+    }
+  }
+}
+
+

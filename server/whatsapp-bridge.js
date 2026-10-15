@@ -72,6 +72,45 @@ function saveSyncedTasks(tasks) {
 // Historial en memoria de tareas conocidas
 let currentKnownTasks = loadSyncedTasks()
 
+// Clientes conectados por Server-Sent Events (SSE) para sincronización ultra rápida en tiempo real (<50ms)
+const sseClients = new Set()
+
+export function broadcastTasksUpdate(tasks) {
+  const activeTasks = (tasks || currentKnownTasks).filter(
+    (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
+  )
+  const message = `data: ${JSON.stringify({ type: 'tasks_updated', tasks: activeTasks, timestamp: Date.now() })}\n\n`
+  for (const client of sseClients) {
+    try {
+      client.write(message)
+    } catch (err) {
+      sseClients.delete(client)
+    }
+  }
+}
+
+export function broadcastStatusUpdate(status) {
+  const message = `data: ${JSON.stringify({ type: 'status_updated', status: status || currentStatus, timestamp: Date.now() })}\n\n`
+  for (const client of sseClients) {
+    try {
+      client.write(message)
+    } catch (err) {
+      sseClients.delete(client)
+    }
+  }
+}
+
+// Keep-alive heartbeat cada 20s para mantener abiertos los túneles y proxies (Render, Cloudflare)
+setInterval(() => {
+  for (const client of sseClients) {
+    try {
+      client.write(': ping\n\n')
+    } catch (err) {
+      sseClients.delete(client)
+    }
+  }
+}, 20000)
+
 export function updateKnownTasks(tasks) {
   if (Array.isArray(tasks)) {
     // 1. Identificar tombstones activos para que la sincronización del frontend nunca los resucite
@@ -99,21 +138,47 @@ export function updateKnownTasks(tasks) {
       validIncoming.map((t) => `${(t.title || '').trim().toLowerCase()}_${t.date}_${t.time}`)
     )
 
+    // Detectar tareas que estaban en el servidor y que el frontend ha eliminado para crear tombstones
+    const newlyDeletedTombstones = currentKnownTasks
+      .filter((serverTask) => {
+        if (serverTask._deleted) return false
+        // Si fue creada hace menos de 5 segundos por WhatsApp, darle una pequeña ventana de gracia
+        if (serverTask.source?.startsWith('whatsapp') && Date.now() - (serverTask.updatedAt || 0) < 5000) {
+          return false
+        }
+        const sId = String(serverTask.id)
+        const sKey = `${(serverTask.title || '').trim().toLowerCase()}_${serverTask.date}_${serverTask.time}`
+        return !incomingIds.has(sId) && !incomingKeys.has(sKey)
+      })
+      .map((t) => ({
+        ...t,
+        _deleted: true,
+        deletedAt: Date.now(),
+        updatedAt: Date.now(),
+      }))
+
     // Tareas creadas por WhatsApp pendientes de incorporarse en frontend
     const pendingWhatsAppTasks = currentKnownTasks.filter(
       (bt) =>
         !bt._deleted &&
         !incomingIds.has(String(bt.id)) &&
         !incomingKeys.has(`${(bt.title || '').trim().toLowerCase()}_${bt.date}_${bt.time}`) &&
-        (bt.source?.startsWith('whatsapp') || bt.source === 'chat_test')
+        bt.source?.startsWith('whatsapp') &&
+        Date.now() - (bt.updatedAt || 0) < 5000
     )
 
     const activeTombstones = currentKnownTasks.filter(
       (t) => t._deleted && Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000
     )
 
-    currentKnownTasks = [...activeTombstones, ...pendingWhatsAppTasks, ...validIncoming]
+    currentKnownTasks = [
+      ...activeTombstones,
+      ...newlyDeletedTombstones,
+      ...pendingWhatsAppTasks,
+      ...validIncoming,
+    ]
     saveSyncedTasks(currentKnownTasks)
+    broadcastTasksUpdate(currentKnownTasks)
   }
 }
 
@@ -342,12 +407,13 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
   }
 
   saveSyncedTasks(currentKnownTasks)
+  broadcastTasksUpdate(currentKnownTasks)
   return modified
 }
 
 // Llamada resiliente a Groq con failover automático de modelos ante 429
 async function callGroqWithFallback(payload) {
-  const models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b']
+  const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
   let lastError = null
 
   for (const model of models) {
@@ -738,6 +804,7 @@ export async function startBaileysConnection() {
             phone: null,
             lastUpdated: Date.now(),
           }
+          broadcastStatusUpdate(currentStatus)
           console.log('[Baileys]: Código QR generado y listo para escanear.')
         } catch (e) {
           console.error('[Baileys QR Error]:', e)
@@ -756,6 +823,7 @@ export async function startBaileysConnection() {
           lastUpdated: Date.now(),
           reconnecting: shouldReconnect,
         }
+        broadcastStatusUpdate(currentStatus)
 
         console.log(`[Baileys]: Conexión cerrada (Código: ${statusCode}). Reconectar: ${shouldReconnect}`)
 
@@ -777,6 +845,7 @@ export async function startBaileysConnection() {
           phone: rawPhone ? `+${rawPhone}` : 'Dispositivo Vinculado',
           lastUpdated: Date.now(),
         }
+        broadcastStatusUpdate(currentStatus)
 
         console.log(`[Baileys]: Conexión abierta con éxito. Usuario: ${currentStatus.phone}`)
       }
@@ -963,6 +1032,7 @@ export async function disconnectBaileys() {
     phone: null,
     lastUpdated: Date.now(),
   }
+  broadcastStatusUpdate(currentStatus)
   return currentStatus
 }
 
@@ -988,7 +1058,9 @@ export function getBaileysStatus() {
 }
 
 export function getRecentSyncedTasks() {
-  return loadSyncedTasks()
+  return currentKnownTasks.filter(
+    (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
+  )
 }
 
 // Middleware para Vite / Express
@@ -1003,6 +1075,32 @@ export function handleBaileysApiRoute(req, res) {
   if (req.method === 'OPTIONS') {
     res.statusCode = 204
     res.end()
+    return true
+  }
+
+  // Canal Server-Sent Events (SSE) para sincronización en tiempo real (<50ms)
+  if (pathname === '/api/baileys/events-stream') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no',
+    })
+    res.write(': connected\n\n')
+
+    // Snapshot inmediato de tareas y estado al conectarse
+    const initialTasks = currentKnownTasks.filter(
+      (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
+    )
+    res.write(`data: ${JSON.stringify({ type: 'tasks_updated', tasks: initialTasks, timestamp: Date.now() })}\n\n`)
+    res.write(`data: ${JSON.stringify({ type: 'status_updated', status: currentStatus, timestamp: Date.now() })}\n\n`)
+
+    sseClients.add(res)
+
+    req.on('close', () => {
+      sseClients.delete(res)
+    })
     return true
   }
 
