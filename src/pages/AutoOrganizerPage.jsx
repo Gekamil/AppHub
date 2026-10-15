@@ -30,7 +30,7 @@ import {
   deleteBaileysTask,
   subscribeToBaileysLiveUpdates,
 } from '../services/baileysBridge'
-import { getCurrentUser, isGuestUser } from '../services/firebase'
+import { getCurrentUser, isGuestUser, syncTasksToCloud } from '../services/firebase'
 
 export function isSportActivity(task) {
   if (!task) return false
@@ -222,6 +222,7 @@ export default function AutoOrganizerPage() {
   const [newRoleName, setNewRoleName] = useState('')
   const [newRoleColor, setNewRoleColor] = useState(ROLE_PRESET_COLORS[0].hex)
   const [newRoleIcon, setNewRoleIcon] = useState('task_alt')
+  const [roleToDelete, setRoleToDelete] = useState(null)
 
   useEffect(() => {
     const handleRolesUpdated = (e) => {
@@ -513,11 +514,89 @@ export default function AutoOrganizerPage() {
     setTimeout(() => setAiNotification(''), 4000)
   }
 
-  // Eliminación de rol compartido
-  const handleDeleteRole = (roleId) => {
-    const updated = deleteSharedRole(roleId)
-    setRoles(updated)
-    setAiNotification('Rol eliminado de la memoria compartida.')
+  // Eliminación y confirmación de roles (solo rol o rol + actividades asociadas)
+  const handleConfirmDeleteRole = (role, deleteActivities) => {
+    if (!role) return
+
+    const roleName = role.name
+    const roleId = role.id
+    const roleLabel = role.label || role.name
+
+    const isMatch = (t) =>
+      t.context === roleName ||
+      t.context === roleId ||
+      t.context === roleLabel
+
+    const toDelete = (globalTasks || []).filter(isMatch)
+    const deletedIds = toDelete.map((t) => t.id)
+
+    if (deleteActivities) {
+      const remainingTasks = (globalTasks || []).filter((t) => !isMatch(t))
+      setGlobalTasks(remainingTasks)
+      try {
+        localStorage.setItem('app_global_tasks', JSON.stringify(remainingTasks))
+      } catch (e) {}
+      syncBaileysTasks(remainingTasks, { replace: true, deletedIds }).catch(() => {})
+      syncTasksToCloud(remainingTasks).catch(() => {})
+
+      const updated = deleteSharedRole(role.id)
+      setRoles(updated)
+      if (selectedContextFilter === roleName || selectedContextFilter === roleId) {
+        setSelectedContextFilter('All')
+      }
+      setAiNotification(`Rol "${roleLabel}" y ${toDelete.length} actividades eliminadas permanentemente.`)
+      setTimeout(() => setAiNotification(''), 4000)
+    } else {
+      const updatedTasks = (globalTasks || []).map((t) =>
+        isMatch(t) ? { ...t, context: 'Personal' } : t
+      )
+      setGlobalTasks(updatedTasks)
+      try {
+        localStorage.setItem('app_global_tasks', JSON.stringify(updatedTasks))
+      } catch (e) {}
+      syncBaileysTasks(updatedTasks).catch(() => {})
+      syncTasksToCloud(updatedTasks).catch(() => {})
+
+      const updated = deleteSharedRole(role.id)
+      setRoles(updated)
+      if (selectedContextFilter === roleName || selectedContextFilter === roleId) {
+        setSelectedContextFilter('All')
+      }
+      setAiNotification(`Rol "${roleLabel}" eliminado. Actividades conservadas en Personal.`)
+      setTimeout(() => setAiNotification(''), 4000)
+    }
+
+    setRoleToDelete(null)
+  }
+
+  // Purgar actividades importadas por feed de una categoría o Personal
+  const handlePurgeImportedFromContext = (contextName) => {
+    const isTarget = (t) =>
+      (contextName === 'All'
+        ? t.isExternalSync
+        : (t.context === contextName ||
+            (contextName === 'Personal' && (!t.context || t.context === 'Personal'))) &&
+          t.isExternalSync)
+
+    const toDelete = (globalTasks || []).filter(isTarget)
+    if (toDelete.length === 0) return
+
+    const label = contextName === 'All' ? 'todas las categorías' : `"${contextName}"`
+    const confirmed = window.confirm(
+      `¿Deseas eliminar las ${toDelete.length} actividades importadas por sincronización externa de ${label}? Tus tareas manuales se conservarán intactas.`
+    )
+    if (!confirmed) return
+
+    const deletedIds = toDelete.map((t) => t.id)
+    const remainingTasks = (globalTasks || []).filter((t) => !isTarget(t))
+    setGlobalTasks(remainingTasks)
+    try {
+      localStorage.setItem('app_global_tasks', JSON.stringify(remainingTasks))
+    } catch (e) {}
+    syncBaileysTasks(remainingTasks, { replace: true, deletedIds }).catch(() => {})
+    syncTasksToCloud(remainingTasks).catch(() => {})
+
+    setAiNotification(`Se han eliminado ${toDelete.length} actividades importadas.`)
     setTimeout(() => setAiNotification(''), 4000)
   }
 
@@ -1085,6 +1164,27 @@ export default function AutoOrganizerPage() {
                       </button>
                     )
                   })}
+                  {(() => {
+                    const extCount = (globalTasks || []).filter((t) =>
+                      selectedContextFilter === 'All'
+                        ? t.isExternalSync
+                        : (t.context === selectedContextFilter ||
+                            (selectedContextFilter === 'Personal' && (!t.context || t.context === 'Personal'))) &&
+                          t.isExternalSync
+                    ).length
+                    if (extCount === 0) return null
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => handlePurgeImportedFromContext(selectedContextFilter)}
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ml-auto"
+                        title="Eliminar actividades importadas por sincronización externa"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">cleaning_services</span>
+                        <span>Limpiar {extCount} importadas</span>
+                      </button>
+                    )
+                  })()}
                 </div>
               </div>
 
@@ -1926,7 +2026,7 @@ export default function AutoOrganizerPage() {
                     {roles.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => handleDeleteRole(r.id)}
+                        onClick={() => setRoleToDelete(r)}
                         className="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center transition-colors cursor-pointer"
                         title="Eliminar este rol"
                       >
@@ -2013,6 +2113,71 @@ export default function AutoOrganizerPage() {
           </div>
         </div>
       )}
+
+      {/* POPUP: Confirmación de borrado de Rol / Actividades por Rol */}
+      {roleToDelete && (() => {
+        const roleTasks = (globalTasks || []).filter(
+          (t) =>
+            t.context === roleToDelete.name ||
+            t.context === roleToDelete.id ||
+            t.context === roleToDelete.label
+        )
+        const totalCount = roleTasks.length
+        const extCount = roleTasks.filter((t) => t.isExternalSync).length
+
+        return (
+          <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-[#161b26] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-2xl">delete_sweep</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                    ¿Cómo deseas eliminar "{roleToDelete.label || roleToDelete.name}"?
+                  </h3>
+                  <p className="text-xs text-secondary mt-0.5">
+                    Tiene <strong className="text-on-surface font-semibold">{totalCount} {totalCount === 1 ? 'actividad' : 'actividades'}</strong> asociadas
+                    {extCount > 0 ? ` (${extCount} importadas)` : ''}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 text-xs text-secondary leading-relaxed">
+                Elige si deseas eliminar únicamente la clasificación/rol o purgar el rol junto con todas sus actividades de una sola vez.
+              </div>
+
+              <div className="flex flex-col gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleConfirmDeleteRole(roleToDelete, false)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-secondary">label_off</span>
+                  <span>Eliminar solo rol (conservar actividades en Personal)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleConfirmDeleteRole(roleToDelete, true)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-rose-600/25"
+                >
+                  <span className="material-symbols-outlined text-[17px]">delete_forever</span>
+                  <span>Eliminar actividades Y ROL ({totalCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRoleToDelete(null)}
+                  className="w-full py-2 text-secondary hover:text-on-surface text-xs font-medium text-center transition-colors cursor-pointer mt-0.5"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Modal de Tarea Completo con Selector Simple vs Avanzado (Matching Calendario) */}
       {isTaskModalOpen && (

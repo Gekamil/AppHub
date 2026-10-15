@@ -56,12 +56,16 @@ export async function sendBaileysMessage({ to, text }) {
   }
 }
 
-export async function syncBaileysTasks(tasks) {
+export async function syncBaileysTasks(tasks, options = {}) {
   try {
     const res = await fetch(`${API_BASE}/api/baileys/sync-tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tasks }),
+      body: JSON.stringify({
+        tasks,
+        replace: Boolean(options?.replace),
+        deletedIds: Array.isArray(options?.deletedIds) ? options.deletedIds : [],
+      }),
     })
     return await res.json()
   } catch (e) {

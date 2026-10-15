@@ -112,11 +112,38 @@ setInterval(() => {
   }
 }, 20000)
 
-// Sincronización entrante desde el cliente web (Upsert seguro: nunca borra por omisión)
-export function updateKnownTasks(tasks) {
-  if (!Array.isArray(tasks) || tasks.length === 0) return
+// Sincronización entrante desde el cliente web (soporta upsert incremental o reemplazo atómico total con deletedIds)
+export function updateKnownTasks(tasks, options = {}) {
+  const { replace = false, deletedIds = [] } = options
 
-  let hasModifications = false
+  if (Array.isArray(deletedIds) && deletedIds.length > 0) {
+    const delSet = new Set(deletedIds.map(String))
+    currentKnownTasks = currentKnownTasks.filter((t) => !delSet.has(String(t.id)))
+  }
+
+  if (replace) {
+    if (Array.isArray(tasks)) {
+      currentKnownTasks = tasks
+        .filter((t) => t && t.id && !t._deleted)
+        .map((t) => ({
+          ...t,
+          updatedAt: t.updatedAt || Date.now(),
+        }))
+    }
+    saveSyncedTasks(currentKnownTasks)
+    broadcastTasksUpdate(currentKnownTasks, deletedIds)
+    return
+  }
+
+  if (!Array.isArray(tasks) || tasks.length === 0) {
+    if (Array.isArray(deletedIds) && deletedIds.length > 0) {
+      saveSyncedTasks(currentKnownTasks)
+      broadcastTasksUpdate(currentKnownTasks, deletedIds)
+    }
+    return
+  }
+
+  let hasModifications = Array.isArray(deletedIds) && deletedIds.length > 0
   const serverMap = new Map()
   currentKnownTasks.forEach((t) => {
     if (t.id) serverMap.set(String(t.id), t)
@@ -133,7 +160,8 @@ export function updateKnownTasks(tasks) {
         existing.time !== incoming.time ||
         existing.date !== incoming.date ||
         existing.completed !== incoming.completed ||
-        existing.description !== incoming.description
+        existing.description !== incoming.description ||
+        existing.context !== incoming.context
 
       if (changed) {
         Object.assign(existing, {
@@ -146,6 +174,7 @@ export function updateKnownTasks(tasks) {
           context: incoming.context || existing.context,
           est: incoming.est || existing.est,
           color: incoming.color || existing.color,
+          calendarId: incoming.calendarId || existing.calendarId,
           updatedAt: Date.now(),
         })
         hasModifications = true
@@ -168,7 +197,7 @@ export function updateKnownTasks(tasks) {
 
   if (hasModifications) {
     saveSyncedTasks(currentKnownTasks)
-    broadcastTasksUpdate(currentKnownTasks)
+    broadcastTasksUpdate(currentKnownTasks, deletedIds)
   }
 }
 
@@ -1402,8 +1431,8 @@ export function handleBaileysApiRoute(req, res) {
     })
     req.on('end', () => {
       try {
-        const { tasks } = JSON.parse(body)
-        updateKnownTasks(tasks)
+        const { tasks, replace, deletedIds } = JSON.parse(body)
+        updateKnownTasks(tasks, { replace: Boolean(replace), deletedIds: deletedIds || [] })
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ success: true, count: currentKnownTasks.length }))

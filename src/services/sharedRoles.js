@@ -112,9 +112,54 @@ export function saveSharedRoles(roles) {
   return roles
 }
 
+export function findOrCreateSharedRole(name, preferredIcon = 'school') {
+  if (!name || typeof name !== 'string') return null
+  const trimmed = name.trim()
+  if (!trimmed) return null
+
+  const current = getSharedRoles()
+  const existing = current.find(
+    (r) =>
+      r.name.toLowerCase() === trimmed.toLowerCase() ||
+      (r.label && r.label.toLowerCase() === trimmed.toLowerCase()) ||
+      r.id.toLowerCase() === trimmed.toLowerCase()
+  )
+  if (existing) return existing
+
+  const colorIndex = current.length % ROLE_PRESET_COLORS.length
+  const palette = ROLE_PRESET_COLORS[colorIndex]
+  const id = trimmed.replace(/[^a-zA-Z0-9_-]/g, '_') + '_' + Date.now().toString(36)
+
+  const newRole = {
+    id,
+    name: trimmed,
+    label: trimmed,
+    icon: preferredIcon || 'school',
+    color: palette.hex,
+    hex: palette.hex,
+    dot: palette.dot,
+    bg: palette.bg,
+    text: palette.text,
+    border: palette.border,
+    activeClass: `${palette.bg} ${palette.text} ${palette.border}`,
+  }
+
+  const updated = [...current, newRole]
+  saveSharedRoles(updated)
+  return newRole
+}
+
 export function addSharedRole({ name, hexColor, icon }) {
   const current = getSharedRoles()
-  const id = name.trim().replace(/\s+/g, '-') + '-' + Date.now().toString(36)
+  const trimmed = name.trim()
+  const existing = current.find(
+    (r) =>
+      r.name.toLowerCase() === trimmed.toLowerCase() ||
+      (r.label && r.label.toLowerCase() === trimmed.toLowerCase())
+  )
+  if (existing) return current
+
+  const id = trimmed.replace(/\s+/g, '-') + '-' + Date.now().toString(36)
   const palette = ROLE_PRESET_COLORS.find((p) => p.hex.toLowerCase() === (hexColor || '').toLowerCase()) || {
     hex: hexColor || '#3b82f6',
     bg: 'bg-blue-50 dark:bg-blue-950/60',
@@ -125,8 +170,8 @@ export function addSharedRole({ name, hexColor, icon }) {
 
   const newRole = {
     id,
-    name: name.trim(),
-    label: name.trim(),
+    name: trimmed,
+    label: trimmed,
     icon: icon || 'task_alt',
     color: palette.hex,
     hex: palette.hex,
@@ -149,3 +194,4 @@ export function deleteSharedRole(id) {
   const updated = current.filter((r) => r.id !== id && r.name !== id)
   return saveSharedRoles(updated)
 }
+

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { syncTasksToCloud, syncCalendarsToCloud, loadUserDataFromCloud } from '../services/firebase'
-import { getSharedRoles, addSharedRole, deleteSharedRole } from '../services/sharedRoles'
-import { deleteBaileysTask } from '../services/baileysBridge'
+import { getSharedRoles, addSharedRole, deleteSharedRole, findOrCreateSharedRole } from '../services/sharedRoles'
+import { deleteBaileysTask, syncBaileysTasks } from '../services/baileysBridge'
 
 // Helpers de fecha dinámicos
 const formatYMD = (date) => {
@@ -360,6 +360,32 @@ function parseICS(icsContent, calendarId) {
         }
 
         if (date) {
+          let assignedContext = 'Personal'
+          if (cur.categories) {
+            let rawCat = cur.categories
+              .replace(/\\,/g, ',')
+              .replace(/\\;/g, ';')
+              .replace(/\\\\/g, '\\')
+              .trim()
+
+            // Si es jerárquica con '>', tomar el segmento final
+            if (rawCat.includes('>')) {
+              const segs = rawCat.split('>')
+              rawCat = segs[segs.length - 1].trim()
+            } else if (rawCat.includes(',')) {
+              rawCat = rawCat.split(',')[0].trim()
+            }
+
+            if (rawCat) {
+              const matchedRole = findOrCreateSharedRole(rawCat, 'school')
+              if (matchedRole) {
+                assignedContext = matchedRole.name || rawCat
+              } else {
+                assignedContext = rawCat
+              }
+            }
+          }
+
           events.push({
             id: 'ext-' + (cur.uid || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
             title: (cur.summary || 'Evento importado')
@@ -375,7 +401,7 @@ function parseICS(icsContent, calendarId) {
             date,
             time,
             isAllDay,
-            context: 'Personal',
+            context: assignedContext,
             effort: 'Medium',
             icon: 'sync',
             calendarId: calendarId || 'cal-default',
@@ -399,6 +425,7 @@ function parseICS(icsContent, calendarId) {
         else if (propName === 'DESCRIPTION') cur.description = value
         else if (propName === 'DTSTART') cur.dtstart = rawLine
         else if (propName === 'UID') cur.uid = value
+        else if (propName === 'CATEGORIES') cur.categories = value
       }
     }
   }
@@ -522,6 +549,7 @@ export default function CalendarPage() {
 
   // Categorías y Roles con memoria compartida (sincronizados con Auto-Organizer)
   const [categories, setCategories] = useState(() => getSharedRoles())
+  const [roleToDelete, setRoleToDelete] = useState(null)
 
   useEffect(() => {
     const handleRolesUpdated = (e) => {
@@ -904,14 +932,93 @@ export default function CalendarPage() {
   const handleDeleteCategory = (catName) => {
     const role = categories.find((c) => c.name === catName || c.id === catName || c.label === catName)
     if (!role) return
-    const updated = deleteSharedRole(role.id)
-    setCategories(updated)
-    if (selectedFilter === catName) setSelectedFilter('All')
+    setRoleToDelete(role)
+  }
+
+  // Confirmación de borrado de rol (solo rol o rol + actividades asociadas)
+  const handleConfirmDeleteRole = (role, deleteActivities) => {
+    if (!role) return
+
+    const roleName = role.name
+    const roleId = role.id
+    const roleLabel = role.label || role.name
+
+    const isMatch = (t) =>
+      t.context === roleName ||
+      t.context === roleId ||
+      t.context === roleLabel
+
+    const toDelete = (globalTasks || []).filter(isMatch)
+    const deletedIds = toDelete.map((t) => t.id)
+
+    if (deleteActivities) {
+      const remainingTasks = (globalTasks || []).filter((t) => !isMatch(t))
+      setGlobalTasks(remainingTasks)
+      try {
+        localStorage.setItem('app_global_tasks', JSON.stringify(remainingTasks))
+      } catch (e) {}
+      syncBaileysTasks(remainingTasks, { replace: true, deletedIds }).catch(() => {})
+      syncTasksToCloud(remainingTasks).catch(() => {})
+
+      const updated = deleteSharedRole(role.id)
+      setCategories(updated)
+      if (selectedFilter === roleName || selectedFilter === roleId) setSelectedFilter('All')
+      setFeedbackToast(`Rol "${roleLabel}" y ${toDelete.length} actividades eliminadas permanentemente`)
+      setTimeout(() => setFeedbackToast(null), 3500)
+    } else {
+      const updatedTasks = (globalTasks || []).map((t) =>
+        isMatch(t) ? { ...t, context: 'Personal' } : t
+      )
+      setGlobalTasks(updatedTasks)
+      try {
+        localStorage.setItem('app_global_tasks', JSON.stringify(updatedTasks))
+      } catch (e) {}
+      syncBaileysTasks(updatedTasks).catch(() => {})
+      syncTasksToCloud(updatedTasks).catch(() => {})
+
+      const updated = deleteSharedRole(role.id)
+      setCategories(updated)
+      if (selectedFilter === roleName || selectedFilter === roleId) setSelectedFilter('All')
+      setFeedbackToast(`Rol "${roleLabel}" eliminado. Actividades conservadas en Personal`)
+      setTimeout(() => setFeedbackToast(null), 3500)
+    }
+
+    setRoleToDelete(null)
+  }
+
+  // Limpiar eventos importados de un calendario específico
+  const handleClearExternalFromCal = (calId) => {
+    const isTarget = (t) =>
+      (t.calendarId === calId || (!t.calendarId && calId === 'cal-default')) && t.isExternalSync
+    const toDelete = (globalTasks || []).filter(isTarget)
+    if (toDelete.length === 0) return
+    const confirmed = window.confirm(
+      `¿Deseas eliminar las ${toDelete.length} actividades importadas por sincronización externa de este calendario? Las tareas manuales se conservarán intactas.`
+    )
+    if (!confirmed) return
+    const deletedIds = toDelete.map((t) => t.id)
+    const remainingTasks = (globalTasks || []).filter((t) => !isTarget(t))
+    setGlobalTasks(remainingTasks)
+    try {
+      localStorage.setItem('app_global_tasks', JSON.stringify(remainingTasks))
+    } catch (e) {}
+    syncBaileysTasks(remainingTasks, { replace: true, deletedIds }).catch(() => {})
+    syncTasksToCloud(remainingTasks).catch(() => {})
+    setFeedbackToast(`Se eliminaron ${toDelete.length} eventos importados`)
+    setTimeout(() => setFeedbackToast(null), 3500)
   }
 
   // Manejo de Calendarios múltiples y Sincronización Externa (TeamUp, Google Calendar, Móvil)
+  const handleCloseCalendarModal = () => {
+    if (editingCalendarId && !calendars.some((c) => c.id === editingCalendarId)) {
+      setGlobalTasks((prev) => (prev || []).filter((t) => t.calendarId !== editingCalendarId))
+    }
+    setIsCalendarModalOpen(false)
+  }
+
   const handleOpenAddCalendar = () => {
-    setEditingCalendarId(null)
+    const newCalId = `cal-${Date.now()}`
+    setEditingCalendarId(newCalId)
     setCalendarForm({
       name: '',
       color: '#3b82f6',
@@ -938,11 +1045,13 @@ export default function CalendarPage() {
     if (!calendarForm.name.trim()) return
 
     const cleanSyncUrl = calendarForm.syncUrl?.trim() || ''
+    const targetCalId = editingCalendarId || `cal-${Date.now()}`
+    const existing = calendars.find((c) => c.id === targetCalId)
 
-    if (editingCalendarId) {
+    if (existing) {
       setCalendars((prev) =>
         prev.map((c) =>
-          c.id === editingCalendarId
+          c.id === targetCalId
             ? {
                 ...c,
                 name: calendarForm.name.trim(),
@@ -955,12 +1064,12 @@ export default function CalendarPage() {
       )
       setFeedbackToast(`Calendario "${calendarForm.name.trim()}" guardado`)
       setTimeout(() => setFeedbackToast(null), 3000)
-      if (cleanSyncUrl) {
-        handleSyncCalendar(editingCalendarId, cleanSyncUrl)
+      if (cleanSyncUrl && cleanSyncUrl !== existing.syncUrl) {
+        handleSyncCalendar(targetCalId, cleanSyncUrl)
       }
     } else {
       const newCal = {
-        id: `cal-${Date.now()}`,
+        id: targetCalId,
         name: calendarForm.name.trim(),
         color: calendarForm.color,
         dot: 'bg-primary',
@@ -990,8 +1099,18 @@ export default function CalendarPage() {
     )
     if (!confirmed) return
 
+    const toDelete = (globalTasks || []).filter((t) => t.calendarId === calId)
+    const deletedIds = toDelete.map((t) => t.id)
+    const remainingTasks = (globalTasks || []).filter((t) => t.calendarId !== calId)
+
     setCalendars((prev) => prev.filter((c) => c.id !== calId))
-    setGlobalTasks((prev) => (prev || []).filter((t) => t.calendarId !== calId))
+    setGlobalTasks(remainingTasks)
+    try {
+      localStorage.setItem('app_global_tasks', JSON.stringify(remainingTasks))
+    } catch (e) {}
+    syncBaileysTasks(remainingTasks, { replace: true, deletedIds }).catch(() => {})
+    syncTasksToCloud(remainingTasks).catch(() => {})
+
     if (activeCalendarId === calId) {
       const remaining = calendars.filter((c) => c.id !== calId)
       setActiveCalendarId(remaining[0]?.id || 'cal-default')
@@ -3915,6 +4034,71 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {/* POPUP: Confirmación de borrado de Rol / Actividades por Rol */}
+      {roleToDelete && (() => {
+        const roleTasks = (globalTasks || []).filter(
+          (t) =>
+            t.context === roleToDelete.name ||
+            t.context === roleToDelete.id ||
+            t.context === roleToDelete.label
+        )
+        const totalCount = roleTasks.length
+        const extCount = roleTasks.filter((t) => t.isExternalSync).length
+
+        return (
+          <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-[#161b26] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-2xl">delete_sweep</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                    ¿Cómo deseas eliminar "{roleToDelete.label || roleToDelete.name}"?
+                  </h3>
+                  <p className="text-xs text-secondary mt-0.5">
+                    Tiene <strong className="text-on-surface font-semibold">{totalCount} {totalCount === 1 ? 'actividad' : 'actividades'}</strong> asociadas
+                    {extCount > 0 ? ` (${extCount} importadas)` : ''}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 text-xs text-secondary leading-relaxed">
+                Elige si deseas eliminar únicamente la etiqueta del rol (las actividades se conservarán asignadas a Personal) o purgar el rol junto con todas sus actividades de una sola vez.
+              </div>
+
+              <div className="flex flex-col gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleConfirmDeleteRole(roleToDelete, false)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-secondary">label_off</span>
+                  <span>Eliminar solo rol (conservar actividades en Personal)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleConfirmDeleteRole(roleToDelete, true)}
+                  className="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-rose-600/25"
+                >
+                  <span className="material-symbols-outlined text-[17px]">delete_forever</span>
+                  <span>Eliminar actividades Y ROL ({totalCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRoleToDelete(null)}
+                  className="w-full py-2 text-secondary hover:text-on-surface text-xs font-medium text-center transition-colors cursor-pointer mt-0.5"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* POPUP 4: GESTOR DE CALENDARIOS (DISEÑO LATERAL 2 COLUMNAS ESTILO APPLE) */}
       {isCalendarModalOpen && (
         <div
@@ -3943,7 +4127,7 @@ export default function CalendarPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsCalendarModalOpen(false)}
+                onClick={handleCloseCalendarModal}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
@@ -4145,26 +4329,48 @@ export default function CalendarPage() {
 
               {/* Botones de acción */}
               <div className="flex items-center justify-between p-4 px-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#141824]/50 shrink-0 gap-2">
-                {editingCalendarId ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteCalendar(editingCalendarId)}
-                    disabled={calendars.length <= 1}
-                    className={`px-3.5 py-2 rounded-2xl text-error hover:bg-error/10 text-label-sm font-semibold transition-colors flex items-center gap-1 ${
-                      calendars.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'
-                    }`}
-                    title={calendars.length <= 1 ? 'No puedes eliminar el único calendario activo' : 'Eliminar este calendario'}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">delete</span>
-                    <span>Eliminar calendario</span>
-                  </button>
+                {editingCalendarId && calendars.some((c) => c.id === editingCalendarId) ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCalendar(editingCalendarId)}
+                      disabled={calendars.length <= 1}
+                      className={`px-3.5 py-2 rounded-2xl text-error hover:bg-error/10 text-label-sm font-semibold transition-colors flex items-center gap-1 ${
+                        calendars.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'
+                      }`}
+                      title={calendars.length <= 1 ? 'No puedes eliminar el único calendario activo' : 'Eliminar este calendario'}
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                      <span>Eliminar calendario</span>
+                    </button>
+
+                    {(() => {
+                      const extCount = (globalTasks || []).filter(
+                        (t) =>
+                          (t.calendarId === editingCalendarId || (!t.calendarId && editingCalendarId === 'cal-default')) &&
+                          t.isExternalSync
+                      ).length
+                      if (extCount === 0) return null
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => handleClearExternalFromCal(editingCalendarId)}
+                          className="px-3 py-2 rounded-2xl text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 text-label-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                          title="Eliminar eventos importados por feed externo de este calendario"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">mop</span>
+                          <span>Limpiar {extCount} importados</span>
+                        </button>
+                      )
+                    })()}
+                  </div>
                 ) : (
                   <div></div>
                 )}
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsCalendarModalOpen(false)}
+                    onClick={handleCloseCalendarModal}
                     className="px-4 py-2.5 rounded-2xl text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 text-label-md font-medium transition-colors cursor-pointer"
                   >
                     Cancelar
