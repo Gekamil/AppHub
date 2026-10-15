@@ -1052,62 +1052,7 @@ export default function AutoOrganizerPage() {
           </div>
         </section>
 
-        {/* Banner Temático Dedicado (Transforma la atmósfera del organizador) */}
-        {appTheme === 'aura' && (
-          <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-r from-pink-100/90 via-rose-50/90 to-fuchsia-100/90 dark:from-[#2a1322] dark:via-[#20101d] dark:to-[#1a1226] border-2 border-pink-300/90 dark:border-pink-800/60 shadow-xs animate-in fade-in duration-200">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-white text-pink-500 dark:bg-pink-950/80 dark:text-pink-300 flex items-center justify-center shrink-0 shadow-xs border border-pink-200/80">
-                  <span className="material-symbols-outlined text-[24px]">favorite</span>
-                </div>
-                <div>
-                  <h2 className="font-serif italic text-base sm:text-lg font-bold text-pink-950 dark:text-pink-100">
-                    Mi Cuaderno & Agenda Dulce
-                  </h2>
-                  <p className="text-xs text-pink-800/90 dark:text-pink-300/80 font-medium">
-                    Un espacio bonito y en calma para organizar tus planes con tranquilidad.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap text-xs">
-                <span className="px-3.5 py-1.5 rounded-full bg-white text-pink-700 dark:bg-pink-950/80 dark:text-pink-200 border-2 border-pink-300/80 font-semibold shadow-2xs flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-pink-400"></span>
-                  <span>{pendingThisWeekCount} planes pendientes</span>
-                </span>
-                <span className="px-3.5 py-1.5 rounded-full bg-white text-rose-700 dark:bg-pink-950/80 dark:text-rose-200 border-2 border-rose-200/80 font-semibold shadow-2xs flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[14px] text-pink-500">done_all</span>
-                  <span>{completedThisWeekCount} listos</span>
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {appTheme === 'executive' && (
-          <div className="rounded-xl px-4 py-3 bg-white dark:bg-[#121214] border border-slate-900/15 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-sans animate-in fade-in duration-200">
-            <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-slate-950 text-white dark:bg-slate-100 dark:text-slate-950 flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[17px]">business_center</span>
-              </span>
-              <div>
-                <h2 className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm tracking-tight">
-                  Despacho Profesional · Planificación y Agenda
-                </h2>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Agenda corporativa estructurada, control de compromisos y reuniones de trabajo.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 text-[11px] font-medium">
-              <span className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                Compromisos: {pendingThisWeekCount}
-              </span>
-              <span className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                Completados: {completedThisWeekCount}
-              </span>
-            </div>
-          </div>
-        )}
 
         {appTheme === 'brutalista' && (
           <div className="p-3 bg-yellow-300 text-black border-2 border-black shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] flex flex-col md:flex-row md:items-center justify-between gap-2 uppercase font-black text-xs tracking-wider animate-in fade-in duration-200">
@@ -1176,9 +1121,9 @@ export default function AutoOrganizerPage() {
               appTheme === 'brutalista'
                 ? 'rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]'
                 : appTheme === 'executive'
-                ? 'rounded-xl bg-white dark:bg-[#121214] border border-slate-900/20 dark:border-slate-800 shadow-xs focus-within:border-slate-900 focus-within:ring-1 focus-within:ring-slate-900/10'
+                ? 'rounded-xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-slate-800 shadow-2xs focus-within:border-slate-400'
                 : appTheme === 'aura'
-                ? 'rounded-3xl bg-white dark:bg-[#1c1020] border-2 border-pink-300 dark:border-pink-800/60 shadow-xs focus-within:border-pink-400'
+                ? 'rounded-2xl bg-white dark:bg-[#1c1020] border border-pink-200/90 dark:border-pink-900/40 shadow-xs focus-within:border-pink-400'
                 : 'rounded-2xl bg-white dark:bg-[#161b26] border-slate-200/80 dark:border-slate-800 shadow-2xs focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20'
             }`}>
               <form onSubmit={handleDirectSmartIngestion} className="flex items-center gap-2">
@@ -1186,22 +1131,20 @@ export default function AutoOrganizerPage() {
                   appTheme === 'aura'
                     ? 'material-symbols-outlined text-pink-500'
                     : appTheme === 'executive'
-                    ? 'material-symbols-outlined text-slate-800 dark:text-slate-200'
+                    ? 'material-symbols-outlined text-slate-600 dark:text-slate-300'
                     : appTheme === 'brutalista'
                     ? 'material-symbols-outlined text-black dark:text-white'
                     : 'material-symbols-outlined text-slate-400 dark:text-slate-500'
                 }`}>
-                  {appTheme === 'executive' ? 'edit_calendar' : appTheme === 'aura' ? 'favorite' : 'add_task'}
+                  {appTheme === 'brutalista' ? 'terminal' : 'add_task'}
                 </span>
                 <input
                   type="text"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   placeholder={
-                    appTheme === 'aura'
-                      ? 'Anotar una nueva intención o tarea bonita...'
-                      : appTheme === 'executive'
-                      ? 'Introducir nuevo compromiso laboral o tarea (ej. Reunión el jueves a las 11:00...)'
+                    appTheme === 'executive'
+                      ? '¿Qué necesitas hacer? (ej. Reunión el jueves a las 11:00, Enviar presupuesto...)'
                       : appTheme === 'brutalista'
                       ? '// INGRESO DE PROTOCOLO O MISIÓN OPERATIVA...'
                       : '¿Qué necesitas hacer? (ej. Deberes de sistemas el viernes, Gimnasio todos los martes...)'
@@ -1217,7 +1160,7 @@ export default function AutoOrganizerPage() {
                     appTheme === 'brutalista'
                       ? 'rounded-none bg-slate-100 hover:bg-yellow-200 text-black border border-black'
                       : appTheme === 'executive'
-                      ? 'rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-medium'
+                      ? 'rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-medium'
                       : appTheme === 'aura'
                       ? 'rounded-full bg-pink-50 hover:bg-pink-100 text-pink-700 dark:bg-pink-950/60 dark:text-pink-200 border border-pink-200'
                       : 'rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
@@ -1234,7 +1177,7 @@ export default function AutoOrganizerPage() {
                     appTheme === 'brutalista'
                       ? 'rounded-none bg-yellow-300 hover:bg-yellow-400 text-black font-mono font-bold uppercase border-2 border-black shadow-[2px_2px_0px_#000]'
                       : appTheme === 'executive'
-                      ? 'rounded-md bg-slate-950 hover:bg-black text-white font-medium border border-slate-900 shadow-xs'
+                      ? 'rounded-md bg-slate-800 hover:bg-slate-900 text-white font-medium border border-slate-700 shadow-xs'
                       : appTheme === 'aura'
                       ? 'rounded-full bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xs'
                       : 'rounded-lg bg-primary hover:bg-primary/90 text-white shadow-2xs'
@@ -1246,10 +1189,6 @@ export default function AutoOrganizerPage() {
                       ? 'Procesando...'
                       : appTheme === 'brutalista'
                       ? '[+] ASIGNAR'
-                      : appTheme === 'executive'
-                      ? 'Asignar Tarea'
-                      : appTheme === 'aura'
-                      ? 'Anotar'
                       : 'Añadir'}
                   </span>
                   <kbd className="hidden sm:inline-block px-1 py-0.2 rounded bg-black/20 text-[10px] font-mono leading-none">
@@ -2894,7 +2833,7 @@ export default function AutoOrganizerPage() {
 function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme }) {
   const currentTheme = appTheme || 'clasica'
 
-  // --- 1. BLOSSOM STUDY (GIRLY PINK & WHITE AESTHETIC) ---
+  // --- 1. BLOSSOM STUDY (GIRLY PINK & WHITE AESTHETIC - BORDES SUAVES & ICONOS ESTÁNDAR) ---
   if (currentTheme === 'aura') {
     const pastelContextColors = {
       University: 'bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300 border-pink-200/70',
@@ -2905,17 +2844,17 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
 
     return (
       <div
-        className={`p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-[#1a0f1d] border-2 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-xs hover:shadow-md group ${
+        className={`p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#1a0f1d] border transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-2xs hover:shadow-xs group ${
           task.completed
-            ? 'opacity-60 border-pink-200/50 dark:border-pink-900/30 bg-pink-50/30'
-            : 'border-pink-300 dark:border-pink-800/70 hover:border-pink-400'
+            ? 'opacity-60 border-pink-200/40 dark:border-pink-900/30 bg-pink-50/20'
+            : 'border-pink-100 dark:border-pink-900/40 hover:border-pink-300/70'
         }`}
       >
         <div className="flex items-start gap-3.5 min-w-0 flex-1">
           <button
             type="button"
             onClick={() => onToggle(task.id)}
-            className={`w-6 h-6 mt-0.5 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 border-2 transform active:scale-90 ${
+            className={`w-6 h-6 mt-0.5 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 border transform active:scale-90 ${
               task.completed
                 ? 'bg-pink-500 border-pink-500 text-white shadow-xs'
                 : 'border-pink-300 dark:border-pink-600 hover:border-pink-500 hover:bg-pink-50/60'
@@ -2969,12 +2908,12 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
               onClick={() => onStartFocus(task)}
               className="h-7.5 px-3.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
             >
-              <span className="material-symbols-outlined text-[14px]">favorite</span>
+              <span className="material-symbols-outlined text-[15px]">play_arrow</span>
               <span>Enfocar</span>
             </button>
           ) : (
             <span className="text-[11px] text-pink-600 dark:text-pink-300 font-semibold px-2.5 py-0.5 rounded-full bg-pink-100/70 dark:bg-pink-950/60">
-              Hecho con calma
+              Completada
             </span>
           )}
 
@@ -3001,24 +2940,24 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
     )
   }
 
-  // --- 2. EJECUTIVO BLACK & WHITE (SOBER CORPORATE DESK // CLEAN 1.5PX BORDERS // ZERO TECH FLUFF) ---
+  // --- 2. EJECUTIVO BLACK & WHITE (SOBER CORPORATE DESK // LÍNEAS Y TONOS GRISES PROFESIONALES) ---
   if (currentTheme === 'executive') {
     return (
       <div
-        className={`p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#121214] border transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-3 group shadow-2xs hover:shadow-xs ${
+        className={`p-3.5 sm:p-4 rounded-xl bg-slate-50/70 dark:bg-[#151922] border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-slate-400 dark:border-l-slate-600 transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-3 group shadow-2xs hover:shadow-xs hover:border-slate-300 ${
           task.completed
-            ? 'opacity-50 border-slate-200 dark:border-slate-800 bg-slate-50/50'
-            : 'border-slate-300/80 dark:border-slate-800 hover:border-slate-900 dark:hover:border-slate-400'
+            ? 'opacity-50 border-slate-200 bg-slate-100/40'
+            : ''
         }`}
       >
         <div className="flex items-start gap-3 min-w-0 flex-1">
           <button
             type="button"
             onClick={() => onToggle(task.id)}
-            className={`w-5 h-5 mt-0.5 rounded-sm flex items-center justify-center transition-all cursor-pointer shrink-0 border-2 ${
+            className={`w-5 h-5 mt-0.5 rounded-sm flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
               task.completed
-                ? 'bg-slate-950 border-slate-950 text-white dark:bg-white dark:border-white dark:text-black'
-                : 'border-slate-400 dark:border-slate-600 bg-transparent hover:border-slate-900'
+                ? 'bg-slate-800 border-slate-800 text-white dark:bg-slate-200 dark:border-slate-200 dark:text-slate-900'
+                : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:border-slate-600'
             }`}
             title={task.completed ? 'Marcar pendiente' : 'Marcar completado'}
           >
@@ -3033,32 +2972,32 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
             <div className="flex items-center gap-1.5 flex-wrap text-xs">
               <span className={`px-2 py-0.5 rounded-sm text-[11px] font-semibold tracking-wide border ${
                 task.effort === 'High'
-                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-black dark:border-white'
+                  ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200'
                   : task.effort === 'Medium'
-                  ? 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
-                  : 'bg-white text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'
+                  ? 'bg-white text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                  : 'bg-white text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
               }`}>
                 {task.effort === 'High' ? 'Prioridad Alta' : task.effort === 'Medium' ? 'Prioridad Media' : 'Prioridad Normal'}
               </span>
 
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 px-2 py-0.5 rounded-sm border border-slate-200 dark:border-slate-700">
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-2 py-0.5 rounded-sm border border-slate-200 dark:border-slate-700">
                 <span className="material-symbols-outlined text-[13px] text-slate-500">schedule</span>
                 <span>{task.time || '10:00'}{task.est ? ` · ${task.est}` : ''}</span>
               </span>
 
-              <span className="px-2 py-0.5 rounded-sm text-[11px] font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <span className="px-2 py-0.5 rounded-sm text-[11px] font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                 {task.context}
               </span>
 
               {isSportActivity(task) && (
-                <span className="px-2 py-0.5 rounded-sm text-[11px] font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-sm text-[11px] font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[13px]">fitness_center</span>
                   Deporte
                 </span>
               )}
             </div>
 
-            <h4 className={`font-semibold text-sm text-slate-950 dark:text-white leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+            <h4 className={`font-semibold text-sm text-slate-900 dark:text-white leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
               {task.title}
             </h4>
 
@@ -3073,10 +3012,10 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
             <button
               type="button"
               onClick={() => onStartFocus(task)}
-              className="h-7 px-3 rounded-md bg-slate-950 hover:bg-black text-white dark:bg-white dark:hover:bg-slate-200 dark:text-black text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+              className="h-7.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
             >
               <span className="material-symbols-outlined text-[14px]">play_arrow</span>
-              <span>Iniciar Tarea</span>
+              <span>Enfocar</span>
             </button>
           ) : (
             <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">

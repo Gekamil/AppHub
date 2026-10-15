@@ -360,7 +360,7 @@ export default function MyHubPage() {
           <div className="flex flex-col gap-space-xs">
             <div className="flex items-center gap-space-xs text-secondary font-code-sm text-code-sm">
               <span className="material-symbols-outlined text-[16px] text-primary">hub</span>
-              <span>{appTheme === 'executive' ? 'DESPACHO // ARCHIVO DOCUMENTAL' : appTheme === 'brutalista' ? '[DEPÓSITO DE PROTOCOLOS // LOCAL DB]' : appTheme === 'aura' ? 'Cajón de Recuerdos & Notas Bonitas' : 'Workspace • Knowledge Repository'}</span>
+              <span>{appTheme === 'brutalista' ? '[DEPÓSITO DE PROTOCOLOS // LOCAL DB]' : 'Workspace • Knowledge Repository'}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
               <span className="text-tertiary">SYNCED WITH LOCAL DB</span>
             </div>
@@ -379,7 +379,7 @@ export default function MyHubPage() {
                 appTheme === 'brutalista'
                   ? 'rounded-none bg-yellow-300 text-black border-2 border-black font-bold uppercase shadow-[3px_3px_0px_#000]'
                   : appTheme === 'executive'
-                  ? 'rounded-md bg-slate-950 hover:bg-black text-white font-medium border border-slate-900 shadow-xs'
+                  ? 'rounded-md bg-slate-800 hover:bg-slate-900 text-white font-medium border border-slate-700 shadow-xs'
                   : appTheme === 'aura'
                   ? 'rounded-full bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xs'
                   : 'bg-primary-container text-on-primary rounded-lg'
@@ -387,7 +387,7 @@ export default function MyHubPage() {
               id="btnNewResource"
             >
               <span className="material-symbols-outlined text-[18px]">add</span>
-              <span>{appTheme === 'brutalista' ? '[+] AÑADIR' : appTheme === 'executive' ? '+ Asignar Documento' : appTheme === 'aura' ? '+ Nueva Nota' : '+ New Resource'}</span>
+              <span>{appTheme === 'brutalista' ? '[+] AÑADIR' : '+ New Resource'}</span>
             </button>
           </div>
         </div>

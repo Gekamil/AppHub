@@ -392,7 +392,7 @@ html.dark[data-theme-style="brutalista"] div[style*="top:"][style*="height:"] {
 html[data-theme-style="aura"],
 html[data-theme-style="aura"] body {
   font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
-  background: linear-gradient(135deg, #fff0f3 0%, #ffe4e6 50%, #fdf2f8 100%) !important;
+  background: linear-gradient(135deg, #fff5f7 0%, #fff0f3 50%, #fdf2f8 100%) !important;
   background-attachment: fixed !important;
 }
 
@@ -402,13 +402,13 @@ html.dark[data-theme-style="aura"] body {
   background-attachment: fixed !important;
 }
 
-/* Titulares en rosa frambuesa dulce y vivo */
+/* Titulares limpios en rosa frambuesa */
 html[data-theme-style="aura"] h1,
 html[data-theme-style="aura"] h2,
 html[data-theme-style="aura"] h3,
 html[data-theme-style="aura"] h4 {
-  font-family: 'Fraunces', Georgia, serif !important;
-  font-style: italic !important;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
+  font-style: normal !important;
   font-weight: 700 !important;
   letter-spacing: -0.015em !important;
   color: #be185d !important;
@@ -421,25 +421,25 @@ html.dark[data-theme-style="aura"] h4 {
   color: #fbcfe8 !important;
 }
 
-/* Tarjetas acolchadas en blanco puro con marco rosa suave de 2.5px */
+/* Tarjetas en blanco puro con marco fino rosa suave (sin rebordes gruesos) */
 html[data-theme-style="aura"] .bg-white,
 html[data-theme-style="aura"] .bg-surface-pure {
   background-color: #ffffff !important;
-  border: 2.5px solid #f472b6 !important;
-  border-radius: 28px !important;
-  box-shadow: 0 12px 30px -4px rgba(244, 114, 182, 0.22) !important;
+  border: 1px solid rgba(244, 114, 182, 0.25) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 16px -2px rgba(244, 114, 182, 0.08) !important;
 }
 
 html.dark[data-theme-style="aura"] .bg-white,
 html.dark[data-theme-style="aura"] .bg-surface-pure,
 html.dark[data-theme-style="aura"] .bg-\[\#161b26\] {
   background-color: rgba(38, 16, 31, 0.95) !important;
-  border: 2px solid #ec4899 !important;
-  border-radius: 28px !important;
-  box-shadow: 0 12px 30px -4px rgba(236, 72, 153, 0.25) !important;
+  border: 1px solid rgba(236, 72, 153, 0.35) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 16px -2px rgba(236, 72, 153, 0.15) !important;
 }
 
-/* Botones en píldora con degradado fresa y rosa chicle */
+/* Botones suaves en píldora con acento rosa */
 html[data-theme-style="aura"] button {
   border-radius: 9999px !important;
 }
@@ -449,27 +449,70 @@ html[data-theme-style="aura"] .bg-primary-container {
   background: linear-gradient(135deg, #fb7185 0%, #ec4899 100%) !important;
   color: #ffffff !important;
   border: none !important;
-  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.25) !important;
 }
 
-/* Calendario en Blossom: notas blancas con reborde rosa vivo */
-html[data-theme-style="aura"] .border-slate-200,
-html[data-theme-style="aura"] .border-slate-200\/80 {
-  border-color: rgba(244, 114, 182, 0.35) !important;
+/* Grid normal continuo del calendario con tono blanco rosado (sin cajas burbuja) */
+html[data-theme-style="aura"] .grid-cols-7 > div {
+  border-radius: 0px !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
-html.dark[data-theme-style="aura"] .border-slate-800,
-html.dark[data-theme-style="aura"] .border-slate-700 {
-  border-color: rgba(236, 72, 153, 0.3) !important;
+html[data-theme-style="aura"] .grid-cols-7 {
+  background-color: #fce7f3 !important; /* Líneas finas entre celdas */
 }
 
+html[data-theme-style="aura"] .grid-cols-7 > div.bg-white {
+  background-color: #fffbfc !important; /* Blanco rosado suave y limpio */
+}
+
+html[data-theme-style="aura"] .grid-cols-7 > div.bg-white:hover {
+  background-color: #fff0f5 !important;
+}
+
+html[data-theme-style="aura"] .grid-cols-7 > div.bg-slate-50\/70 {
+  background-color: #fff1f5 !important;
+}
+
+/* Transformar todos los textos, acentos y estados azules a rojo/rosa en Blossom */
+html[data-theme-style="aura"] .text-primary,
+html[data-theme-style="aura"] .text-\[\#0071E3\],
+html[data-theme-style="aura"] .text-blue-500,
+html[data-theme-style="aura"] .text-blue-600,
+html[data-theme-style="aura"] .text-blue-400 {
+  color: #f43f5e !important;
+}
+
+html[data-theme-style="aura"] .bg-primary,
+html[data-theme-style="aura"] .bg-primary-container,
+html[data-theme-style="aura"] .bg-\[\#0071E3\],
+html[data-theme-style="aura"] .bg-blue-500,
+html[data-theme-style="aura"] .bg-blue-600 {
+  background-color: #f43f5e !important;
+  color: #ffffff !important;
+}
+
+html[data-theme-style="aura"] .border-primary,
+html[data-theme-style="aura"] .border-\[\#0071E3\],
+html[data-theme-style="aura"] .border-blue-500 {
+  border-color: #f43f5e !important;
+}
+
+html[data-theme-style="aura"] .ring-primary,
+html[data-theme-style="aura"] .ring-\[\#0071E3\] {
+  --tw-ring-color: rgba(244, 63, 94, 0.4) !important;
+}
+
+/* Eventos en Blossom: tarjetas finas con línea rosa en lugar de borde grueso */
 html[data-theme-style="aura"] div[style*="top:"][style*="height:"] {
-  border-radius: 16px !important;
-  border: 2px solid #f472b6 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(244, 114, 182, 0.35) !important;
+  border-left: 3px solid #f43f5e !important;
   background: #ffffff !important;
   color: #be185d !important;
   font-weight: 600 !important;
-  box-shadow: 0 4px 14px -2px rgba(244, 114, 182, 0.2) !important;
+  box-shadow: 0 2px 8px -1px rgba(244, 114, 182, 0.12) !important;
   font-family: 'Outfit', sans-serif !important;
 }
 
@@ -479,31 +522,26 @@ html.dark[data-theme-style="aura"] div[style*="top:"][style*="height:"] {
   border-color: #ec4899 !important;
 }
 
-html[data-theme-style="aura"] .font-headline-md.text-headline-md {
-  font-family: 'Fraunces', serif !important;
-  font-style: italic !important;
-}
-
 
 /* ==========================================================================
-   3. EJECUTIVO BLACK & WHITE (Profesional, Sobrio, Despacho, Sin IA ni Frikadas)
+   3. EJECUTIVO BLACK & WHITE (Profesional, Sobrio, Despacho, Líneas y Tonos Grises)
    ========================================================================== */
 html[data-theme-style="executive"],
 html[data-theme-style="executive"] body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
-  background-color: #fcfcfc !important;
+  background-color: #f8fafc !important;
   background-image: none !important;
-  color: #09090b !important;
+  color: #0f172a !important;
 }
 
 html.dark[data-theme-style="executive"],
 html.dark[data-theme-style="executive"] body {
-  background-color: #09090b !important;
+  background-color: #0b0f17 !important;
   background-image: none !important;
-  color: #fafafa !important;
+  color: #f1f5f9 !important;
 }
 
-/* Titulares ejecutivos con máxima sobriedad y peso corporativo */
+/* Titulares ejecutivos con sobriedad y trazo corporativo */
 html[data-theme-style="executive"] h1,
 html[data-theme-style="executive"] h2,
 html[data-theme-style="executive"] h3,
@@ -511,35 +549,64 @@ html[data-theme-style="executive"] h4 {
   font-family: 'Plus Jakarta Sans', sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: -0.02em !important;
-  color: #09090b !important;
+  color: #0f172a !important;
 }
 
 html.dark[data-theme-style="executive"] h1,
 html.dark[data-theme-style="executive"] h2,
 html.dark[data-theme-style="executive"] h3,
 html.dark[data-theme-style="executive"] h4 {
-  color: #ffffff !important;
+  color: #f8fafc !important;
 }
 
-/* Tarjetas ejecutivas en blanco puro con marco negro nítido de 1.5px */
+/* Tarjetas ejecutivas en blanco puro con marco gris sutil (sin rebordes negros superiores) */
 html[data-theme-style="executive"] .bg-white,
 html[data-theme-style="executive"] .bg-surface-pure {
   background-color: #ffffff !important;
-  border: 1.5px solid #0f172a !important;
-  border-radius: 10px !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03) !important;
 }
 
 html.dark[data-theme-style="executive"] .bg-white,
 html.dark[data-theme-style="executive"] .bg-surface-pure,
 html.dark[data-theme-style="executive"] .bg-\[\#161b26\] {
-  background-color: #121215 !important;
-  border: 1px solid #27272a !important;
-  border-radius: 10px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+  background-color: #121620 !important;
+  border: 1px solid #1e293b !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Botones ejecutivos sobrios: negro puro con texto blanco */
+/* Grid normal continuo del calendario en Ejecutivo (sin marcar días en recuadros pesados) */
+html[data-theme-style="executive"] .grid-cols-7 > div {
+  border-radius: 0px !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme-style="executive"] .grid-cols-7 {
+  background-color: #e2e8f0 !important;
+}
+
+html[data-theme-style="executive"] .grid-cols-7 > div.bg-white {
+  background-color: #ffffff !important;
+}
+
+html[data-theme-style="executive"] .grid-cols-7 > div.bg-slate-50\/70 {
+  background-color: #f8fafc !important;
+}
+
+/* Tono gris pizarra elegante en widgets e información secundaria */
+html[data-theme-style="executive"] .bg-surface-subtle,
+html[data-theme-style="executive"] .bg-surface-muted,
+html[data-theme-style="executive"] .bg-slate-50,
+html[data-theme-style="executive"] .bg-slate-50\/90,
+html[data-theme-style="executive"] .bg-slate-50\/70 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Botones ejecutivos sobrios: gris pizarra oscuro corporativo */
 html[data-theme-style="executive"] button {
   border-radius: 8px !important;
   font-weight: 600 !important;
@@ -549,46 +616,35 @@ html[data-theme-style="executive"] button {
 
 html[data-theme-style="executive"] .bg-primary,
 html[data-theme-style="executive"] .bg-primary-container {
-  background: #09090b !important;
+  background: #1e293b !important;
   color: #ffffff !important;
-  border: 1px solid #09090b !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 html.dark[data-theme-style="executive"] .bg-primary,
 html.dark[data-theme-style="executive"] .bg-primary-container {
-  background: #ffffff !important;
-  color: #09090b !important;
-  border: 1px solid #ffffff !important;
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15) !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #f1f5f9 !important;
 }
 
-/* Calendario en Ejecutivo B&W: Líneas neutras y tarjetas nítidas de trabajo */
-html[data-theme-style="executive"] .border-slate-200,
-html[data-theme-style="executive"] .border-slate-200\/80 {
-  border-color: #e4e4e7 !important;
-}
-
-html.dark[data-theme-style="executive"] .border-slate-800,
-html.dark[data-theme-style="executive"] .border-slate-700 {
-  border-color: #27272a !important;
-}
-
+/* Líneas y diseño con acentos grises en eventos y tareas */
 html[data-theme-style="executive"] div[style*="top:"][style*="height:"] {
   border-radius: 6px !important;
-  border: 1.5px solid #09090b !important;
-  border-left: 4px solid #09090b !important;
-  background: #ffffff !important;
-  color: #09090b !important;
+  border: 1px solid #cbd5e1 !important;
+  border-left: 3px solid #475569 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
   font-family: 'Plus Jakarta Sans', sans-serif !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 }
 
 html.dark[data-theme-style="executive"] div[style*="top:"][style*="height:"] {
-  background: #18181b !important;
-  border-color: #52525b !important;
-  border-left: 4px solid #ffffff !important;
-  color: #fafafa !important;
+  background: #181f2c !important;
+  border-color: #334155 !important;
+  border-left: 3px solid #94a3b8 !important;
+  color: #f8fafc !important;
 }
 
 html[data-theme-style="executive"] .font-code-sm {
