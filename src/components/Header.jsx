@@ -4,6 +4,7 @@ import ProfilePopover from './ProfilePopover'
 import AccountModal from './AccountModal'
 import AIBotIcon from './AIBotIcon'
 import { getCurrentUser, isGuestUser } from '../services/firebase'
+import { APP_THEMES, getAppTheme, setAppTheme } from '../services/appTheme'
 
 const mobileNavItems = [
   { name: 'Calendario', shortName: 'Agenda', to: '/calendar', icon: 'calendar_today' },
@@ -30,6 +31,25 @@ export default function Header({
   const profileButtonRef = useRef(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
   const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'es')
+
+  const [currentAppTheme, setCurrentAppTheme] = useState(() => getAppTheme())
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false)
+
+  useEffect(() => {
+    const handleThemeChange = (e) => {
+      if (e.detail) setCurrentAppTheme(e.detail)
+    }
+    window.addEventListener('app_theme_changed', handleThemeChange)
+    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+  }, [])
+
+  const activeThemeObj = APP_THEMES.find((t) => t.id === currentAppTheme) || APP_THEMES[0]
+
+  const handleSelectThemeStyle = (themeId) => {
+    setAppTheme(themeId)
+    setCurrentAppTheme(themeId)
+    setIsThemeDropdownOpen(false)
+  }
 
   const isGuest = isGuestUser(user)
 
@@ -350,7 +370,7 @@ export default function Header({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-surface-pure rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-outline-variant/30 animate-in fade-in zoom-in-95 duration-150 cursor-default"
+            className="bg-surface-pure rounded-2xl shadow-xl w-full max-w-sm sm:max-w-md border border-outline-variant/30 animate-in fade-in zoom-in-95 duration-150 cursor-default relative"
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-muted">
               <div className="flex items-center gap-2">
@@ -369,6 +389,99 @@ export default function Header({
             </div>
 
             <div className="p-5 flex flex-col gap-5">
+              {/* SELECTOR DESPLEGABLE DE FUENTE Y DISEÑO VISUAL */}
+              <div className="flex flex-col gap-2 relative">
+                <div className="flex items-center justify-between">
+                  <label className="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">
+                    {language === 'es' ? 'Fuente & Diseño Visual' : 'Font & Visual Style'}
+                  </label>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-subtle border border-outline-variant/20 text-secondary font-medium">
+                    4 estilos
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsThemeDropdownOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-surface-subtle border border-outline-variant/40 hover:border-primary/50 text-xs transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs"
+                        style={{ backgroundColor: activeThemeObj.accentColor || '#0071E3' }}
+                      />
+                      <div className="flex flex-col text-left min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
+                          Fuente: {activeThemeObj.fontName.split('/')[0].trim()}
+                        </span>
+                        <span className="font-semibold text-slate-900 dark:text-white truncate">
+                          {activeThemeObj.name}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-pure border border-outline-variant/30 text-secondary font-semibold">
+                        {activeThemeObj.tag}
+                      </span>
+                      <span
+                        className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-transform duration-200"
+                        style={{ transform: isThemeDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        expand_more
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* Menu Desplegable de Fuentes y Diseños */}
+                  {isThemeDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white dark:bg-[#161b26] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-150">
+                      {APP_THEMES.map((th) => {
+                        const isSelected = th.id === currentAppTheme
+                        return (
+                          <button
+                            key={th.id}
+                            type="button"
+                            onClick={() => handleSelectThemeStyle(th.id)}
+                            className={`flex items-start gap-2.5 p-2.5 rounded-xl transition-all cursor-pointer text-left ${
+                              isSelected
+                                ? 'bg-primary/10 text-primary font-bold border border-primary/30 shadow-2xs'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800/70 text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            <span
+                              className="w-3.5 h-3.5 rounded-full shrink-0 mt-1 shadow-xs"
+                              style={{ backgroundColor: th.accentColor || '#0071E3' }}
+                            />
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="font-semibold text-xs truncate">
+                                  {th.name}
+                                </span>
+                                <span className="text-[9px] uppercase px-1.5 py-0.2 rounded font-bold tracking-wider shrink-0 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                  {th.tag}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-secondary line-clamp-1 mt-0.5">
+                                {th.description}
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 mt-0.5">
+                                Tipografía: {th.fontName}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-1">
+                                check_circle
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Selector de Modo Claro / Oscuro */}
               <div className="flex flex-col gap-2">
                 <label className="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">

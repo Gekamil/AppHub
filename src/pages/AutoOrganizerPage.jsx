@@ -963,7 +963,7 @@ export default function AutoOrganizerPage() {
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Organizador Semanal
+              {themeTokens?.labels?.autoOrganizer || 'Organizador Semanal'}
             </h1>
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium flex-wrap">
               <span>{todayInfo.headerDateStr}</span>
@@ -1200,7 +1200,7 @@ export default function AutoOrganizerPage() {
               {/* Atajos Rápidos de Contexto / Rol */}
               <div className="space-y-1.5">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  Filtrar por contexto
+                  {themeTokens?.labels?.filterContext || 'Filtrar por contexto'}
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
@@ -1212,7 +1212,7 @@ export default function AutoOrganizerPage() {
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
                     }`}
                   >
-                    Todos ({getUniqueTaskCount(globalTasks)})
+                    {themeTokens?.labels?.allContexts || 'Todos'} ({getUniqueTaskCount(globalTasks)})
                   </button>
                   {roles.map((r) => {
                     const roleTasks = (globalTasks || []).filter((t) => t.context === r.name || t.context === r.id || t.context === r.label)

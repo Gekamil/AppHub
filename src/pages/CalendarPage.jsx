@@ -2916,7 +2916,7 @@ export default function CalendarPage() {
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-on-surface"></span>
-              <span>All Activities</span>
+              <span>{themeTokens?.labels?.allContexts || 'All Activities'}</span>
               <span className="text-secondary font-code-sm text-[10px] ml-1">{getUniqueTaskCount(globalTasks)}</span>
             </button>
 

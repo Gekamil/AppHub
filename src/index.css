@@ -242,3 +242,258 @@ header, aside, main, nav, footer, .theme-transition {
     font-size: 21px;
   }
 }
+
+/* ==========================================================================
+   SISTEMA DE FUENTES Y ESTILOS VISUALES RADICALES (APPHUB THEME ENGINE)
+   4 Diseños: Clásica (Apple), Aura Rose & Silk, Executive Editorial, Neo-Brutalista
+   ========================================================================== */
+
+/* Animación Lateral de Transición de Diseño */
+@keyframes themeLateralSlide {
+  0% {
+    opacity: 0.55;
+    transform: translateX(24px) scale(0.998);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0px) scale(1);
+    filter: blur(0px);
+  }
+}
+
+.animate-theme-switch {
+  animation: themeLateralSlide 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* --------------------------------------------------------------------------
+   1. NEO-BRUTALISTA INDUSTRIAL (Bordes 0px, Marcos 2px, Sombras Sólidas)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="brutalista"],
+html[data-theme-style="brutalista"] body {
+  font-family: 'Space Grotesk', 'JetBrains Mono', -apple-system, sans-serif !important;
+}
+
+html[data-theme-style="brutalista"] h1,
+html[data-theme-style="brutalista"] h2,
+html[data-theme-style="brutalista"] h3,
+html[data-theme-style="brutalista"] h4 {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  text-transform: uppercase !important;
+}
+
+/* Esquinas estrictamente 0px (Sin redondear) */
+html[data-theme-style="brutalista"] .rounded-3xl,
+html[data-theme-style="brutalista"] .rounded-2xl,
+html[data-theme-style="brutalista"] .rounded-xl,
+html[data-theme-style="brutalista"] .rounded-lg,
+html[data-theme-style="brutalista"] .rounded-md,
+html[data-theme-style="brutalista"] button,
+html[data-theme-style="brutalista"] input,
+html[data-theme-style="brutalista"] textarea,
+html[data-theme-style="brutalista"] select,
+html[data-theme-style="brutalista"] .shadow-2xs,
+html[data-theme-style="brutalista"] .shadow-xs,
+html[data-theme-style="brutalista"] .shadow-sm,
+html[data-theme-style="brutalista"] .shadow-md,
+html[data-theme-style="brutalista"] .shadow-lg,
+html[data-theme-style="brutalista"] .shadow-xl,
+html[data-theme-style="brutalista"] .shadow-2xl {
+  border-radius: 0px !important;
+}
+
+/* Marcos sólidos negros / blancos */
+html[data-theme-style="brutalista"] .border,
+html[data-theme-style="brutalista"] .border-slate-200,
+html[data-theme-style="brutalista"] .border-slate-200\/80,
+html[data-theme-style="brutalista"] .border-slate-200\/70,
+html[data-theme-style="brutalista"] .border-outline-variant\/30,
+html[data-theme-style="brutalista"] .border-surface-muted {
+  border-width: 2px !important;
+  border-color: #0f172a !important;
+}
+
+html.dark[data-theme-style="brutalista"] .border,
+html.dark[data-theme-style="brutalista"] .border-slate-800,
+html.dark[data-theme-style="brutalista"] .border-slate-700,
+html.dark[data-theme-style="brutalista"] .border-slate-700\/60,
+html.dark[data-theme-style="brutalista"] .border-outline-variant\/30,
+html.dark[data-theme-style="brutalista"] .border-surface-muted {
+  border-width: 2px !important;
+  border-color: #f8fafc !important;
+}
+
+/* Sombras gráficas desplazadas duras */
+html[data-theme-style="brutalista"] .shadow-sm,
+html[data-theme-style="brutalista"] .shadow-md,
+html[data-theme-style="brutalista"] .shadow-lg,
+html[data-theme-style="brutalista"] .shadow-xl,
+html[data-theme-style="brutalista"] .shadow-2xs,
+html[data-theme-style="brutalista"] .shadow-xs {
+  box-shadow: 4px 4px 0px 0px #0f172a !important;
+}
+
+html.dark[data-theme-style="brutalista"] .shadow-sm,
+html.dark[data-theme-style="brutalista"] .shadow-md,
+html.dark[data-theme-style="brutalista"] .shadow-lg,
+html.dark[data-theme-style="brutalista"] .shadow-xl,
+html.dark[data-theme-style="brutalista"] .shadow-2xs,
+html.dark[data-theme-style="brutalista"] .shadow-xs {
+  box-shadow: 4px 4px 0px 0px #f8fafc !important;
+}
+
+/* Pulsación táctica con desplazamiento 2px */
+html[data-theme-style="brutalista"] button:active {
+  transform: translate(2px, 2px) !important;
+  box-shadow: 2px 2px 0px 0px #0f172a !important;
+}
+
+html.dark[data-theme-style="brutalista"] button:active {
+  box-shadow: 2px 2px 0px 0px #f8fafc !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. AURA ROSE & SILK (Elegante & Soft, Curvas Orgánicas, Reflejos de Seda)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="aura"],
+html[data-theme-style="aura"] body {
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
+}
+
+html[data-theme-style="aura"] h1,
+html[data-theme-style="aura"] h2,
+html[data-theme-style="aura"] h3 {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Curvas ultra-amplias y amables */
+html[data-theme-style="aura"] .rounded-2xl {
+  border-radius: 28px !important;
+}
+
+html[data-theme-style="aura"] .rounded-3xl {
+  border-radius: 36px !important;
+}
+
+html[data-theme-style="aura"] .rounded-xl {
+  border-radius: 22px !important;
+}
+
+html[data-theme-style="aura"] .rounded-lg {
+  border-radius: 18px !important;
+}
+
+html[data-theme-style="aura"] button:not(.rounded-none) {
+  border-radius: 9999px !important;
+}
+
+html[data-theme-style="aura"] input,
+html[data-theme-style="aura"] textarea,
+html[data-theme-style="aura"] select {
+  border-radius: 20px !important;
+}
+
+/* Sombras etéreas suaves tipo aura */
+html[data-theme-style="aura"] .shadow-sm,
+html[data-theme-style="aura"] .shadow-md,
+html[data-theme-style="aura"] .shadow-2xs,
+html[data-theme-style="aura"] .shadow-xs {
+  box-shadow: 0 10px 30px -5px rgba(244, 114, 182, 0.16), 0 4px 12px -2px rgba(232, 121, 249, 0.08) !important;
+}
+
+/* Tinte rosado en bordes sutiles */
+html[data-theme-style="aura"] .border-slate-200,
+html[data-theme-style="aura"] .border-slate-200\/80,
+html[data-theme-style="aura"] .border-slate-200\/70,
+html[data-theme-style="aura"] .border-outline-variant\/30 {
+  border-color: rgba(244, 114, 182, 0.3) !important;
+}
+
+html.dark[data-theme-style="aura"] .border-slate-800,
+html.dark[data-theme-style="aura"] .border-slate-700,
+html.dark[data-theme-style="aura"] .border-slate-700\/60,
+html.dark[data-theme-style="aura"] .border-outline-variant\/30 {
+  border-color: rgba(244, 114, 182, 0.22) !important;
+}
+
+/* Botones principales en degradado joya / rosa seda */
+html[data-theme-style="aura"] .bg-primary,
+html[data-theme-style="aura"] .bg-primary-container {
+  background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px -2px rgba(236, 72, 153, 0.4) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. EXECUTIVE EDITORIAL (Prensa Financiera, Titulares Newsreader, Sobriedad)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="executive"],
+html[data-theme-style="executive"] body {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+}
+
+html[data-theme-style="executive"] h1,
+html[data-theme-style="executive"] h2,
+html[data-theme-style="executive"] h3 {
+  font-family: 'Newsreader', Georgia, 'Times New Roman', serif !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  font-style: normal !important;
+}
+
+/* Curvatura arquitectónica mínima y precisa */
+html[data-theme-style="executive"] .rounded-3xl,
+html[data-theme-style="executive"] .rounded-2xl {
+  border-radius: 8px !important;
+}
+
+html[data-theme-style="executive"] .rounded-xl,
+html[data-theme-style="executive"] .rounded-lg {
+  border-radius: 6px !important;
+}
+
+html[data-theme-style="executive"] button,
+html[data-theme-style="executive"] input,
+html[data-theme-style="executive"] textarea,
+html[data-theme-style="executive"] select {
+  border-radius: 6px !important;
+}
+
+/* Marcos sobrios de 1px */
+html[data-theme-style="executive"] .border-slate-200,
+html[data-theme-style="executive"] .border-slate-200\/80,
+html[data-theme-style="executive"] .border-outline-variant\/30 {
+  border-color: #cbd5e1 !important;
+}
+
+html.dark[data-theme-style="executive"] .border-slate-800,
+html.dark[data-theme-style="executive"] .border-slate-700 {
+  border-color: #334155 !important;
+}
+
+/* Sombras mínimas y limpias */
+html[data-theme-style="executive"] .shadow-sm,
+html[data-theme-style="executive"] .shadow-md,
+html[data-theme-style="executive"] .shadow-2xs,
+html[data-theme-style="executive"] .shadow-xs {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Botones ejecutivos en azul marino zafiro */
+html[data-theme-style="executive"] .bg-primary,
+html[data-theme-style="executive"] .bg-primary-container {
+  background-color: #0f2942 !important;
+  color: #ffffff !important;
+  border: 1px solid #1e3a5f !important;
+}
+
+html.dark[data-theme-style="executive"] .bg-primary,
+html.dark[data-theme-style="executive"] .bg-primary-container {
+  background-color: #1e3a5f !important;
+  border-color: #3b82f6 !important;
+}
+
