@@ -408,7 +408,7 @@ export default function AppShell() {
         <main
           className={`w-full ${
             navPosition === 'top' ? 'pt-28 sm:pt-32 md:pt-22' : 'pt-20 md:pt-16'
-          } px-3 sm:px-6 md:px-gutter-lg pb-margin-lg bg-surface-subtle min-h-screen`}
+          } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 pb-margin-lg bg-surface-subtle min-h-screen transition-all`}
         >
           <Outlet
             context={{

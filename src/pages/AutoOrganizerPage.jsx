@@ -743,7 +743,7 @@ export default function AutoOrganizerPage() {
         />
       </div>
 
-      <div className="relative z-10 flex flex-col w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-16 px-3 sm:px-6">
+      <div className="relative z-10 flex flex-col w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto space-y-6 sm:space-y-8 pb-16 px-3 sm:px-6">
         {/* 1. Cabecera Principal Elegante (Sin botón redundante de Añadir Tarea) */}
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
           <div className="flex flex-col gap-1">

@@ -222,7 +222,7 @@ export default function NotebooksPage() {
 
   return (
     <div className="flex flex-col w-full">
-      <div className="flex flex-col lg:flex-row gap-space-lg w-full max-w-[1400px] mx-auto items-start">
+      <div className="flex flex-col lg:flex-row gap-space-lg w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto items-start">
         {/* LEFT PANEL: Notebooks Tree & Directory (Linear/Notion inspired utility) */}
         <aside className="w-full lg:w-[280px] shrink-0 bg-surface-pure rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
           {/* Panel Header */}
@@ -477,7 +477,7 @@ export default function NotebooksPage() {
           </div>
 
           {/* Main Editor Container (Notion Style Content Padding) */}
-          <div className="px-6 sm:px-16 md:px-24 pb-20 pt-2 flex flex-col max-w-4xl mx-auto w-full">
+          <div className="px-6 sm:px-12 md:px-16 lg:px-20 pb-20 pt-2 flex flex-col max-w-5xl 2xl:max-w-6xl mx-auto w-full">
             {/* Document Badge Icon */}
             <div className="-mt-9 mb-4 flex items-center">
               <div className="w-14 h-14 rounded-xl bg-surface-pure shadow-md p-1.5 flex items-center justify-center hover:scale-105 transition-transform cursor-pointer group">

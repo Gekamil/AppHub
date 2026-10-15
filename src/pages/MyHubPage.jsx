@@ -342,7 +342,7 @@ export default function MyHubPage() {
   return (
     <div className="flex flex-col w-full">
       {/* Hub Top Utility & Summary Banner */}
-      <div className="w-full max-w-7xl mx-auto flex flex-col gap-space-lg">
+      <div className="w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto flex flex-col gap-space-lg">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-md pb-space-sm">
           <div className="flex flex-col gap-space-xs">
@@ -463,7 +463,7 @@ export default function MyHubPage() {
             </button>
           </div>
         ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-space-lg space-y-space-lg transition-all duration-300" id="resourceGrid">
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-space-lg space-y-space-lg transition-all duration-300" id="resourceGrid">
             {filteredResources.map((item) => (
               <article
                 key={item.id}

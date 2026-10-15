@@ -424,62 +424,94 @@ export default function AccountModal({
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-0.5">
-              {allAccounts.map((acc) => {
-                const isCurrent = !isGuest && acc.uid === user.uid
-                return (
-                  <div
-                    key={acc.uid}
-                    className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
-                      isCurrent
-                        ? 'bg-primary/5 border-primary shadow-xs'
-                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300'
-                    }`}
+            {allAccounts.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col items-center justify-center text-center gap-2.5 my-1">
+                <div className="w-10 h-10 rounded-2xl bg-slate-200/70 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[22px]">no_accounts</span>
+                </div>
+                <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                  No hay cuentas guardadas en este equipo
+                </span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                  Inicia sesión con tu cuenta existente o crea una nueva para sincronizar tus tareas en la nube y WhatsApp.
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('login')}
+                    className="px-3 py-1.5 rounded-xl bg-primary text-white font-semibold shadow-xs hover:opacity-95 transition-opacity cursor-pointer text-xs flex items-center gap-1"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center text-xs shrink-0">
-                        {getInitials(acc.displayName)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate font-semibold text-slate-900 dark:text-white text-xs">
-                          {acc.displayName}
+                    <span className="material-symbols-outlined text-[15px]">login</span>
+                    <span>Iniciar Sesión</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('register')}
+                    className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-300 transition-colors cursor-pointer text-xs flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">person_add</span>
+                    <span>Crear Cuenta</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-0.5">
+                {allAccounts.map((acc) => {
+                  const isCurrent = !isGuest && acc.uid === user.uid
+                  return (
+                    <div
+                      key={acc.uid}
+                      className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
+                        isCurrent
+                          ? 'bg-primary/5 border-primary shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center text-xs shrink-0">
+                          {getInitials(acc.displayName)}
                         </div>
-                        <div className="truncate text-[10px] text-slate-400">{acc.email}</div>
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold text-slate-900 dark:text-white text-xs">
+                            {acc.displayName}
+                          </div>
+                          <div className="truncate text-[10px] text-slate-400">{acc.email}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isCurrent ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Activa
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchAccount(acc.uid)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-800 dark:text-slate-200 text-[11px] font-semibold transition-colors cursor-pointer"
+                          >
+                            Usar cuenta
+                          </button>
+                        )}
+
+                        {/* Botón borrar solo si hay más de 1 cuenta */}
+                        {allAccounts.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAccount(acc.uid, acc.displayName)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                            title="Eliminar de este equipo"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {isCurrent ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/60">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                          Activa
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleSwitchAccount(acc.uid)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-800 dark:text-slate-200 text-[11px] font-semibold transition-colors cursor-pointer"
-                        >
-                          Usar cuenta
-                        </button>
-                      )}
-
-                      {/* Botón borrar solo si hay más de 1 cuenta */}
-                      {allAccounts.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAccount(acc.uid, acc.displayName)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                          title="Eliminar de este equipo"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">delete</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Opción de volver a modo invitado si tiene una cuenta iniciada */}
             {!isGuest && (

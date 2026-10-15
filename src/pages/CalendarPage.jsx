@@ -2312,7 +2312,7 @@ export default function CalendarPage() {
   // ===================== RENDER PRINCIPAL =====================
 
   return (
-    <div className="flex flex-col w-full max-w-7xl mx-auto relative isolate overflow-x-clip">
+    <div className="flex flex-col w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto relative isolate overflow-x-clip">
       {/* Toast de confirmación de eventos y acciones (Siempre visible en primer plano z-[9999], debajo de la navbar) */}
       {feedbackToast && (
         <div

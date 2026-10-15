@@ -22,7 +22,23 @@ export const getAllAccounts = () => {
     const raw = localStorage.getItem(ACCOUNTS_DB_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed
+      if (Array.isArray(parsed)) {
+        // Purgar de forma estricta cualquier rastro de cuentas demo o inexistentes
+        const clean = parsed.filter(
+          (acc) =>
+            acc &&
+            acc.uid &&
+            acc.uid !== 'user-jorge' &&
+            acc.uid !== 'guest' &&
+            acc.email &&
+            acc.email !== 'jorge.m@focushub.workspace' &&
+            acc.email !== 'invitado@studenthub.app'
+        )
+        if (clean.length !== parsed.length) {
+          localStorage.setItem(ACCOUNTS_DB_KEY, JSON.stringify(clean))
+        }
+        return clean
+      }
     }
   } catch (e) {
     console.warn('Error leyendo base de datos de cuentas:', e)
@@ -61,13 +77,23 @@ export const getCurrentUser = () => {
     const raw = localStorage.getItem(ACTIVE_USER_KEY)
     if (raw) {
       const user = JSON.parse(raw)
-      if (user && user.uid && user.uid !== 'guest' && !user.isGuest && user.email) {
+      if (
+        user &&
+        user.uid &&
+        user.uid !== 'guest' &&
+        user.uid !== 'user-jorge' &&
+        !user.isGuest &&
+        user.email &&
+        user.email !== 'jorge.m@focushub.workspace'
+      ) {
         return user
       }
     }
   } catch (e) {
     console.warn('Error leyendo usuario activo:', e)
   }
+  // Si no hay sesión válida real, forzar modo invitado
+  localStorage.setItem('studenthub_is_authenticated', 'false')
   return GUEST_USER
 }
 

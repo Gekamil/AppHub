@@ -96,7 +96,7 @@ export default function AIAssistantPage() {
   }
 
   return (
-    <div className="flex flex-col w-full max-w-5xl mx-auto space-y-4">
+    <div className="flex flex-col w-full max-w-6xl 2xl:max-w-7xl mx-auto space-y-4">
       {/* Cabecera del Asistente */}
       <div className="w-full bg-white/80 dark:bg-[#161b26]/90 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5">
