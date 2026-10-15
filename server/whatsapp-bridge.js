@@ -226,19 +226,112 @@ function formatTasksSummary(tasks) {
     .join('\n')
 }
 
+// Contexto dinámico de fechas exactas en el huso de España (Europe/Madrid)
+export function getCalendarReferenceContext(now = new Date()) {
+  let todayYmd
+  let dayOfWeek
+  let currentTimeStr
+  try {
+    const fmtDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' })
+    todayYmd = fmtDate.format(now)
+    const fmtDay = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long' })
+    const rawD = fmtDay.format(now)
+    dayOfWeek = rawD.charAt(0).toUpperCase() + rawD.slice(1)
+    const fmtTime = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hour12: false })
+    currentTimeStr = fmtTime.format(now)
+  } catch (e) {
+    todayYmd = now.toISOString().split('T')[0]
+    const daysArr = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    dayOfWeek = daysArr[now.getDay()]
+    currentTimeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const [y, m, d] = todayYmd.split('-').map(Number)
+  const baseD = new Date(y, m - 1, d, 12, 0, 0)
+  const dayNum = baseD.getDay() // 0 = Domingo, 1 = Lunes...
+  const diffToMonday = (dayNum === 0 ? -6 : 1) - dayNum
+  const monday = new Date(baseD)
+  monday.setDate(baseD.getDate() + diffToMonday)
+
+  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+  const thisWeekDates = {}
+  const nextWeekDates = {}
+
+  for (let i = 0; i < 7; i++) {
+    const cur = new Date(monday)
+    cur.setDate(monday.getDate() + i)
+    const ymd = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`
+    thisWeekDates[dayNames[i].toLowerCase()] = ymd
+  }
+
+  for (let i = 7; i < 14; i++) {
+    const cur = new Date(monday)
+    cur.setDate(monday.getDate() + i)
+    const ymd = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`
+    nextWeekDates[dayNames[i - 7].toLowerCase()] = ymd
+  }
+
+  const calendarTableText = `CALENDARIO DE FECHAS OFICIALES EXACTAS (HOY ES ${dayOfWeek.toUpperCase()} ${todayYmd}):
+Esta semana en curso:
+- Lunes: ${thisWeekDates['lunes']}
+- Martes: ${thisWeekDates['martes']}
+- Miércoles: ${thisWeekDates['miércoles']}
+- Jueves: ${thisWeekDates['jueves']}
+- Viernes: ${thisWeekDates['viernes']}
+- Sábado: ${thisWeekDates['sábado']}
+- Domingo ("este domingo", "el domingo", "el fin de semana"): ${thisWeekDates['domingo']}
+
+Próxima semana:
+- Próximo Lunes: ${nextWeekDates['lunes']}
+- Próximo Domingo ("el domingo que viene", "el próximo domingo"): ${nextWeekDates['domingo']}
+
+REGLA CRUCIAL PARA ASIGNAR FECHAS ("date"):
+Cuando Jorge mencione "domingo", "este domingo" o un evento para el fin de semana, ASIGNA EXACTAMENTE la fecha del domingo de esta semana: "${thisWeekDates['domingo']}".
+NUNCA inventes una fecha en el pasado ni saltes al lunes ${nextWeekDates['lunes']} cuando te pida domingo.`
+
+  return {
+    todayYmd,
+    dayOfWeek,
+    currentTimeStr,
+    thisSundayYmd: thisWeekDates['domingo'],
+    thisSaturdayYmd: thisWeekDates['sábado'],
+    nextSundayYmd: nextWeekDates['domingo'],
+    calendarTableText,
+    thisWeekDates,
+  }
+}
+
 // Aplicar acciones (add, update, delete) sobre currentKnownTasks
 export function applyBridgeActions(actions, source = 'whatsapp') {
   if (!Array.isArray(actions) || actions.length === 0) return []
 
   const modified = []
+  const calRef = getCalendarReferenceContext()
 
   for (const act of actions) {
     if (act.type === 'add_task' && act.task) {
       const t = act.task
+      let cleanDate = (t.date || '').trim()
+      const mDate = cleanDate.match(/\d{4}-\d{2}-\d{2}/)
+      if (mDate) {
+        cleanDate = mDate[0]
+      } else {
+        const lowerDate = cleanDate.toLowerCase()
+        if (lowerDate.includes('domingo')) {
+          cleanDate = lowerDate.includes('próximo') || lowerDate.includes('proximo') || lowerDate.includes('que viene')
+            ? calRef.nextSundayYmd
+            : calRef.thisSundayYmd
+        } else if (lowerDate.includes('sábado') || lowerDate.includes('sabado')) {
+          cleanDate = calRef.thisSaturdayYmd
+        } else {
+          cleanDate = calRef.todayYmd
+        }
+      }
+
       const newTask = {
         id: Date.now() + Math.floor(Math.random() * 100000),
         title: t.title || 'Nueva tarea',
-        date: t.date || new Date().toISOString().split('T')[0],
+        date: cleanDate,
         time: t.time || '10:00',
         effort: t.effort || 'Medium',
         context: t.context || 'University',
@@ -455,16 +548,17 @@ async function callGroqWithFallback(payload) {
 
 // Procesar mensaje en lenguaje natural con Groq AI
 export async function processMessageWithAI(userText, fromUser = 'default') {
-  const now = new Date()
-  const todayStr = now.toISOString().split('T')[0]
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-  const dayOfWeek = days[now.getDay()]
-  const currentTimeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  const calRef = getCalendarReferenceContext()
+  const todayStr = calRef.todayYmd
+  const dayOfWeek = calRef.dayOfWeek
+  const currentTimeStr = calRef.currentTimeStr
   const tasksSummary = formatTasksSummary(currentKnownTasks)
 
   const systemPrompt = `Eres "AI Helper", el asistente personal de élite de Jorge en su WhatsApp.
 Fecha y hora actual: ${todayStr} (${dayOfWeek}), ${currentTimeStr}.
 Usuario: Jorge (estudiante universitario de informática/sistemas, desarrollador tech, deportista pádel/gym, vida personal).
+
+${calRef.calendarTableText}
 
 AGENDA ACTUAL EN SU APLICACIÓN (ORDEN CRONOLÓGICO):
 ${tasksSummary}

@@ -247,27 +247,41 @@ export function parseScheduleLocalHeuristics(text, baseDate = '2026-10-14') {
 
   const lower = text.toLowerCase()
 
-  // 1. Detección de fecha relativa al baseDate (2026-10-14 es Miércoles)
+  // 1. Detección de fecha relativa al baseDate
   let targetDate = baseDate
-  const dayOffsets = {
-    'hoy': 0,
-    'mañana': 1,
-    'pasado mañana': 2,
-    'jueves': 1,
-    'viernes': 2,
-    'sábado': 3,
-    'sabado': 3,
-    'domingo': 4,
-    'lunes': 5,
-    'martes': 6,
-    'miércoles': 7,
-    'miercoles': 7,
-  }
 
-  for (const [dayKey, offset] of Object.entries(dayOffsets)) {
-    if (lower.includes(dayKey)) {
-      targetDate = addDays(baseDate, offset)
-      break
+  if (lower.includes('hoy')) {
+    targetDate = baseDate
+  } else if (lower.includes('pasado mañana') || lower.includes('pasado manana')) {
+    targetDate = addDays(baseDate, 2)
+  } else if (lower.includes('mañana') || lower.includes('manana')) {
+    targetDate = addDays(baseDate, 1)
+  } else {
+    const [bYear, bMonth, bDay] = baseDate.split('-').map(Number)
+    const baseD = new Date(bYear, bMonth - 1, bDay, 12, 0, 0)
+    const baseDayOfWeek = baseD.getDay() // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+
+    const dayTargetMap = {
+      'domingo': 0,
+      'lunes': 1,
+      'martes': 2,
+      'miércoles': 3,
+      'miercoles': 3,
+      'jueves': 4,
+      'viernes': 5,
+      'sábado': 6,
+      'sabado': 6,
+    }
+
+    for (const [dayKey, targetDayNum] of Object.entries(dayTargetMap)) {
+      if (lower.includes(dayKey)) {
+        let diff = targetDayNum - baseDayOfWeek
+        if (diff <= 0) {
+          diff += 7
+        }
+        targetDate = addDays(baseDate, diff)
+        break
+      }
     }
   }
 

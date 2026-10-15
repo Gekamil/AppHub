@@ -7,7 +7,13 @@ import { deleteBaileysTask } from '../services/baileysBridge'
 // Helpers de fecha dinámicos
 const formatYMD = (date) => {
   if (!date) return ''
+  if (typeof date === 'string') {
+    const trimmed = date.trim()
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+    if (trimmed.includes('T')) return trimmed.split('T')[0]
+  }
   const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
@@ -17,11 +23,16 @@ const formatYMD = (date) => {
 const TODAY_YMD = formatYMD(new Date())
 
 const getMonday = (d) => {
-  const date = new Date(d)
+  let date
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
+    date = new Date(d.trim() + 'T12:00:00')
+  } else {
+    date = new Date(d)
+  }
   const day = date.getDay()
   const diff = (day === 0 ? -6 : 1) - day
   date.setDate(date.getDate() + diff)
-  date.setHours(0, 0, 0, 0)
+  date.setHours(12, 0, 0, 0)
   return date
 }
 
@@ -49,11 +60,12 @@ const getWeekDays = (baseDate) => {
 const getMonthDays = (baseDate) => {
   const year = baseDate.getFullYear()
   const month = baseDate.getMonth()
-  const firstDay = new Date(year, month, 1)
+  const firstDay = new Date(year, month, 1, 12, 0, 0)
   const firstMonday = getMonday(firstDay)
 
   const days = []
   const current = new Date(firstMonday)
+  current.setHours(12, 0, 0, 0)
   for (let i = 0; i < 42; i++) {
     days.push({
       dateObj: new Date(current),
@@ -655,7 +667,7 @@ export default function CalendarPage() {
     if (baseEvent.recurrence === 'daily') {
       // 365 días continuos (1 año completo)
       for (let i = 1; i <= 365; i++) {
-        const nextD = new Date(baseEvent.date + 'T00:00:00')
+        const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setDate(nextD.getDate() + i)
         events.push({
           ...baseEvent,
@@ -667,7 +679,7 @@ export default function CalendarPage() {
     } else if (baseEvent.recurrence === 'weekly') {
       // 104 semanas continuas (2 años)
       for (let i = 1; i <= 104; i++) {
-        const nextD = new Date(baseEvent.date + 'T00:00:00')
+        const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setDate(nextD.getDate() + i * 7)
         events.push({
           ...baseEvent,
@@ -679,7 +691,7 @@ export default function CalendarPage() {
     } else if (baseEvent.recurrence === 'monthly') {
       // 60 meses continuos (5 años)
       for (let i = 1; i <= 60; i++) {
-        const nextD = new Date(baseEvent.date + 'T00:00:00')
+        const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setMonth(nextD.getMonth() + i)
         events.push({
           ...baseEvent,
@@ -691,7 +703,7 @@ export default function CalendarPage() {
     } else if (baseEvent.recurrence === 'yearly') {
       // 10 años continuos
       for (let i = 1; i <= 10; i++) {
-        const nextD = new Date(baseEvent.date + 'T00:00:00')
+        const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setFullYear(nextD.getFullYear() + i)
         events.push({
           ...baseEvent,
@@ -829,7 +841,7 @@ export default function CalendarPage() {
         setActiveCalendarId(targetCalId)
       }
     }
-    const parsedDate = new Date(eventForm.date + 'T00:00:00')
+    const parsedDate = new Date(eventForm.date + 'T12:00:00')
     if (!isNaN(parsedDate.getTime())) {
       setCurrentDate(parsedDate)
     }
