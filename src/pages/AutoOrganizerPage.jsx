@@ -16,9 +16,12 @@ import {
   saveSharedRoles,
   addSharedRole,
   deleteSharedRole,
+  updateSharedRole,
+  pruneOrphanImportedRoles,
   ROLE_PRESET_COLORS,
   ROLE_PRESET_ICONS,
 } from '../services/sharedRoles'
+import { getAppTheme, getAppThemeTokens } from '../services/appTheme'
 import {
   getBaileysStatus,
   requestBaileysConnect,
@@ -64,6 +67,29 @@ export function isSportActivity(task) {
     return true
   }
   return false
+}
+
+export function getUniqueTaskCount(taskList) {
+  if (!taskList || taskList.length === 0) return 0
+  const seenSeries = new Set()
+  let count = 0
+  for (const t of taskList) {
+    if (t.recurrenceGroupId) {
+      if (!seenSeries.has(t.recurrenceGroupId)) {
+        seenSeries.add(t.recurrenceGroupId)
+        count++
+      }
+    } else if (t.isRecurring || (t.recurrence && t.recurrence !== 'none')) {
+      const key = `${(t.title || '').trim().toLowerCase()}::${(t.context || '').trim().toLowerCase()}::${t.time || ''}`
+      if (!seenSeries.has(key)) {
+        seenSeries.add(key)
+        count++
+      }
+    } else {
+      count++
+    }
+  }
+  return count
 }
 
 function getTodayInfo() {
@@ -223,6 +249,47 @@ export default function AutoOrganizerPage() {
   const [newRoleColor, setNewRoleColor] = useState(ROLE_PRESET_COLORS[0].hex)
   const [newRoleIcon, setNewRoleIcon] = useState('task_alt')
   const [roleToDelete, setRoleToDelete] = useState(null)
+  const [roleContextMenu, setRoleContextMenu] = useState(null)
+  const [roleToEdit, setRoleToEdit] = useState(null)
+
+  // Paginación progresiva para tareas futuras (límite inicial 6, se auto-recoge)
+  const [visibleFutureLimit, setVisibleFutureLimit] = useState(6)
+
+  // Gestor y Tokens de Tema / Diseño Visual
+  const [appTheme, setAppThemeState] = useState(() => getAppTheme())
+
+  useEffect(() => {
+    const handleThemeChange = (e) => {
+      setAppThemeState(e.detail || getAppTheme())
+    }
+    window.addEventListener('app_theme_changed', handleThemeChange)
+    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+  }, [])
+
+  const themeTokens = useMemo(() => getAppThemeTokens(appTheme), [appTheme])
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (roleContextMenu) setRoleContextMenu(null)
+    }
+    window.addEventListener('click', handleGlobalClick)
+    return () => window.removeEventListener('click', handleGlobalClick)
+  }, [roleContextMenu])
+
+  // Resetear paginación de tareas futuras al cambiar contexto o filtro
+  useEffect(() => {
+    setVisibleFutureLimit(6)
+  }, [selectedContextFilter, filterStatus])
+
+  // Limpieza inicial de roles importados que no tengan actividades
+  useEffect(() => {
+    if (globalTasks && globalTasks.length > 0) {
+      const pruned = pruneOrphanImportedRoles(globalTasks)
+      if (pruned.length !== roles.length) {
+        setRoles(pruned)
+      }
+    }
+  }, [globalTasks])
 
   useEffect(() => {
     const handleRolesUpdated = (e) => {
@@ -595,6 +662,9 @@ export default function AutoOrganizerPage() {
     } catch (e) {}
     syncBaileysTasks(remainingTasks, { replace: true, deletedIds }).catch(() => {})
     syncTasksToCloud(remainingTasks).catch(() => {})
+
+    const cleanedRoles = pruneOrphanImportedRoles(remainingTasks)
+    setRoles(cleanedRoles)
 
     setAiNotification(`Se han eliminado ${toDelete.length} actividades importadas.`)
     setTimeout(() => setAiNotification(''), 4000)
@@ -1142,21 +1212,27 @@ export default function AutoOrganizerPage() {
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
                     }`}
                   >
-                    Todos ({globalTasks.length})
+                    Todos ({getUniqueTaskCount(globalTasks)})
                   </button>
                   {roles.map((r) => {
-                    const count = globalTasks.filter((t) => t.context === r.name || t.context === r.id || t.context === r.label).length
+                    const roleTasks = (globalTasks || []).filter((t) => t.context === r.name || t.context === r.id || t.context === r.label)
+                    const count = getUniqueTaskCount(roleTasks)
                     const isSelected = selectedContextFilter === r.name || selectedContextFilter === r.id
                     return (
                       <button
                         key={r.id}
                         type="button"
                         onClick={() => setSelectedContextFilter(isSelected ? 'All' : r.name)}
+                        onContextMenu={(e) => {
+                          e.preventDefault()
+                          setRoleContextMenu({ x: e.clientX, y: e.clientY, role: r })
+                        }}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
                           isSelected
                             ? 'ring-2 ring-primary bg-white dark:bg-[#161b26] text-slate-900 dark:text-white font-bold shadow-2xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
                         }`}
+                        title="Click para filtrar • Click derecho para editar o eliminar rol"
                       >
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: r.hex }} />
                         <span>{r.label || r.name}</span>
@@ -1616,7 +1692,7 @@ export default function AutoOrganizerPage() {
             </div>
           </div>
 
-          {/* Bloque 3: Tareas de Próximas Semanas (Con límite contra scroll infinito) */}
+          {/* Bloque 3: Tareas de Próximas Semanas (Con paginación progresiva 'Ver más') */}
           {tasksFutureWeeks.length > 0 && (
             <div className="space-y-3 pt-3">
               <div className="flex items-center justify-between px-1">
@@ -1626,22 +1702,20 @@ export default function AutoOrganizerPage() {
                     Próximas Semanas ({todayInfo.nextMondayStr ? `A partir del ${todayInfo.nextMondayStr}` : 'Futuras'}) • {tasksFutureWeeks.length} tareas
                   </h3>
                 </div>
-                {tasksFutureWeeks.length > 5 && (
+                {visibleFutureLimit > 6 && (
                   <button
                     type="button"
-                    onClick={() => setShowAllFutureTasks((prev) => !prev)}
+                    onClick={() => setVisibleFutureLimit(6)}
                     className="text-xs text-primary font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <span>{showAllFutureTasks ? 'Ver menos' : `Ver todas (${tasksFutureWeeks.length})`}</span>
-                    <span className="material-symbols-outlined text-[15px]">
-                      {showAllFutureTasks ? 'expand_less' : 'expand_more'}
-                    </span>
+                    <span>Recoger</span>
+                    <span className="material-symbols-outlined text-[15px]">expand_less</span>
                   </button>
                 )}
               </div>
 
               <div className="flex flex-col gap-2.5">
-                {(showAllFutureTasks ? tasksFutureWeeks : tasksFutureWeeks.slice(0, 5)).map((task) => (
+                {tasksFutureWeeks.slice(0, visibleFutureLimit).map((task) => (
                   <TaskCardItem
                     key={task.id}
                     task={task}
@@ -1653,16 +1727,25 @@ export default function AutoOrganizerPage() {
                 ))}
               </div>
 
-              {tasksFutureWeeks.length > 5 && !showAllFutureTasks && (
+              {visibleFutureLimit < tasksFutureWeeks.length ? (
                 <button
                   type="button"
-                  onClick={() => setShowAllFutureTasks(true)}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  onClick={() => setVisibleFutureLimit((prev) => prev + 8)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                 >
-                  <span className="material-symbols-outlined text-[15px]">more_horiz</span>
-                  <span>Mostrar {tasksFutureWeeks.length - 5} tareas futuras más</span>
+                  <span className="material-symbols-outlined text-[16px] text-primary">expand_more</span>
+                  <span>Ver más ({Math.min(8, tasksFutureWeeks.length - visibleFutureLimit)} más de {tasksFutureWeeks.length - visibleFutureLimit} restantes)</span>
                 </button>
-              )}
+              ) : tasksFutureWeeks.length > 6 ? (
+                <button
+                  type="button"
+                  onClick={() => setVisibleFutureLimit(6)}
+                  className="w-full py-2 px-3 rounded-xl bg-slate-50/50 hover:bg-slate-100 dark:bg-slate-800/30 dark:hover:bg-slate-800/60 border border-dashed border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-500 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[15px]">expand_less</span>
+                  <span>Recoger lista (mostrando las {tasksFutureWeeks.length} tareas futuras)</span>
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -2178,6 +2261,173 @@ export default function AutoOrganizerPage() {
           </div>
         )
       })()}
+
+      {/* MENU CONTEXTUAL CLIC DERECHO EN ROLES */}
+      {roleContextMenu && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="fixed z-[1000] bg-white dark:bg-[#161b26] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 w-52 flex flex-col gap-1 text-xs animate-in zoom-in-95 duration-100 select-none"
+          style={{
+            top: Math.min(typeof window !== 'undefined' ? window.innerHeight - 130 : 500, roleContextMenu.y),
+            left: Math.min(typeof window !== 'undefined' ? window.innerWidth - 220 : 500, roleContextMenu.x),
+          }}
+        >
+          <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 truncate">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: roleContextMenu.role.hex || '#0071E3' }} />
+            <span className="truncate">{roleContextMenu.role.label || roleContextMenu.role.name}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setRoleToEdit({ ...roleContextMenu.role })
+              setRoleContextMenu(null)
+            }}
+            className="w-full px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span className="material-symbols-outlined text-[16px] text-primary">edit</span>
+            <span>Editar rol</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setRoleToDelete(roleContextMenu.role)
+              setRoleContextMenu(null)
+            }}
+            className="w-full px-2.5 py-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span className="material-symbols-outlined text-[16px]">delete</span>
+            <span>Eliminar rol...</span>
+          </button>
+        </div>
+      )}
+
+      {/* MODAL RAPIDO PARA EDITAR ROL */}
+      {roleToEdit && (
+        <div
+          onClick={() => setRoleToEdit(null)}
+          className="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-[#161b26] rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: roleToEdit.hex || '#3b82f6' }}
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {roleToEdit.icon || 'school'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                    Editar Rol
+                  </h3>
+                  <p className="text-[10px] text-secondary">
+                    Personaliza nombre, color e icono
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRoleToEdit(null)}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Nombre del rol
+                </label>
+                <input
+                  type="text"
+                  value={roleToEdit.name || ''}
+                  onChange={(e) => setRoleToEdit({ ...roleToEdit, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Color distintivo
+                </label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {ROLE_PRESET_COLORS.map((pal) => (
+                    <button
+                      key={pal.name}
+                      type="button"
+                      onClick={() => setRoleToEdit({ ...roleToEdit, hex: pal.hex })}
+                      className={`w-6 h-6 rounded-full cursor-pointer transition-all ${
+                        roleToEdit.hex === pal.hex ? 'ring-2 ring-primary ring-offset-2 scale-110' : 'hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: pal.hex }}
+                      title={pal.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Icono
+                </label>
+                <div className="grid grid-cols-8 gap-1 max-h-28 overflow-y-auto p-1 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700">
+                  {ROLE_PRESET_ICONS.map((ic) => (
+                    <button
+                      key={ic}
+                      type="button"
+                      onClick={() => setRoleToEdit({ ...roleToEdit, icon: ic })}
+                      className={`h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                        roleToEdit.icon === ic
+                          ? 'bg-primary text-white shadow-xs font-bold'
+                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                      }`}
+                      title={ic}
+                    >
+                      <span className="material-symbols-outlined text-[16px]">{ic}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setRoleToEdit(null)}
+                className="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-200 transition-colors cursor-pointer text-xs"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!roleToEdit.name.trim()) return
+                  const updated = updateSharedRole(roleToEdit.id, {
+                    name: roleToEdit.name.trim(),
+                    hexColor: roleToEdit.hex,
+                    icon: roleToEdit.icon,
+                  })
+                  setRoles(updated)
+                  setRoleToEdit(null)
+                  setAiNotification(`Rol "${roleToEdit.name.trim()}" actualizado`)
+                  setTimeout(() => setAiNotification(''), 3000)
+                }}
+                className="flex-1 py-2 rounded-xl bg-primary text-white font-semibold hover:opacity-95 transition-opacity cursor-pointer text-xs shadow-xs"
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Tarea Completo con Selector Simple vs Avanzado (Matching Calendario) */}
       {isTaskModalOpen && (

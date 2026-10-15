@@ -112,7 +112,7 @@ export function saveSharedRoles(roles) {
   return roles
 }
 
-export function findOrCreateSharedRole(name, preferredIcon = 'school') {
+export function findOrCreateSharedRole(name, preferredIcon = 'school', isExternalSync = false) {
   if (!name || typeof name !== 'string') return null
   const trimmed = name.trim()
   if (!trimmed) return null
@@ -124,7 +124,13 @@ export function findOrCreateSharedRole(name, preferredIcon = 'school') {
       (r.label && r.label.toLowerCase() === trimmed.toLowerCase()) ||
       r.id.toLowerCase() === trimmed.toLowerCase()
   )
-  if (existing) return existing
+  if (existing) {
+    if (isExternalSync && !existing.isExternalSync) {
+      existing.isExternalSync = true
+      saveSharedRoles(current)
+    }
+    return existing
+  }
 
   const colorIndex = current.length % ROLE_PRESET_COLORS.length
   const palette = ROLE_PRESET_COLORS[colorIndex]
@@ -142,11 +148,65 @@ export function findOrCreateSharedRole(name, preferredIcon = 'school') {
     text: palette.text,
     border: palette.border,
     activeClass: `${palette.bg} ${palette.text} ${palette.border}`,
+    isExternalSync: Boolean(isExternalSync),
   }
 
   const updated = [...current, newRole]
   saveSharedRoles(updated)
   return newRole
+}
+
+export function updateSharedRole(id, { name, hexColor, icon }) {
+  const current = getSharedRoles()
+  const palette = hexColor
+    ? ROLE_PRESET_COLORS.find((p) => p.hex.toLowerCase() === hexColor.toLowerCase()) || {
+        hex: hexColor,
+        bg: 'bg-blue-50 dark:bg-blue-950/60',
+        text: 'text-blue-700 dark:text-blue-300',
+        border: 'border-blue-200 dark:border-blue-800',
+        dot: 'bg-blue-500',
+      }
+    : null
+
+  const updated = current.map((r) => {
+    if (r.id === id || r.name === id) {
+      const newName = name ? name.trim() : r.name
+      return {
+        ...r,
+        name: newName,
+        label: newName,
+        icon: icon || r.icon,
+        color: palette ? palette.hex : r.color,
+        hex: palette ? palette.hex : r.hex,
+        dot: palette ? palette.dot : r.dot,
+        bg: palette ? palette.bg : r.bg,
+        text: palette ? palette.text : r.text,
+        border: palette ? palette.border : r.border,
+        activeClass: palette ? `${palette.bg} ${palette.text} ${palette.border}` : r.activeClass,
+      }
+    }
+    return r
+  })
+
+  return saveSharedRoles(updated)
+}
+
+export function pruneOrphanImportedRoles(activeTasks = []) {
+  const current = getSharedRoles()
+  const defaultRoleNames = new Set(['University', 'Projects', 'Personal', 'Health & Gym'])
+
+  const updated = current.filter((r) => {
+    if (defaultRoleNames.has(r.name) || defaultRoleNames.has(r.id)) return true
+    const count = (activeTasks || []).filter(
+      (t) => t.context === r.name || t.context === r.id || t.context === r.label
+    ).length
+    return count > 0
+  })
+
+  if (updated.length !== current.length) {
+    saveSharedRoles(updated)
+  }
+  return updated
 }
 
 export function addSharedRole({ name, hexColor, icon }) {

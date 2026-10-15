@@ -1,8 +1,18 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { syncTasksToCloud, syncCalendarsToCloud, loadUserDataFromCloud } from '../services/firebase'
-import { getSharedRoles, addSharedRole, deleteSharedRole, findOrCreateSharedRole } from '../services/sharedRoles'
+import {
+  getSharedRoles,
+  addSharedRole,
+  deleteSharedRole,
+  updateSharedRole,
+  pruneOrphanImportedRoles,
+  findOrCreateSharedRole,
+  ROLE_PRESET_COLORS,
+  ROLE_PRESET_ICONS,
+} from '../services/sharedRoles'
 import { deleteBaileysTask, syncBaileysTasks } from '../services/baileysBridge'
+import { getAppTheme, getAppThemeTokens } from '../services/appTheme'
 
 // Helpers de fecha dinámicos
 const formatYMD = (date) => {
@@ -85,6 +95,63 @@ const timeToTop = (timeStr) => {
   if (!timeStr) return 0
   const [h, m] = timeStr.split(':').map(Number)
   return (h || 0) * 60 + (m || 0)
+}
+
+export function getEventDurationMinutes(task) {
+  if (!task) return 60
+  if (typeof task.duration === 'number' && task.duration > 0) {
+    return task.duration
+  }
+  if (task.time && task.endTime) {
+    const [sh, sm] = task.time.split(':').map(Number)
+    const [eh, em] = task.endTime.split(':').map(Number)
+    if (!isNaN(sh) && !isNaN(sm) && !isNaN(eh) && !isNaN(em)) {
+      const diff = (eh * 60 + em) - (sh * 60 + sm)
+      if (diff > 0) return diff
+    }
+  }
+  if (task.est) {
+    const match = String(task.est).match(/(\d+)\s*(m|min|h|hora)/i)
+    if (match) {
+      const val = parseInt(match[1], 10)
+      const unit = match[2].toLowerCase()
+      if (unit.startsWith('h')) return val * 60
+      return val
+    }
+  }
+  return 60
+}
+
+export function formatEventDurationLabel(task) {
+  const dur = getEventDurationMinutes(task)
+  const h = Math.floor(dur / 60)
+  const m = dur % 60
+  if (h > 0 && m > 0) return `${h}h ${m}m`
+  if (h > 0) return `${h}h`
+  return `${m}m`
+}
+
+export function getUniqueTaskCount(taskList) {
+  if (!taskList || taskList.length === 0) return 0
+  const seenSeries = new Set()
+  let count = 0
+  for (const t of taskList) {
+    if (t.recurrenceGroupId) {
+      if (!seenSeries.has(t.recurrenceGroupId)) {
+        seenSeries.add(t.recurrenceGroupId)
+        count++
+      }
+    } else if (t.isRecurring || (t.recurrence && t.recurrence !== 'none')) {
+      const key = `${(t.title || '').trim().toLowerCase()}::${(t.context || '').trim().toLowerCase()}::${t.time || ''}`
+      if (!seenSeries.has(key)) {
+        seenSeries.add(key)
+        count++
+      }
+    } else {
+      count++
+    }
+  }
+  return count
 }
 
 const CATEGORY_PALETTES = [
@@ -335,6 +402,8 @@ function parseICS(icsContent, calendarId) {
       if (inEvent && (cur.summary || cur.dtstart)) {
         let date = ''
         let time = ''
+        let endTime = ''
+        let durationMinutes = 60
         let isAllDay = true
 
         if (cur.dtstart) {
@@ -359,6 +428,47 @@ function parseICS(icsContent, calendarId) {
           }
         }
 
+        // Extracción de DTEND o DURATION para calcular la duración exacta del evento
+        if (cur.dtend) {
+          const colonPos = cur.dtend.lastIndexOf(':')
+          const endVal = colonPos >= 0 ? cur.dtend.slice(colonPos + 1).trim() : cur.dtend.trim()
+          if (endVal.includes('T')) {
+            const timePart = endVal.split('T')[1]
+            if (timePart && timePart.length >= 4) {
+              const eh = timePart.slice(0, 2)
+              const em = timePart.slice(2, 4)
+              endTime = `${eh}:${em}`
+            }
+          }
+        }
+
+        if (time && endTime) {
+          const [sh, sm] = time.split(':').map(Number)
+          const [eh, em] = endTime.split(':').map(Number)
+          if (!isNaN(sh) && !isNaN(sm) && !isNaN(eh) && !isNaN(em)) {
+            const diff = (eh * 60 + em) - (sh * 60 + sm)
+            if (diff > 0) durationMinutes = diff
+          }
+        } else if (cur.duration) {
+          // RFC 5545 DURATION (ej: PT1H30M, PT2H, PT45M)
+          const durStr = cur.duration
+          const hMatch = durStr.match(/(\d+)H/i)
+          const mMatch = durStr.match(/(\d+)M/i)
+          let total = 0
+          if (hMatch) total += parseInt(hMatch[1], 10) * 60
+          if (mMatch) total += parseInt(mMatch[1], 10)
+          if (total > 0) {
+            durationMinutes = total
+            if (time && !endTime) {
+              const [sh, sm] = time.split(':').map(Number)
+              const totalM = (sh * 60 + sm + total) % 1440
+              const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+              const endM = String(totalM % 60).padStart(2, '0')
+              endTime = `${endH}:${endM}`
+            }
+          }
+        }
+
         if (date) {
           let assignedContext = 'Personal'
           if (cur.categories) {
@@ -377,7 +487,7 @@ function parseICS(icsContent, calendarId) {
             }
 
             if (rawCat) {
-              const matchedRole = findOrCreateSharedRole(rawCat, 'school')
+              const matchedRole = findOrCreateSharedRole(rawCat, 'school', true)
               if (matchedRole) {
                 assignedContext = matchedRole.name || rawCat
               } else {
@@ -400,6 +510,9 @@ function parseICS(icsContent, calendarId) {
               .replace(/\\\\/g, '\\'),
             date,
             time,
+            endTime: endTime || '',
+            duration: durationMinutes,
+            est: durationMinutes >= 60 ? `${Math.round(durationMinutes / 60)}h` : `${durationMinutes}m`,
             isAllDay,
             context: assignedContext,
             effort: 'Medium',
@@ -424,6 +537,8 @@ function parseICS(icsContent, calendarId) {
         if (propName === 'SUMMARY') cur.summary = value
         else if (propName === 'DESCRIPTION') cur.description = value
         else if (propName === 'DTSTART') cur.dtstart = rawLine
+        else if (propName === 'DTEND') cur.dtend = rawLine
+        else if (propName === 'DURATION') cur.duration = value
         else if (propName === 'UID') cur.uid = value
         else if (propName === 'CATEGORIES') cur.categories = value
       }
@@ -586,11 +701,36 @@ export default function CalendarPage() {
   const [taskToDelete, setTaskToDelete] = useState(null)
   const [slideDirection, setSlideDirection] = useState('none')
 
-  // Formulario Evento fluido
+  // Menu contextual para roles (clic derecho) y modal de edición rápida
+  const [roleContextMenu, setRoleContextMenu] = useState(null)
+  const [roleToEdit, setRoleToEdit] = useState(null)
+  const [appTheme, setAppThemeState] = useState(() => getAppTheme())
+
+  useEffect(() => {
+    const handleThemeChange = (e) => {
+      setAppThemeState(e.detail || getAppTheme())
+    }
+    window.addEventListener('app_theme_changed', handleThemeChange)
+    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+  }, [])
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (roleContextMenu) setRoleContextMenu(null)
+    }
+    window.addEventListener('click', handleGlobalClick)
+    return () => window.removeEventListener('click', handleGlobalClick)
+  }, [roleContextMenu])
+
+  const themeTokens = useMemo(() => getAppThemeTokens(appTheme), [appTheme])
+
+  // Formulario Evento fluido con soporte de duración y hora de finalización
   const [eventForm, setEventForm] = useState({
     title: '',
     date: '2026-10-12',
     time: '10:00',
+    duration: 60,
+    endTime: '11:00',
     isAllDay: false,
     effort: 'Medium',
     context: 'University',
@@ -667,11 +807,19 @@ export default function CalendarPage() {
     const isAllDay = !!params.isAllDay
     const calId = params.calendarId || activeCalendarId
 
+    const dur = 60
+    const [sh, sm] = targetTime.split(':').map(Number)
+    const totalM = (sh * 60 + (sm || 0) + dur) % 1440
+    const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+    const endM = String(totalM % 60).padStart(2, '0')
+
     setEditingTaskId(null)
     setEventForm({
       title: '',
       date: targetDate,
       time: targetTime,
+      duration: dur,
+      endTime: `${endH}:${endM}`,
       isAllDay,
       effort: 'Medium',
       context: categories[0]?.name || 'University',
@@ -746,10 +894,22 @@ export default function CalendarPage() {
 
   const handleStartEditEvent = (task) => {
     setEditingTaskId(task.id)
+    const dur = getEventDurationMinutes(task)
+    let endTime = task.endTime || ''
+    if (!endTime && task.time) {
+      const [sh, sm] = task.time.split(':').map(Number)
+      const totalM = (sh * 60 + (sm || 0) + dur) % 1440
+      const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+      const endM = String(totalM % 60).padStart(2, '0')
+      endTime = `${endH}:${endM}`
+    }
+
     setEventForm({
       title: task.title,
       date: task.date,
       time: task.time || '10:00',
+      duration: dur,
+      endTime,
       isAllDay: !!task.isAllDay,
       effort: task.effort || 'Medium',
       context: task.context || 'University',
@@ -774,6 +934,8 @@ export default function CalendarPage() {
     if (!cleanTitle) return
 
     const targetCalId = eventForm.calendarId || activeCalendarId
+    const durMinutes = eventForm.duration || 60
+    const estLabel = durMinutes >= 60 ? `${Math.round(durMinutes / 60)}h` : `${durMinutes}m`
 
     if (editingTaskId) {
       const prevTask = (globalTasks || []).find((t) => String(t.id) === String(editingTaskId))
@@ -789,6 +951,9 @@ export default function CalendarPage() {
                 description: eventForm.description.trim(),
                 date: eventForm.date,
                 time: eventForm.isAllDay ? '' : eventForm.time,
+                endTime: eventForm.isAllDay ? '' : (eventForm.endTime || ''),
+                duration: durMinutes,
+                est: estLabel,
                 isAllDay: eventForm.isAllDay,
                 effort: eventForm.effort,
                 context: eventForm.context,
@@ -815,6 +980,9 @@ export default function CalendarPage() {
             description: eventForm.description.trim(),
             date: eventForm.date,
             time: eventForm.isAllDay ? '' : eventForm.time,
+            endTime: eventForm.isAllDay ? '' : (eventForm.endTime || ''),
+            duration: durMinutes,
+            est: estLabel,
             isAllDay: eventForm.isAllDay,
             effort: eventForm.effort,
             context: eventForm.context,
@@ -843,6 +1011,9 @@ export default function CalendarPage() {
       description: eventForm.description.trim(),
       date: eventForm.date,
       time: eventForm.isAllDay ? '' : eventForm.time,
+      endTime: eventForm.isAllDay ? '' : (eventForm.endTime || ''),
+      duration: durMinutes,
+      est: estLabel,
       isAllDay: eventForm.isAllDay,
       effort: eventForm.effort,
       context: eventForm.context,
@@ -1004,7 +1175,9 @@ export default function CalendarPage() {
     } catch (e) {}
     syncBaileysTasks(remainingTasks, { replace: true, deletedIds }).catch(() => {})
     syncTasksToCloud(remainingTasks).catch(() => {})
-    setFeedbackToast(`Se eliminaron ${toDelete.length} eventos importados`)
+    const cleanedRoles = pruneOrphanImportedRoles(remainingTasks)
+    setCategories(cleanedRoles)
+    setFeedbackToast(`Se eliminaron ${toDelete.length} eventos importados y sus roles vacíos`)
     setTimeout(() => setFeedbackToast(null), 3500)
   }
 
@@ -1823,13 +1996,15 @@ export default function CalendarPage() {
 
                     {dayTasks.map((task) => {
                       const top = timeToTop(task.time)
+                      const durMins = getEventDurationMinutes(task)
+                      const cardHeight = Math.max(48, durMins - 2)
                       const scheme = getCatScheme(task.context)
                       return (
                         <div
                           key={task.id}
                           onClick={() => setSelectedDetailTask(task)}
                           className={`absolute left-1 right-1 z-10 ${scheme.bg} hover:shadow-md transition-all rounded-xl p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer group border border-black/5 dark:border-white/10`}
-                          style={{ top, height: 52 }}
+                          style={{ top, height: cardHeight }}
                         >
                           <div className="flex items-center justify-between gap-1 min-w-0">
                             <div className="flex items-center gap-1 min-w-0 truncate">
@@ -1851,7 +2026,9 @@ export default function CalendarPage() {
                             </button>
                           </div>
                           <div className={`flex items-center justify-between ${scheme.text} font-code-sm text-[10px] opacity-80 pt-0.5`}>
-                            <span>{task.time}</span>
+                            <span>
+                              {task.time}{task.endTime ? ` - ${task.endTime}` : ''} ({formatEventDurationLabel(task)})
+                            </span>
                             <span className="truncate max-w-[65px] font-medium text-right">{task.context}</span>
                           </div>
                         </div>
@@ -2052,13 +2229,15 @@ export default function CalendarPage() {
             .filter((t) => t.date === formatYMD(currentDate) && t.time && !t.isAllDay)
             .map((task) => {
               const top = timeToTop(task.time)
+              const durMins = getEventDurationMinutes(task)
+              const cardHeight = Math.max(48, durMins - 2)
               const scheme = getCatScheme(task.context)
               return (
                 <div
                   key={task.id}
                   onClick={() => setSelectedDetailTask(task)}
                   className={`absolute left-2 right-2 sm:left-4 sm:right-4 z-10 ${scheme.bg} hover:shadow-md transition-all rounded-2xl p-2.5 sm:p-3 flex items-center justify-between group cursor-pointer border border-black/5 dark:border-white/10`}
-                  style={{ top, minHeight: 52 }}
+                  style={{ top, height: cardHeight }}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className={`w-2 h-2 rounded-full ${scheme.dot} shrink-0`} />
@@ -2073,10 +2252,15 @@ export default function CalendarPage() {
                             {task.effort}
                           </span>
                         )}
+                        <span className="px-2 py-0.2 rounded-full bg-primary/10 text-primary text-[10px] font-semibold font-code-sm">
+                          {formatEventDurationLabel(task)}
+                        </span>
                       </div>
                       <div className={`font-code-sm text-xs ${scheme.text} flex items-center gap-1 mt-0.5 font-medium`}>
                         <span className="material-symbols-outlined text-[13px]">schedule</span>
-                        <span>{task.time}</span>
+                        <span>
+                          {task.time}{task.endTime ? ` - ${task.endTime}` : ''}
+                        </span>
                         {task.description && (
                           <span className="opacity-70 ml-2 truncate max-w-[280px]">· {task.description}</span>
                         )}
@@ -2733,23 +2917,35 @@ export default function CalendarPage() {
             >
               <span className="w-1.5 h-1.5 rounded-full bg-on-surface"></span>
               <span>All Activities</span>
-              <span className="text-secondary font-code-sm text-[10px] ml-1">{globalTasks.length}</span>
+              <span className="text-secondary font-code-sm text-[10px] ml-1">{getUniqueTaskCount(globalTasks)}</span>
             </button>
 
             {categories.map((cat) => {
-              const count = globalTasks.filter((t) => t.context === cat.name).length
+              const count = getUniqueTaskCount(
+                globalTasks.filter(
+                  (t) => t.context === cat.name || t.context === cat.id || t.context === cat.label
+                )
+              )
               const isSelected = selectedFilter === cat.name
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedFilter(selectedFilter === cat.name ? 'All' : cat.name)}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    setRoleContextMenu({ x: e.clientX, y: e.clientY, role: cat })
+                  }}
                   className={`px-3 py-1 rounded-xl font-label-sm text-label-sm flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
                     isSelected
                       ? `${cat.bg} ${cat.text} font-bold ring-2 ring-primary shadow-xs`
                       : 'bg-white/70 dark:bg-slate-800/60 hover:bg-white text-secondary hover:text-on-surface'
                   }`}
-                  title={isSelected ? 'Clic para quitar filtro' : `Filtrar por ${cat.name}`}
+                  title={
+                    isSelected
+                      ? 'Clic para quitar filtro (Clic derecho para editar o eliminar rol)'
+                      : `Filtrar por ${cat.name} (Clic derecho para editar o eliminar rol)`
+                  }
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${cat.dot}`}></span>
                   <span>{cat.name}</span>
@@ -3559,8 +3755,8 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
-                  {/* Fecha y Hora en 2 columnas */}
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* Fecha, Hora y Duración en 3 columnas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">Fecha</label>
                       <input
@@ -3572,16 +3768,61 @@ export default function CalendarPage() {
                       />
                     </div>
                     <div>
-                      <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">Hora</label>
+                      <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">Hora inicio</label>
                       <input
                         type="time"
                         disabled={eventForm.isAllDay}
                         value={eventForm.time}
-                        onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
+                        onChange={(e) => {
+                          const newTime = e.target.value
+                          const dur = eventForm.duration || 60
+                          const [sh, sm] = (newTime || '10:00').split(':').map(Number)
+                          const totalM = (sh * 60 + (sm || 0) + dur) % 1440
+                          const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+                          const endM = String(totalM % 60).padStart(2, '0')
+                          setEventForm({
+                            ...eventForm,
+                            time: newTime,
+                            endTime: `${endH}:${endM}`,
+                          })
+                        }}
                         className={`w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all ${
                           eventForm.isAllDay ? 'opacity-40 cursor-not-allowed' : ''
                         }`}
                       />
+                    </div>
+                    <div>
+                      <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">
+                        Duración {eventForm.endTime && !eventForm.isAllDay ? `(hasta ${eventForm.endTime})` : ''}
+                      </label>
+                      <select
+                        disabled={eventForm.isAllDay}
+                        value={eventForm.duration || 60}
+                        onChange={(e) => {
+                          const dur = parseInt(e.target.value, 10)
+                          const [sh, sm] = (eventForm.time || '10:00').split(':').map(Number)
+                          const totalM = (sh * 60 + (sm || 0) + dur) % 1440
+                          const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+                          const endM = String(totalM % 60).padStart(2, '0')
+                          setEventForm({
+                            ...eventForm,
+                            duration: dur,
+                            endTime: `${endH}:${endM}`,
+                          })
+                        }}
+                        className={`w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all cursor-pointer ${
+                          eventForm.isAllDay ? 'opacity-40 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        <option value={30}>30 minutos</option>
+                        <option value={45}>45 minutos</option>
+                        <option value={60}>1 hora (60m)</option>
+                        <option value={90}>1 hora 30 min (90m)</option>
+                        <option value={120}>2 horas (120m)</option>
+                        <option value={150}>2 horas 30 min (150m)</option>
+                        <option value={180}>3 horas (180m)</option>
+                        <option value={240}>4 horas (240m)</option>
+                      </select>
                     </div>
                   </div>
 
@@ -4098,6 +4339,173 @@ export default function CalendarPage() {
           </div>
         )
       })()}
+
+      {/* MENU CONTEXTUAL CLIC DERECHO EN ROLES */}
+      {roleContextMenu && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="fixed z-[1000] bg-white dark:bg-[#161b26] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 w-52 flex flex-col gap-1 text-xs animate-in zoom-in-95 duration-100 select-none"
+          style={{
+            top: Math.min(typeof window !== 'undefined' ? window.innerHeight - 130 : 500, roleContextMenu.y),
+            left: Math.min(typeof window !== 'undefined' ? window.innerWidth - 220 : 500, roleContextMenu.x),
+          }}
+        >
+          <div className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 truncate">
+            <span className={`w-2 h-2 rounded-full ${roleContextMenu.role.dot || 'bg-primary'}`} />
+            <span className="truncate">{roleContextMenu.role.label || roleContextMenu.role.name}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setRoleToEdit({ ...roleContextMenu.role })
+              setRoleContextMenu(null)
+            }}
+            className="w-full px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span className="material-symbols-outlined text-[16px] text-primary">edit</span>
+            <span>Editar rol</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setRoleToDelete(roleContextMenu.role)
+              setRoleContextMenu(null)
+            }}
+            className="w-full px-2.5 py-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-2 cursor-pointer transition-colors text-left"
+          >
+            <span className="material-symbols-outlined text-[16px]">delete</span>
+            <span>Eliminar rol...</span>
+          </button>
+        </div>
+      )}
+
+      {/* MODAL RAPIDO PARA EDITAR ROL */}
+      {roleToEdit && (
+        <div
+          onClick={() => setRoleToEdit(null)}
+          className="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-[#161b26] rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: roleToEdit.hex || '#3b82f6' }}
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    {roleToEdit.icon || 'school'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                    Editar Rol
+                  </h3>
+                  <p className="text-[10px] text-secondary">
+                    Personaliza nombre, color e icono
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRoleToEdit(null)}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Nombre del rol
+                </label>
+                <input
+                  type="text"
+                  value={roleToEdit.name || ''}
+                  onChange={(e) => setRoleToEdit({ ...roleToEdit, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Color distintivo
+                </label>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {ROLE_PRESET_COLORS.map((pal) => (
+                    <button
+                      key={pal.name}
+                      type="button"
+                      onClick={() => setRoleToEdit({ ...roleToEdit, hex: pal.hex })}
+                      className={`w-6 h-6 rounded-full cursor-pointer transition-all ${
+                        roleToEdit.hex === pal.hex ? 'ring-2 ring-primary ring-offset-2 scale-110' : 'hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: pal.hex }}
+                      title={pal.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Icono
+                </label>
+                <div className="grid grid-cols-8 gap-1 max-h-28 overflow-y-auto p-1 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700">
+                  {ROLE_PRESET_ICONS.map((ic) => (
+                    <button
+                      key={ic}
+                      type="button"
+                      onClick={() => setRoleToEdit({ ...roleToEdit, icon: ic })}
+                      className={`h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                        roleToEdit.icon === ic
+                          ? 'bg-primary text-white shadow-xs font-bold'
+                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700'
+                      }`}
+                      title={ic}
+                    >
+                      <span className="material-symbols-outlined text-[16px]">{ic}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setRoleToEdit(null)}
+                className="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-200 transition-colors cursor-pointer text-xs"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!roleToEdit.name.trim()) return
+                  const updated = updateSharedRole(roleToEdit.id, {
+                    name: roleToEdit.name.trim(),
+                    hexColor: roleToEdit.hex,
+                    icon: roleToEdit.icon,
+                  })
+                  setCategories(updated)
+                  setRoleToEdit(null)
+                  setFeedbackToast(`Rol "${roleToEdit.name.trim()}" actualizado`)
+                  setTimeout(() => setFeedbackToast(null), 3000)
+                }}
+                className="flex-1 py-2 rounded-xl bg-primary text-white font-semibold hover:opacity-95 shadow-xs transition-opacity cursor-pointer text-xs"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* POPUP 4: GESTOR DE CALENDARIOS (DISEÑO LATERAL 2 COLUMNAS ESTILO APPLE) */}
       {isCalendarModalOpen && (

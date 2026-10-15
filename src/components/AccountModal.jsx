@@ -10,6 +10,7 @@ import {
   deleteAccount,
   logoutUser,
 } from '../services/firebase'
+import { APP_THEMES, getAppTheme, setAppTheme } from '../services/appTheme'
 
 export default function AccountModal({
   isOpen,
@@ -20,6 +21,16 @@ export default function AccountModal({
   const [user, setUser] = useState(getCurrentUser())
   const [allAccounts, setAllAccounts] = useState(getAllAccounts())
   const [editName, setEditName] = useState(user.displayName || '')
+
+  const [currentTheme, setCurrentTheme] = useState(() => getAppTheme())
+
+  useEffect(() => {
+    const handleThemeChange = (e) => {
+      setCurrentTheme(e.detail || getAppTheme())
+    }
+    window.addEventListener('app_theme_changed', handleThemeChange)
+    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+  }, [])
 
   // Estados de formularios
   const [loginEmail, setLoginEmail] = useState('')
@@ -167,6 +178,7 @@ export default function AccountModal({
 
   const tabs = [
     { id: 'profile', label: 'Perfil' },
+    { id: 'theme', label: 'Fuente' },
     { id: 'accounts', label: `Cuentas (${allAccounts.length})` },
     { id: 'login', label: 'Entrar' },
     { id: 'register', label: 'Nueva' },
@@ -194,6 +206,8 @@ export default function AccountModal({
               <span className="material-symbols-outlined text-[20px]">
                 {activeTab === 'profile'
                   ? 'person'
+                  : activeTab === 'theme'
+                  ? 'palette'
                   : activeTab === 'accounts'
                   ? 'switch_account'
                   : activeTab === 'login'
@@ -205,6 +219,8 @@ export default function AccountModal({
               <h3 className="font-bold text-slate-900 dark:text-white text-base truncate">
                 {activeTab === 'profile'
                   ? 'Ajustes de Perfil'
+                  : activeTab === 'theme'
+                  ? 'Selección de Fuente & Estilo'
                   : activeTab === 'accounts'
                   ? 'Cuentas en este equipo'
                   : activeTab === 'login'
@@ -404,6 +420,97 @@ export default function AccountModal({
                 </div>
               </form>
             )}
+            {/* Selector rápido de Fuente y Estilo Visual */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[18px]">format_paint</span>
+                </div>
+                <div className="min-w-0">
+                  <span className="font-bold text-slate-900 dark:text-white block text-xs truncate">
+                    Diseño: {APP_THEMES.find((t) => t.id === currentTheme)?.name || 'Clásica'}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
+                    Fuente: {APP_THEMES.find((t) => t.id === currentTheme)?.fontName || 'Inter'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('theme')}
+                className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-primary font-semibold text-[11px] shrink-0 cursor-pointer shadow-2xs"
+              >
+                Cambiar fuente
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA: FUENTE Y ESTILO VISUAL */}
+        {activeTab === 'theme' && (
+          <div className="flex flex-col gap-3 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 font-medium">
+                Elige el diseño global y la tipografía de la app:
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">
+                4 Diseños
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {APP_THEMES.map((theme) => {
+                const isSelected = currentTheme === theme.id
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => {
+                      setAppTheme(theme.id)
+                      setCurrentTheme(theme.id)
+                      setStatusMessage({
+                        text: `Estilo cambiado a ${theme.name}. Interfaz y fuente actualizadas.`,
+                        type: 'success',
+                      })
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
+                      isSelected
+                        ? 'border-primary ring-2 ring-primary/30 bg-primary/5 dark:bg-primary/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                            isSelected
+                              ? 'border-primary bg-primary'
+                              : 'border-slate-300 dark:border-slate-600'
+                          }`}
+                        >
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white"></span>}
+                        </span>
+                        <span className="font-bold text-slate-900 dark:text-white text-xs">
+                          {theme.name}
+                        </span>
+                      </div>
+                      <span className={theme.previewBadge}>{theme.tag}</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed pl-5">
+                      {theme.description}
+                    </p>
+
+                    <div className="pl-5 flex items-center gap-2 pt-0.5 text-[10px] text-slate-400">
+                      <span className="font-medium text-slate-600 dark:text-slate-300">Fuente:</span>
+                      <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-mono text-[10px] text-slate-800 dark:text-slate-200">
+                        {theme.fontName}
+                      </code>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
