@@ -1054,49 +1054,56 @@ export default function AutoOrganizerPage() {
 
         {/* Banner Temático Dedicado (Transforma la atmósfera del organizador) */}
         {appTheme === 'aura' && (
-          <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-r from-rose-100/90 via-pink-50/90 to-purple-100/90 dark:from-[#2a1322] dark:via-[#20101d] dark:to-[#1a1226] border-2 border-rose-200/80 dark:border-rose-900/40 shadow-xs animate-in fade-in duration-200">
+          <div className="relative overflow-hidden rounded-3xl p-5 bg-gradient-to-r from-pink-100/90 via-rose-50/90 to-fuchsia-100/90 dark:from-[#2a1322] dark:via-[#20101d] dark:to-[#1a1226] border-2 border-pink-300/90 dark:border-pink-800/60 shadow-xs animate-in fade-in duration-200">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-white/90 dark:bg-black/30 text-rose-500 dark:text-rose-300 flex items-center justify-center shrink-0 shadow-xs">
-                  <span className="material-symbols-outlined text-[24px]">local_florist</span>
+                <div className="w-11 h-11 rounded-2xl bg-white text-pink-500 dark:bg-pink-950/80 dark:text-pink-300 flex items-center justify-center shrink-0 shadow-xs border border-pink-200/80">
+                  <span className="material-symbols-outlined text-[24px]">favorite</span>
                 </div>
                 <div>
-                  <h2 className="font-serif italic text-base sm:text-lg font-bold text-rose-950 dark:text-rose-100">
-                    Cuaderno de Hábitos & Estudio Sereno
+                  <h2 className="font-serif italic text-base sm:text-lg font-bold text-pink-950 dark:text-pink-100">
+                    Mi Cuaderno & Agenda Dulce
                   </h2>
-                  <p className="text-xs text-rose-700/90 dark:text-rose-300/80 font-medium">
-                    Hoy es un día para avanzar a tu propio ritmo, con calma y cariño en cada momento.
+                  <p className="text-xs text-pink-800/90 dark:text-pink-300/80 font-medium">
+                    Un espacio bonito y en calma para organizar tus planes con tranquilidad.
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap text-xs">
-                <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-black/40 text-rose-700 dark:text-rose-200 border border-rose-200/60 dark:border-rose-800/60 font-semibold shadow-2xs">
-                  🌸 {pendingThisWeekCount} momentos pendientes
+                <span className="px-3.5 py-1.5 rounded-full bg-white text-pink-700 dark:bg-pink-950/80 dark:text-pink-200 border-2 border-pink-300/80 font-semibold shadow-2xs flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-pink-400"></span>
+                  <span>{pendingThisWeekCount} planes pendientes</span>
                 </span>
-                <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-black/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 font-semibold shadow-2xs">
-                  ✨ {completedThisWeekCount} completados
+                <span className="px-3.5 py-1.5 rounded-full bg-white text-rose-700 dark:bg-pink-950/80 dark:text-rose-200 border-2 border-rose-200/80 font-semibold shadow-2xs flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px] text-pink-500">done_all</span>
+                  <span>{completedThisWeekCount} listos</span>
                 </span>
               </div>
             </div>
           </div>
         )}
 
-        {appTheme === 'linear' && (
-          <div className="rounded-xl px-4 py-2.5 bg-[#0b0e14] border border-cyan-500/30 shadow-[0_0_20px_rgba(56,189,248,0.08)] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono animate-in fade-in duration-200">
+        {appTheme === 'executive' && (
+          <div className="rounded-xl px-4 py-3 bg-white dark:bg-[#121214] border border-slate-900/15 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-sans animate-in fade-in duration-200">
             <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span className="text-cyan-400 font-bold tracking-wider">CHRONOS_KERNEL // SPRINT v4.2</span>
-              <span className="text-slate-600">|</span>
-              <span className="text-slate-300">QUEUE: {pendingThisWeekCount}</span>
-              <span className="text-slate-600">|</span>
-              <span className="text-emerald-400">SHIPPED: {completedThisWeekCount}</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-400 text-[11px]">
-              <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300">
-                VELOCITY: 94%
+              <span className="w-8 h-8 rounded-lg bg-slate-950 text-white dark:bg-slate-100 dark:text-slate-950 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[17px]">business_center</span>
               </span>
-              <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
-                LATENCY: 12ms
+              <div>
+                <h2 className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm tracking-tight">
+                  Despacho Profesional · Planificación y Agenda
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Agenda corporativa estructurada, control de compromisos y reuniones de trabajo.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 text-[11px] font-medium">
+              <span className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                Compromisos: {pendingThisWeekCount}
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                Completados: {completedThisWeekCount}
               </span>
             </div>
           </div>
@@ -1168,23 +1175,23 @@ export default function AutoOrganizerPage() {
             <div className={`p-1.5 sm:p-2 border transition-all ${
               appTheme === 'brutalista'
                 ? 'rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]'
-                : appTheme === 'linear'
-                ? 'rounded-xl bg-[#0c1017]/90 border border-slate-800 shadow-[0_4px_16px_rgba(0,0,0,0.4)] focus-within:border-cyan-500/50'
+                : appTheme === 'executive'
+                ? 'rounded-xl bg-white dark:bg-[#121214] border border-slate-900/20 dark:border-slate-800 shadow-xs focus-within:border-slate-900 focus-within:ring-1 focus-within:ring-slate-900/10'
                 : appTheme === 'aura'
-                ? 'rounded-3xl bg-white/95 dark:bg-[#1c1020]/95 border-2 border-rose-200/80 dark:border-rose-900/40 shadow-xs focus-within:border-rose-400'
+                ? 'rounded-3xl bg-white dark:bg-[#1c1020] border-2 border-pink-300 dark:border-pink-800/60 shadow-xs focus-within:border-pink-400'
                 : 'rounded-2xl bg-white dark:bg-[#161b26] border-slate-200/80 dark:border-slate-800 shadow-2xs focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20'
             }`}>
               <form onSubmit={handleDirectSmartIngestion} className="flex items-center gap-2">
                 <span className={`text-[20px] ml-2 shrink-0 ${
                   appTheme === 'aura'
-                    ? 'material-symbols-outlined text-rose-500'
-                    : appTheme === 'linear'
-                    ? 'font-mono text-cyan-400 font-bold text-sm'
+                    ? 'material-symbols-outlined text-pink-500'
+                    : appTheme === 'executive'
+                    ? 'material-symbols-outlined text-slate-800 dark:text-slate-200'
                     : appTheme === 'brutalista'
                     ? 'material-symbols-outlined text-black dark:text-white'
                     : 'material-symbols-outlined text-slate-400 dark:text-slate-500'
                 }`}>
-                  {appTheme === 'linear' ? '>' : appTheme === 'aura' ? 'local_florist' : 'add_task'}
+                  {appTheme === 'executive' ? 'edit_calendar' : appTheme === 'aura' ? 'favorite' : 'add_task'}
                 </span>
                 <input
                   type="text"
@@ -1192,15 +1199,15 @@ export default function AutoOrganizerPage() {
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   placeholder={
                     appTheme === 'aura'
-                      ? '🌸 Anotar una nueva intención o tarea con calma...'
-                      : appTheme === 'linear'
-                      ? 'quick dispatch issue --priority [P1] (ej. Deploy sprint, study AI models...)'
+                      ? 'Anotar una nueva intención o tarea bonita...'
+                      : appTheme === 'executive'
+                      ? 'Introducir nuevo compromiso laboral o tarea (ej. Reunión el jueves a las 11:00...)'
                       : appTheme === 'brutalista'
                       ? '// INGRESO DE PROTOCOLO O MISIÓN OPERATIVA...'
                       : '¿Qué necesitas hacer? (ej. Deberes de sistemas el viernes, Gimnasio todos los martes...)'
                   }
                   className={`flex-1 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none py-1.5 px-1 min-w-0 ${
-                    appTheme === 'linear' || appTheme === 'brutalista' ? 'font-mono' : ''
+                    appTheme === 'brutalista' ? 'font-mono' : ''
                   }`}
                 />
                 <button
@@ -1209,10 +1216,10 @@ export default function AutoOrganizerPage() {
                   className={`h-7 px-2.5 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0 ${
                     appTheme === 'brutalista'
                       ? 'rounded-none bg-slate-100 hover:bg-yellow-200 text-black border border-black'
-                      : appTheme === 'linear'
-                      ? 'rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-mono text-[11px]'
+                      : appTheme === 'executive'
+                      ? 'rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-medium'
                       : appTheme === 'aura'
-                      ? 'rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-200 border border-rose-200/60'
+                      ? 'rounded-full bg-pink-50 hover:bg-pink-100 text-pink-700 dark:bg-pink-950/60 dark:text-pink-200 border border-pink-200'
                       : 'rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}
                   title="Configuración manual con todos los campos"
@@ -1226,10 +1233,10 @@ export default function AutoOrganizerPage() {
                   className={`h-7 px-3.5 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0 disabled:opacity-50 ${
                     appTheme === 'brutalista'
                       ? 'rounded-none bg-yellow-300 hover:bg-yellow-400 text-black font-mono font-bold uppercase border-2 border-black shadow-[2px_2px_0px_#000]'
-                      : appTheme === 'linear'
-                      ? 'rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold border border-cyan-400/50 shadow-[0_0_12px_rgba(56,189,248,0.3)]'
+                      : appTheme === 'executive'
+                      ? 'rounded-md bg-slate-950 hover:bg-black text-white font-medium border border-slate-900 shadow-xs'
                       : appTheme === 'aura'
-                      ? 'rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-xs'
+                      ? 'rounded-full bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xs'
                       : 'rounded-lg bg-primary hover:bg-primary/90 text-white shadow-2xs'
                   }`}
                   title="Añadir directamente con IA (Enter)"
@@ -1239,8 +1246,8 @@ export default function AutoOrganizerPage() {
                       ? 'Procesando...'
                       : appTheme === 'brutalista'
                       ? '[+] ASIGNAR'
-                      : appTheme === 'linear'
-                      ? 'DISPATCH'
+                      : appTheme === 'executive'
+                      ? 'Asignar Tarea'
                       : appTheme === 'aura'
                       ? 'Anotar'
                       : 'Añadir'}
@@ -1457,21 +1464,21 @@ export default function AutoOrganizerPage() {
                                 ? 'bg-yellow-100 dark:bg-yellow-950/40 text-black dark:text-white'
                                 : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`
-                          : appTheme === 'linear'
-                          ? `rounded-lg ${
+                          : appTheme === 'executive'
+                          ? `rounded-md ${
                               isSelected
-                                ? 'bg-cyan-950/80 text-cyan-300 ring-1 ring-cyan-500/50'
+                                ? 'bg-slate-900 text-white shadow-xs'
                                 : isToday
-                                ? 'bg-slate-800/80 text-cyan-400'
-                                : 'hover:bg-slate-800/40 text-slate-400'
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
                             }`
                           : appTheme === 'aura'
                           ? `rounded-2xl ${
                               isSelected
-                                ? 'bg-rose-100/90 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 ring-2 ring-rose-400/60 shadow-xs'
+                                ? 'bg-pink-100 text-pink-900 dark:bg-pink-950/80 dark:text-pink-100 ring-2 ring-pink-400 shadow-xs'
                                 : isToday
-                                ? 'bg-rose-50/70 dark:bg-rose-950/30 text-rose-600'
-                                : 'hover:bg-rose-50/40 text-slate-500'
+                                ? 'bg-pink-50/80 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border border-pink-200/60'
+                                : 'hover:bg-pink-50/50 text-slate-500'
                             }`
                           : isSelected
                           ? 'rounded-2xl bg-blue-500/10 dark:bg-blue-500/15 ring-2 ring-[#0071E3]/50 shadow-xs'
@@ -1482,10 +1489,10 @@ export default function AutoOrganizerPage() {
                     >
                       <span
                         className={`text-[10px] font-semibold tracking-wider uppercase ${
-                          appTheme === 'linear'
-                            ? 'font-mono text-slate-400'
+                          appTheme === 'executive'
+                            ? isSelected ? 'text-white font-medium' : isToday ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-400'
                             : isToday
-                            ? appTheme === 'aura' ? 'text-rose-600 font-bold' : appTheme === 'brutalista' ? 'text-black dark:text-white font-bold' : 'text-[#0071E3] dark:text-blue-400 font-bold'
+                            ? appTheme === 'aura' ? 'text-pink-600 font-bold' : appTheme === 'brutalista' ? 'text-black dark:text-white font-bold' : 'text-[#0071E3] dark:text-blue-400 font-bold'
                             : 'text-slate-400 dark:text-slate-500'
                         }`}
                       >
@@ -1503,20 +1510,20 @@ export default function AutoOrganizerPage() {
                                   ? 'bg-yellow-300 text-black border border-black'
                                   : 'text-black dark:text-white'
                               }`
-                            : appTheme === 'linear'
-                            ? `rounded-md font-mono ${
-                                isToday
-                                  ? 'bg-cyan-500 text-slate-950 font-bold'
-                                  : isSelected
-                                  ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/40'
-                                  : 'text-slate-300'
+                            : appTheme === 'executive'
+                            ? `rounded-md font-sans ${
+                                isSelected
+                                  ? 'bg-white text-slate-950 font-bold'
+                                  : isToday
+                                  ? 'bg-slate-900 text-white font-bold'
+                                  : 'text-slate-800 dark:text-slate-200 font-medium'
                               }`
                             : appTheme === 'aura'
                             ? `rounded-full ${
                                 isToday
-                                  ? 'bg-rose-500 text-white font-bold shadow-xs'
+                                  ? 'bg-pink-500 text-white font-bold shadow-xs'
                                   : isSelected
-                                  ? 'bg-rose-200/60 text-rose-800 dark:text-rose-200 font-bold'
+                                  ? 'bg-pink-300/70 text-pink-950 font-bold'
                                   : 'text-slate-700 dark:text-slate-300 font-medium'
                               }`
                             : isToday
@@ -2887,21 +2894,21 @@ export default function AutoOrganizerPage() {
 function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme }) {
   const currentTheme = appTheme || 'clasica'
 
-  // --- 1. BLOSSOM STUDY (PASTEL AESTHETIC / NOTION / GOODNOTES) ---
+  // --- 1. BLOSSOM STUDY (GIRLY PINK & WHITE AESTHETIC) ---
   if (currentTheme === 'aura') {
     const pastelContextColors = {
-      University: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border-indigo-200/70',
+      University: 'bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300 border-pink-200/70',
       'Health & Gym': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200/70',
-      Personal: 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/70',
-      Projects: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/70',
+      Personal: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-300 border-fuchsia-200/70',
+      Projects: 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/70',
     }
 
     return (
       <div
-        className={`p-3.5 sm:p-4 rounded-3xl bg-white/95 dark:bg-[#1a0f1d]/95 backdrop-blur-md border-2 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-xs hover:shadow-md group ${
+        className={`p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-[#1a0f1d] border-2 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3.5 shadow-xs hover:shadow-md group ${
           task.completed
-            ? 'opacity-60 border-rose-200/40 dark:border-rose-900/30 bg-rose-50/30'
-            : 'border-rose-200/80 dark:border-rose-900/50 hover:border-rose-300'
+            ? 'opacity-60 border-pink-200/50 dark:border-pink-900/30 bg-pink-50/30'
+            : 'border-pink-300 dark:border-pink-800/70 hover:border-pink-400'
         }`}
       >
         <div className="flex items-start gap-3.5 min-w-0 flex-1">
@@ -2910,8 +2917,8 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
             onClick={() => onToggle(task.id)}
             className={`w-6 h-6 mt-0.5 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 border-2 transform active:scale-90 ${
               task.completed
-                ? 'bg-rose-500 border-rose-500 text-white shadow-xs'
-                : 'border-rose-300 dark:border-rose-700 hover:border-rose-500 hover:bg-rose-50/50'
+                ? 'bg-pink-500 border-pink-500 text-white shadow-xs'
+                : 'border-pink-300 dark:border-pink-600 hover:border-pink-500 hover:bg-pink-50/60'
             }`}
             title={task.completed ? 'Marcar como pendiente' : 'Marcar como completada'}
           >
@@ -2924,16 +2931,17 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
 
           <div className="flex flex-col gap-1 min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap text-xs">
-              <span className="inline-flex items-center gap-1 font-medium text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-200/60 dark:border-rose-800/60 text-[11px]">
-                <span className="material-symbols-outlined text-[13px] text-rose-500">schedule</span>
+              <span className="inline-flex items-center gap-1 font-medium text-pink-700 dark:text-pink-300 bg-pink-50 dark:bg-pink-950/60 px-2.5 py-0.5 rounded-full border border-pink-200/80 dark:border-pink-800/60 text-[11px]">
+                <span className="material-symbols-outlined text-[13px] text-pink-500">schedule</span>
                 <span>{task.time || '10:00'}</span>
               </span>
               {task.est && (
-                <span className="inline-flex items-center gap-1 text-slate-500 dark:text-rose-300/70 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-full text-[11px]">
-                  <span>✨ {task.est}</span>
+                <span className="inline-flex items-center gap-1 text-pink-600 dark:text-pink-300/80 bg-pink-50/80 dark:bg-pink-950/40 px-2.5 py-0.5 rounded-full border border-pink-100 text-[11px]">
+                  <span className="material-symbols-outlined text-[12px] text-pink-400">timer</span>
+                  <span>{task.est}</span>
                 </span>
               )}
-              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${pastelContextColors[task.context] || 'bg-rose-50 text-rose-700 border-rose-200/60'}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${pastelContextColors[task.context] || 'bg-pink-50 text-pink-700 border-pink-200'}`}>
                 {task.context}
               </span>
               {isSportActivity(task) && (
@@ -2944,12 +2952,12 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
               )}
             </div>
 
-            <h4 className={`font-semibold text-sm text-slate-900 dark:text-rose-50 leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+            <h4 className={`font-semibold text-sm text-pink-950 dark:text-pink-50 leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
               {task.title}
             </h4>
 
             {task.description && (
-              <p className="text-xs text-slate-500 dark:text-rose-300/80 line-clamp-1">{task.description}</p>
+              <p className="text-xs text-pink-700/80 dark:text-pink-300/80 line-clamp-1">{task.description}</p>
             )}
           </div>
         </div>
@@ -2959,13 +2967,13 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
             <button
               type="button"
               onClick={() => onStartFocus(task)}
-              className="h-7.5 px-3.5 rounded-full bg-rose-50 hover:bg-rose-500 hover:text-white dark:bg-rose-950/60 dark:hover:bg-rose-600 text-rose-700 dark:text-rose-200 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 border border-rose-200/70 dark:border-rose-800/70"
+              className="h-7.5 px-3.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-400 text-white hover:from-pink-600 hover:to-rose-500 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
             >
-              <span className="material-symbols-outlined text-[14px]">local_florist</span>
+              <span className="material-symbols-outlined text-[14px]">favorite</span>
               <span>Enfocar</span>
             </button>
           ) : (
-            <span className="text-[11px] text-rose-600 dark:text-rose-300 font-semibold px-2.5 py-0.5 rounded-full bg-rose-100/70 dark:bg-rose-950/60">
+            <span className="text-[11px] text-pink-600 dark:text-pink-300 font-semibold px-2.5 py-0.5 rounded-full bg-pink-100/70 dark:bg-pink-950/60">
               Hecho con calma
             </span>
           )}
@@ -2974,7 +2982,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
             <button
               type="button"
               onClick={() => onEdit(task)}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-pink-400 hover:text-pink-700 hover:bg-pink-50 dark:hover:bg-pink-950/60 transition-colors cursor-pointer"
               title="Editar"
             >
               <span className="material-symbols-outlined text-[15px]">edit</span>
@@ -2982,7 +2990,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
             <button
               type="button"
               onClick={() => onDelete(task.id)}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-pink-400 hover:text-rose-600 hover:bg-pink-50 dark:hover:bg-pink-950/60 transition-colors cursor-pointer"
               title="Eliminar"
             >
               <span className="material-symbols-outlined text-[15px]">delete</span>
@@ -2993,90 +3001,105 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
     )
   }
 
-  // --- 2. LINEAR OBSIDIAN PRO (SILICON VALLEY ISSUE ROW / HIGH-DENSITY HUD) ---
-  if (currentTheme === 'linear') {
-    const issueCode = `APP-${((Math.abs(Number(task.id) || 100)) % 900) + 100}`
-    const priorityLabel = task.effort === 'High' ? 'P0' : task.effort === 'Medium' ? 'P1' : 'P2'
-
+  // --- 2. EJECUTIVO BLACK & WHITE (SOBER CORPORATE DESK // CLEAN 1.5PX BORDERS // ZERO TECH FLUFF) ---
+  if (currentTheme === 'executive') {
     return (
       <div
-        className={`py-2 px-3 sm:px-3.5 rounded-xl bg-[#0c0f17]/90 dark:bg-[#0c0f17]/90 border transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-2.5 group shadow-[0_2px_8px_rgba(0,0,0,0.5)] ${
+        className={`p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#121214] border transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-3 group shadow-2xs hover:shadow-xs ${
           task.completed
-            ? 'opacity-50 border-slate-800/60 bg-slate-950/40'
-            : 'border-slate-800 hover:border-cyan-500/50 hover:bg-[#101522]'
+            ? 'opacity-50 border-slate-200 dark:border-slate-800 bg-slate-50/50'
+            : 'border-slate-300/80 dark:border-slate-800 hover:border-slate-900 dark:hover:border-slate-400'
         }`}
       >
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
           <button
             type="button"
             onClick={() => onToggle(task.id)}
-            className={`w-4 h-4 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
+            className={`w-5 h-5 mt-0.5 rounded-sm flex items-center justify-center transition-all cursor-pointer shrink-0 border-2 ${
               task.completed
-                ? 'bg-cyan-500 border-cyan-500 text-slate-950'
-                : 'border-slate-700 bg-slate-900 hover:border-cyan-400'
+                ? 'bg-slate-950 border-slate-950 text-white dark:bg-white dark:border-white dark:text-black'
+                : 'border-slate-400 dark:border-slate-600 bg-transparent hover:border-slate-900'
             }`}
-            title={task.completed ? 'Reabrir issue' : 'Cerrar issue'}
+            title={task.completed ? 'Marcar pendiente' : 'Marcar completado'}
           >
             {task.completed && (
-              <svg className="w-3 h-3 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             )}
           </button>
 
-          <span className="font-mono text-[11px] font-bold text-cyan-400 shrink-0 tracking-tight">
-            [{issueCode}]
-          </span>
+          <div className="flex flex-col gap-1 min-w-0 flex-1 font-sans">
+            <div className="flex items-center gap-1.5 flex-wrap text-xs">
+              <span className={`px-2 py-0.5 rounded-sm text-[11px] font-semibold tracking-wide border ${
+                task.effort === 'High'
+                  ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-black dark:border-white'
+                  : task.effort === 'Medium'
+                  ? 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700'
+                  : 'bg-white text-slate-600 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800'
+              }`}>
+                {task.effort === 'High' ? 'Prioridad Alta' : task.effort === 'Medium' ? 'Prioridad Media' : 'Prioridad Normal'}
+              </span>
 
-          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-slate-300 shrink-0 font-bold">
-            {priorityLabel}
-          </span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 px-2 py-0.5 rounded-sm border border-slate-200 dark:border-slate-700">
+                <span className="material-symbols-outlined text-[13px] text-slate-500">schedule</span>
+                <span>{task.time || '10:00'}{task.est ? ` · ${task.est}` : ''}</span>
+              </span>
 
-          <span className="font-mono text-[11px] text-slate-500 shrink-0 hidden sm:inline">
-            // {task.time || '10:00'} · {task.est || '30m'}
-          </span>
+              <span className="px-2 py-0.5 rounded-sm text-[11px] font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                {task.context}
+              </span>
 
-          <h4 className={`font-sans font-medium text-xs sm:text-sm text-slate-100 truncate flex-1 min-w-0 ${task.completed ? 'line-through text-slate-500' : ''}`}>
-            {task.title}
-          </h4>
+              {isSportActivity(task) && (
+                <span className="px-2 py-0.5 rounded-sm text-[11px] font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[13px]">fitness_center</span>
+                  Deporte
+                </span>
+              )}
+            </div>
 
-          <span className="font-mono text-[10px] text-slate-400 border border-slate-800 px-1.5 py-0.2 rounded shrink-0 hidden md:inline">
-            {task.context}
-          </span>
+            <h4 className={`font-semibold text-sm text-slate-950 dark:text-white leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+              {task.title}
+            </h4>
+
+            {task.description && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{task.description}</p>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 self-end sm:self-center">
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 self-stretch sm:self-center shrink-0">
           {!task.completed ? (
             <button
               type="button"
               onClick={() => onStartFocus(task)}
-              className="h-6.5 px-2.5 rounded bg-cyan-950 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 text-[10px] font-mono font-bold border border-cyan-500/40 transition-all flex items-center gap-1 cursor-pointer shadow-[0_0_8px_rgba(56,189,248,0.2)]"
+              className="h-7 px-3 rounded-md bg-slate-950 hover:bg-black text-white dark:bg-white dark:hover:bg-slate-200 dark:text-black text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
             >
-              <span className="material-symbols-outlined text-[13px]">play_arrow</span>
-              <span>RUN</span>
+              <span className="material-symbols-outlined text-[14px]">play_arrow</span>
+              <span>Iniciar Tarea</span>
             </button>
           ) : (
-            <span className="font-mono text-[10px] text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/40">
-              RESOLVED
+            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              Completado
             </span>
           )}
 
-          <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
             <button
               type="button"
               onClick={() => onEdit(task)}
-              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Editar"
             >
-              <span className="material-symbols-outlined text-[13px]">tune</span>
+              <span className="material-symbols-outlined text-[15px]">edit</span>
             </button>
             <button
               type="button"
               onClick={() => onDelete(task.id)}
-              className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
               title="Eliminar"
             >
-              <span className="material-symbols-outlined text-[13px]">close</span>
+              <span className="material-symbols-outlined text-[15px]">delete</span>
             </button>
           </div>
         </div>
@@ -3102,7 +3125,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
             title={task.completed ? 'Marcar pendiente' : 'Marcar ejecutada'}
           >
             {task.completed && (
-              <span className="font-mono font-black text-xs text-black">✓</span>
+              <span className="material-symbols-outlined text-[14px] text-black">check</span>
             )}
           </button>
 
