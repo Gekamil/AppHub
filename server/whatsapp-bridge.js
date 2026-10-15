@@ -9,6 +9,7 @@ import {
   useMultiFileAuthState,
   DisconnectReason,
   downloadMediaMessage,
+  extractMessageContent,
 } from '@whiskeysockets/baileys'
 import QRCode from 'qrcode'
 import pino from 'pino'
@@ -633,6 +634,12 @@ REGLAS DE ACTUACIÓN, PERSONALIDAD Y FORMATO (ESTRICTAS):
    E) CONVERSACIÓN GENERAL:
       - Si Jorge te saluda o te hace preguntas libres, responde como un asistente inteligente, empático y conversacional, siempre dentro de las barras.
 
+   F) PROCESAMIENTO DE NOTAS DE VOZ Y AUDIOS CITADOS O MENSAJES CITADOS:
+      Si el usuario cita una nota de voz o mensaje (verás el bloque "[Audio / Nota de voz citada transcrita]: ..."), o si te pide "añade los eventos de este audio", "escucha este audio", "añade esto", etc.:
+      - Extrae con máxima precisión TODOS los compromisos, reuniones, partidos, citas, entrenamientos, entregas, viajes, exámenes o tareas que se mencionen en el audio o mensaje citado.
+      - Para cada actividad extraída, genera una acción "add_task" individual con su fecha (YYYY-MM-DD), hora (HH:MM), contexto y duración estimada adecuada.
+      - En tu respuesta amigable, confirma qué actividades has extraído del audio y añadido a su calendario.
+
 ESTRUCTURA JSON OBLIGATORIA DE RETORNO:
 {
   "reply": "- - - - - - - - - - - - - - - - - - - -\\n¡Claro, Jorge! ...\\n- - - - - - - - - - - - - - - - - - - -",
@@ -930,14 +937,21 @@ export async function startBaileysConnection() {
     const processedMsgIds = new Set()
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      if (type !== 'notify') return
+      // Permitir tanto 'notify' como 'append' (mensajes sincronizados desde el propio teléfono móvil)
+      if (type !== 'notify' && type !== 'append') return
 
       for (const msg of messages) {
         if (!msg.message) continue
         const from = msg.key.remoteJid
         if (!from || from === 'status@broadcast') continue
 
-        // Evitar procesar mensajes enviados por el propio bot
+        // Ignorar mensajes antiguos del histórico sincronizados al inicio (más de 3 minutos de antigüedad)
+        const msgTime = Number(msg.messageTimestamp || 0) * 1000
+        if (msgTime > 0 && Date.now() - msgTime > 3 * 60 * 1000) {
+          continue
+        }
+
+        // Evitar procesar mensajes enviados por el propio bot o ya procesados
         if (msg.key.id && sentBotMessageIds.has(msg.key.id)) continue
         if (msg.key.id && processedMsgIds.has(msg.key.id)) continue
 
@@ -951,33 +965,106 @@ export async function startBaileysConnection() {
           (myLid && from.includes(myLid))
         )
 
-        // REGLA DE PRIVACIDAD ESTRICTA:
-        // 1. En chat consigo mismo (isChatWithSelf): responde directamente.
-        // 2. En chat con otras personas o grupos (!isChatWithSelf):
-        //    "solo yo, al otro no le hace caso" -> Si el mensaje lo envió otra persona (!msg.key.fromMe), se ignora por completo.
-        if (!isChatWithSelf && !msg.key.fromMe) {
-          continue
-        }
-
         // Si es el chat propio, guardarlo para briefings automáticos de medianoche
         if (isChatWithSelf) {
           lastUserJid = from
         }
 
-        // Detectar si es una nota de voz o mensaje de audio
+        // Desempaquetar mensaje interno (ephemeral, viewOnce, etc.)
         const innerMsg =
           msg.message.ephemeralMessage?.message ||
           msg.message.viewOnceMessage?.message ||
           msg.message.viewOnceMessageV2?.message ||
           msg.message
 
-        const audioMsg = innerMsg.audioMessage
-        let userText = ''
+        // Extraer texto plano o pie de foto
+        const rawText = (
+          msg.message.conversation ||
+          msg.message.extendedTextMessage?.text ||
+          innerMsg?.conversation ||
+          innerMsg?.extendedTextMessage?.text ||
+          innerMsg?.imageMessage?.caption ||
+          innerMsg?.videoMessage?.caption ||
+          ''
+        ).trim()
+
+        // Evitar procesar respuestas emitidas por el propio bot (barras divisoras)
+        if (rawText.startsWith('- - - - - - - - - - - - - - - - - - - -') || rawText.includes(DIVIDER)) {
+          continue
+        }
+
+        // REGEX UNIVERSAL PARA COMANDO /ia (al inicio, en medio o al final, ej: "/ia añade...", "/ia", "haz esto /ia")
+        const iaTriggerRegex = /(?:^|\s)(?:\/|!|\.|barra\s*)ia(?::|,|\s|$)/i
+        const hasIaTrigger = iaTriggerRegex.test(rawText)
+
+        // En canales externos o grupos (!isChatWithSelf): SOLO se atiende si lleva el comando /ia explícito
+        if (!isChatWithSelf && !hasIaTrigger) {
+          continue
+        }
+
+        // Extraer mensaje citado (si el usuario está respondiendo a un audio, texto o mensaje anterior)
+        const contextInfo =
+          msg.message?.extendedTextMessage?.contextInfo ||
+          innerMsg?.extendedTextMessage?.contextInfo ||
+          innerMsg?.imageMessage?.contextInfo ||
+          innerMsg?.videoMessage?.contextInfo ||
+          innerMsg?.audioMessage?.contextInfo
+
+        let quotedContent = null
+        if (contextInfo?.quotedMessage) {
+          try {
+            quotedContent = extractMessageContent(contextInfo.quotedMessage) || contextInfo.quotedMessage
+          } catch (e) {
+            quotedContent = contextInfo.quotedMessage
+          }
+          quotedContent =
+            quotedContent?.ephemeralMessage?.message ||
+            quotedContent?.viewOnceMessage?.message ||
+            quotedContent?.viewOnceMessageV2?.message ||
+            quotedContent
+        }
+
+        // 1. Detección y transcripción de AUDIO CITADO (cuando se responde a un audio con /ia)
+        const quotedAudio =
+          quotedContent?.audioMessage ||
+          (quotedContent?.documentMessage && quotedContent.documentMessage.mimetype?.startsWith('audio/')
+            ? quotedContent.documentMessage
+            : null)
+
+        let quotedAudioTranscript = ''
+        if (quotedAudio) {
+          console.log(`[Baileys]: Audio citado detectado en ${from} (Stanza: ${contextInfo.stanzaId}). Descargando...`)
+          try {
+            const quotedMsgForDownload = {
+              key: {
+                remoteJid: from,
+                id: contextInfo.stanzaId,
+                participant: contextInfo.participant || from,
+              },
+              message: quotedContent,
+            }
+            const audioBuffer = await downloadMediaMessage(
+              quotedMsgForDownload,
+              'buffer',
+              {},
+              { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
+            )
+            const mimetype = quotedAudio.mimetype || 'audio/ogg; codecs=opus'
+            quotedAudioTranscript = await transcribeAudioWithWhisper(audioBuffer, mimetype)
+            console.log(`[Baileys]: Audio citado transcrito con Whisper: "${quotedAudioTranscript}"`)
+          } catch (audioErr) {
+            console.error('[Baileys Error Descargando Audio Citado]:', audioErr.message)
+          }
+        }
+
+        // 2. Detección y transcripción de AUDIO DIRECTO (nota de voz enviada en el chat personal)
+        const directAudio = innerMsg?.audioMessage
+        let directAudioTranscript = ''
         let isVoiceNote = false
 
-        if (audioMsg) {
+        if (directAudio) {
           isVoiceNote = true
-          console.log(`[Baileys]: Audio detectado en ${from} (${isChatWithSelf ? 'Chat Propio' : 'Chat Externo'}). Transcribiendo...`)
+          console.log(`[Baileys]: Audio directo detectado en ${from}. Transcribiendo...`)
           try {
             const audioBuffer = await downloadMediaMessage(
               msg,
@@ -985,41 +1072,42 @@ export async function startBaileysConnection() {
               {},
               { logger: pino({ level: 'silent' }), reuploadRequest: sock.updateMediaMessage }
             )
-            const mimetype = audioMsg.mimetype || 'audio/ogg; codecs=opus'
-            userText = await transcribeAudioWithWhisper(audioBuffer, mimetype)
-            console.log(`[Baileys]: Audio transcrito con éxito: "${userText}"`)
+            const mimetype = directAudio.mimetype || 'audio/ogg; codecs=opus'
+            directAudioTranscript = await transcribeAudioWithWhisper(audioBuffer, mimetype)
+            console.log(`[Baileys]: Audio directo transcrito con Whisper: "${directAudioTranscript}"`)
           } catch (audioErr) {
-            console.error('[Baileys Audio Error]:', audioErr.message)
+            console.error('[Baileys Audio Directo Error]:', audioErr.message)
             continue
           }
+        }
+
+        // 3. Extraer texto del mensaje citado (si citó un texto en vez de audio)
+        const quotedText = (
+          quotedContent?.conversation ||
+          quotedContent?.extendedTextMessage?.text ||
+          quotedContent?.imageMessage?.caption ||
+          quotedContent?.videoMessage?.caption ||
+          ''
+        ).trim()
+
+        // 4. Limpiar el prefijo /ia del comando del usuario
+        const cleanInstruction = rawText.replace(iaTriggerRegex, ' ').replace(/\s+/g, ' ').trim()
+
+        // 5. Construir el prompt completo para la Inteligencia Artificial
+        let userText = ''
+        if (quotedAudioTranscript) {
+          const instruction = cleanInstruction || 'Analiza el audio citado y crea, añade o programa en el calendario cualquier evento, tarea o cita que se mencione.'
+          userText = `[Audio / Nota de voz citada transcrita]: "${quotedAudioTranscript}"\n\nInstrucción: ${instruction}`
+        } else if (directAudioTranscript) {
+          userText = directAudioTranscript
+        } else if (quotedText) {
+          const instruction = cleanInstruction || 'Analiza el mensaje citado y añade o programa cualquier evento o tarea mencionado.'
+          userText = `[Mensaje citado]: "${quotedText}"\n\nInstrucción: ${instruction}`
         } else {
-          // Extraer texto regular
-          userText =
-            msg.message.conversation ||
-            msg.message.extendedTextMessage?.text ||
-            msg.message.imageMessage?.caption ||
-            ''
+          userText = cleanInstruction || (isChatWithSelf ? rawText : 'Hola')
         }
 
         if (!userText || !userText.trim()) continue
-
-        // Evitar procesar respuestas emitidas por el propio bot (barras divisoras)
-        const trimmed = userText.trim()
-        if (trimmed.startsWith('- - - - - - - - - - - - - - - - - - - -') || trimmed.includes(DIVIDER)) {
-          continue
-        }
-
-        // CONTROL DE COMANDO /ia EN CHATS CON OTRAS PERSONAS O GRUPOS:
-        // "si estoy en chat de otros, solo responda si hago al final /ia y solo yo, al otro no le hace caso"
-        const iaTriggerRegex = /(?:^|\s|\b)(?:\/|barra\s*)ia\s*$/i
-        if (!isChatWithSelf) {
-          if (!iaTriggerRegex.test(trimmed)) {
-            // Conversación normal con otra persona: no intervenir
-            continue
-          }
-          // Limpiar el comando /ia del texto para enviarlo limpio a la IA
-          userText = trimmed.replace(iaTriggerRegex, '').trim() || 'Hola'
-        }
 
         // Registrar el ID del mensaje para evitar duplicados
         if (msg.key.id) {
@@ -1028,7 +1116,7 @@ export async function startBaileysConnection() {
         }
 
         console.log(
-          `[Baileys Mensaje Procesado de ${from} (${isChatWithSelf ? 'Chat Propio' : 'Chat Externo + /ia'} | ${isVoiceNote ? 'Audio' : 'Texto'})]: "${userText}"`
+          `[Baileys Mensaje Procesado de ${from} (${isChatWithSelf ? 'Chat Propio' : 'Canal Externo + /ia'} | ${isVoiceNote || quotedAudioTranscript ? 'Audio' : 'Texto'})]: "${userText.slice(0, 100)}..."`
         )
 
         // Analizar con IA (Conversación Total, Renombrado, Memoria y Anticipación de Carga)
@@ -1038,7 +1126,7 @@ export async function startBaileysConnection() {
         if (Array.isArray(aiResult.actions) && aiResult.actions.length > 0) {
           const modified = applyBridgeActions(
             aiResult.actions,
-            isVoiceNote ? 'whatsapp_audio_whisper' : 'whatsapp_text_baileys'
+            isVoiceNote || quotedAudioTranscript ? 'whatsapp_audio_whisper' : 'whatsapp_text_baileys'
           )
           console.log(
             `[Baileys]: ${modified.length} acción(es) aplicadas en local:`,
@@ -1058,16 +1146,25 @@ export async function startBaileysConnection() {
         // Garantizar barras de guiones espaciados exactamente arriba y abajo
         replyToSend = `${DIVIDER}\n${replyToSend}\n${DIVIDER}`
 
-        // Responder por WhatsApp al chat de origen
+        // Responder por WhatsApp al chat de origen citando el mensaje original para mayor claridad
         if (replyToSend) {
           try {
-            const sentMsg = await sock.sendMessage(from, { text: replyToSend })
+            const sentMsg = await sock.sendMessage(from, { text: replyToSend }, { quoted: msg })
             if (sentMsg?.key?.id) {
               sentBotMessageIds.add(sentMsg.key.id)
             }
             console.log(`[Baileys]: Respuesta enviada a ${from}`)
           } catch (sendErr) {
-            console.error('[Baileys Error Enviando]:', sendErr.message)
+            console.warn('[Baileys Error Enviando con Cita, reintentando sin cita]:', sendErr.message)
+            try {
+              const fallbackMsg = await sock.sendMessage(from, { text: replyToSend })
+              if (fallbackMsg?.key?.id) {
+                sentBotMessageIds.add(fallbackMsg.key.id)
+              }
+              console.log(`[Baileys]: Respuesta enviada sin cita a ${from}`)
+            } catch (fallbackErr) {
+              console.error('[Baileys Error Enviando Definitivo]:', fallbackErr.message)
+            }
           }
         }
       }

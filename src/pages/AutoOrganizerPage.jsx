@@ -30,10 +30,23 @@ import {
   deleteBaileysTask,
   subscribeToBaileysLiveUpdates,
 } from '../services/baileysBridge'
+import { getCurrentUser, isGuestUser } from '../services/firebase'
 
 export default function AutoOrganizerPage() {
   const { globalTasks = [], setGlobalTasks } = useOutletContext() || {}
   const navigate = useNavigate()
+
+  // Control de sesión y acceso a funciones exclusivas
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser())
+  const isGuest = isGuestUser(currentUser)
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setCurrentUser(getCurrentUser())
+    }
+    window.addEventListener('studenthub_auth_changed', handleAuthChange)
+    return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
+  }, [])
 
   // Estados de Entrada Rápida Progresiva
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -108,8 +121,13 @@ export default function AutoOrganizerPage() {
     return () => window.removeEventListener('shared_roles_updated', handleRolesUpdated)
   }, [])
 
-  // Suscripción en tiempo real al estado de WhatsApp Web (Baileys) mediante SSE
+  // Suscripción en tiempo real al estado de WhatsApp Web (Baileys) mediante SSE (solo para usuarios registrados)
   useEffect(() => {
+    if (isGuest) {
+      setBaileysState({ status: 'disconnected', qrCode: null, user: null, phone: null })
+      return
+    }
+
     let isCancelled = false
 
     const checkStatus = async () => {
@@ -147,7 +165,7 @@ export default function AutoOrganizerPage() {
       unsubscribe()
       clearInterval(interval)
     }
-  }, [isWhatsAppModalOpen])
+  }, [isWhatsAppModalOpen, isGuest])
 
   // Estado de Organización con IA (Groq)
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -393,6 +411,13 @@ export default function AutoOrganizerPage() {
 
   // Control de Conexión de WhatsApp Web (Baileys)
   const handleConnectBaileys = async () => {
+    if (isGuest) {
+      window.dispatchEvent(
+        new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
+      )
+      return
+    }
+
     setIsBaileysActionLoading(true)
     setWhatsAppNotificationMsg('Iniciando sesión y generando código QR seguro...')
     try {
@@ -422,6 +447,13 @@ export default function AutoOrganizerPage() {
 
   // Enviar Briefing Matutino a WhatsApp
   const handleSendDailyBriefing = async () => {
+    if (isGuest) {
+      window.dispatchEvent(
+        new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
+      )
+      return
+    }
+
     const briefingText = generateDailyBriefing(globalTasks)
     setAiNotification('Enviando briefing a WhatsApp...')
 
@@ -451,6 +483,12 @@ export default function AutoOrganizerPage() {
   // Enviar o simular mensaje entrante de WhatsApp
   const handleSimulateWhatsAppMessage = async (e) => {
     e.preventDefault()
+    if (isGuest) {
+      window.dispatchEvent(
+        new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
+      )
+      return
+    }
     if (!whatsAppTestText.trim()) return
 
     const incomingText = whatsAppTestText.trim()
@@ -725,11 +763,17 @@ export default function AutoOrganizerPage() {
               type="button"
               onClick={() => setIsWhatsAppModalOpen(true)}
               className="h-8.5 px-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-medium text-xs border border-emerald-200/80 dark:border-emerald-800/80 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Bot de WhatsApp con vinculación QR y servidor local"
+              title={isGuest ? 'Inicia sesión para vincular WhatsApp Bot' : 'Bot de WhatsApp con vinculación QR y servidor local'}
             >
-              <span className="material-symbols-outlined text-[16px]">chat</span>
+              <span className="material-symbols-outlined text-[16px]">
+                {isGuest ? 'lock' : 'chat'}
+              </span>
               <span>WhatsApp Bot</span>
-              {baileysState.status === 'connected' ? (
+              {isGuest ? (
+                <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.2 rounded font-semibold">
+                  Requiere cuenta
+                </span>
+              ) : baileysState.status === 'connected' ? (
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="WhatsApp Web Conectado"></span>
               ) : baileysState.status === 'qr_ready' ? (
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="QR pendiente de escaneo"></span>
@@ -1121,26 +1165,47 @@ export default function AutoOrganizerPage() {
               <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                 <span
                   className={`w-2 h-2 rounded-full ${
-                    baileysState.status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                    isGuest
+                      ? 'bg-amber-400'
+                      : baileysState.status === 'connected'
+                      ? 'bg-emerald-500 animate-pulse'
+                      : 'bg-slate-400'
                   }`}
                 />
                 <span>
                   WhatsApp Bot:{' '}
                   <strong className="font-medium text-slate-900 dark:text-white">
-                    {baileysState.status === 'connected'
+                    {isGuest
+                      ? 'Requiere cuenta registrada'
+                      : baileysState.status === 'connected'
                       ? baileysState.phone || 'Dispositivo Vinculado'
                       : 'Listo para conectar'}
                   </strong>
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleSendDailyBriefing}
-                className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-              >
-                <span>Enviar briefing</span>
-                <span className="material-symbols-outlined text-[14px]">send</span>
-              </button>
+              {isGuest ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
+                    )
+                  }}
+                  className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Iniciar sesión</span>
+                  <span className="material-symbols-outlined text-[14px]">login</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendDailyBriefing}
+                  className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Enviar briefing</span>
+                  <span className="material-symbols-outlined text-[14px]">send</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1368,7 +1433,14 @@ export default function AutoOrganizerPage() {
                     Bot Móvil de WhatsApp (Servidor Local Privado)
                   </h3>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                    {baileysState.status === 'connected' ? (
+                    {isGuest ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">
+                          Acceso restringido • Requiere cuenta registrada
+                        </span>
+                      </>
+                    ) : baileysState.status === 'connected' ? (
                       <>
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span>
@@ -1404,132 +1476,179 @@ export default function AutoOrganizerPage() {
               </button>
             </div>
 
-            {/* CUERPO SEGÚN ESTADO DE CONEXIÓN */}
-            {/* 1. Conectado */}
-            {baileysState.status === 'connected' && (
-              <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="font-semibold text-emerald-900 dark:text-emerald-200 text-xs">
-                      WhatsApp Web Vinculado y Activo
-                    </span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-bold">
-                    {baileysState.phone ? baileysState.phone : 'Dispositivo Activo'}
-                  </span>
+            {/* CUERPO DEL MODAL */}
+            {isGuest ? (
+              /* Vista de Acceso Restringido para Invitados */
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col items-center justify-center text-center gap-4 my-2">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
+                  <span className="material-symbols-outlined text-[32px]">lock</span>
                 </div>
-
-                <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                  El bot está escuchando mensajes y notas de voz en tiempo real con IA. Puedes preguntarle cualquier duda académica, conversar con él, consultar tu agenda (*"¿qué tengo hoy?"*) o dictarle tareas y exámenes por audio o texto para que se añadan al instante a tu organizador y calendario.
-                </p>
-
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40">
-                  <button
-                    type="button"
-                    onClick={handleSendDailyBriefing}
-                    className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">send</span>
-                    <span>Enviar Briefing Ahora</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleDisconnectBaileys}
-                    disabled={isBaileysActionLoading}
-                    className="py-1.5 px-3 rounded-xl bg-white dark:bg-[#121620] hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-semibold text-xs border border-rose-200/80 dark:border-rose-900/40 transition-colors cursor-pointer"
-                  >
-                    Desvincular WhatsApp
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 2. QR Listo para Escaneo */}
-            {baileysState.status === 'qr_ready' && baileysState.qrCode && (
-              <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-4">
-                <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/70">
-                  <img
-                    src={baileysState.qrCode}
-                    alt="Código QR de WhatsApp"
-                    className="w-52 h-52 sm:w-56 sm:h-56 object-contain"
-                  />
-                </div>
-
-                <div className="w-full space-y-2 text-slate-700 dark:text-slate-300 text-xs">
-                  <span className="font-semibold block text-center text-slate-900 dark:text-white">
-                    Pasos para vincular tu teléfono:
-                  </span>
-                  <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-[#121620] p-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
-                    <li>Abre WhatsApp en tu teléfono móvil.</li>
-                    <li>Ve a <strong>Ajustes / Configuración</strong> y selecciona <strong>Dispositivos vinculados</strong>.</li>
-                    <li>Toca en <strong>Vincular un dispositivo</strong> y apunta con la cámara a este código QR.</li>
-                  </ol>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleDisconnectBaileys}
-                  className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline cursor-pointer"
-                >
-                  Cancelar vinculación
-                </button>
-              </div>
-            )}
-
-            {/* 3. Conectando / Generando QR */}
-            {baileysState.status === 'connecting' && (
-              <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-                <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  Iniciando puente local y generando código QR seguro...
-                </p>
-                <span className="text-[11px] text-slate-500">
-                  Esto tarda unos segundos mientras se inicializa el socket en tu equipo.
-                </span>
-              </div>
-            )}
-
-            {/* 4. Desconectado / Pantalla Inicial de Vinculación */}
-            {baileysState.status === 'disconnected' && (
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-3.5">
-                <div className="space-y-1">
-                  <h4 className="font-semibold text-slate-900 dark:text-white text-xs">
-                    Vinculación Rápida por Código QR (Sin servidores ni límites)
+                <div className="space-y-1.5 max-w-md">
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">
+                    Inicio de sesión requerido para WhatsApp Bot
                   </h4>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                    Cada instalación de la app actúa como su propio servidor seguro en local mediante el protocolo oficial de WhatsApp Web. No necesitas crear cuentas de empresa en Meta, pagar suscripciones de servidores en la nube ni verificar documentos.
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Para acceder a la función de WhatsApp y conectar tu calendario con la Inteligencia Artificial 24/7, necesitas haber iniciado sesión en una cuenta de StudentHub. De este modo tus notas de voz, comandos con IA y eventos se sincronizan de manera segura con tu perfil.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 block">IA Conversacional</span>
-                    <span className="text-slate-500 text-[10px]">Responde cualquier duda, saluda y te orienta en el móvil.</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 block">Audios con Whisper</span>
-                    <span className="text-slate-500 text-[10px]">Envía notas de voz: las transcribe y programa todo.</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 block">100% Local y Gratis</span>
-                    <span className="text-slate-500 text-[10px]">Tu equipo es tu servidor sin cuotas ni intermediarios.</span>
-                  </div>
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2 w-full max-w-sm">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWhatsAppModalOpen(false)
+                      window.dispatchEvent(
+                        new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
+                      )
+                    }}
+                    className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-primary text-white font-semibold shadow-xs hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-1.5 text-xs"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">login</span>
+                    <span>Iniciar Sesión</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsWhatsAppModalOpen(false)
+                      window.dispatchEvent(
+                        new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'register' } })
+                      )
+                    }}
+                    className="w-full sm:flex-1 py-2.5 px-4 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-300 transition-colors cursor-pointer flex items-center justify-center gap-1.5 text-xs"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">person_add</span>
+                    <span>Crear Cuenta</span>
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleConnectBaileys}
-                  disabled={isBaileysActionLoading}
-                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 text-xs"
-                >
-                  <span className="material-symbols-outlined text-[17px]">qr_code_scanner</span>
-                  <span>Generar Código QR de Vinculación</span>
-                </button>
               </div>
-            )}
+            ) : (
+              <>
+                {/* 1. Conectado */}
+                {baileysState.status === 'connected' && (
+                  <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="font-semibold text-emerald-900 dark:text-emerald-200 text-xs">
+                          WhatsApp Web Vinculado y Activo
+                        </span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-bold">
+                        {baileysState.phone ? baileysState.phone : 'Dispositivo Activo'}
+                      </span>
+                    </div>
 
+                    <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                      El bot está escuchando mensajes y notas de voz en tiempo real con IA. Puedes preguntarle cualquier duda académica, conversar con él, consultar tu agenda (*"¿qué tengo hoy?"*) o dictarle tareas y exámenes por audio o texto para que se añadan al instante a tu organizador y calendario.
+                    </p>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40">
+                      <button
+                        type="button"
+                        onClick={handleSendDailyBriefing}
+                        className="py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">send</span>
+                        <span>Enviar Briefing Ahora</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDisconnectBaileys}
+                        disabled={isBaileysActionLoading}
+                        className="py-1.5 px-3 rounded-xl bg-white dark:bg-[#121620] hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 font-semibold text-xs border border-rose-200/80 dark:border-rose-900/40 transition-colors cursor-pointer"
+                      >
+                        Desvincular WhatsApp
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. QR Listo para Escaneo */}
+                {baileysState.status === 'qr_ready' && baileysState.qrCode && (
+                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-4">
+                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/70">
+                      <img
+                        src={baileysState.qrCode}
+                        alt="Código QR de WhatsApp"
+                        className="w-52 h-52 sm:w-56 sm:h-56 object-contain"
+                      />
+                    </div>
+
+                    <div className="w-full space-y-2 text-slate-700 dark:text-slate-300 text-xs">
+                      <span className="font-semibold block text-center text-slate-900 dark:text-white">
+                        Pasos para vincular tu teléfono:
+                      </span>
+                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-[#121620] p-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                        <li>Abre WhatsApp en tu teléfono móvil.</li>
+                        <li>Ve a <strong>Ajustes / Configuración</strong> y selecciona <strong>Dispositivos vinculados</strong>.</li>
+                        <li>Toca en <strong>Vincular un dispositivo</strong> y apunta con la cámara a este código QR.</li>
+                      </ol>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleDisconnectBaileys}
+                      className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline cursor-pointer"
+                    >
+                      Cancelar vinculación
+                    </button>
+                  </div>
+                )}
+
+                {/* 3. Conectando / Generando QR */}
+                {baileysState.status === 'connecting' && (
+                  <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                    <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                      Iniciando puente local y generando código QR seguro...
+                    </p>
+                    <span className="text-[11px] text-slate-500">
+                      Esto tarda unos segundos mientras se inicializa el socket en tu equipo.
+                    </span>
+                  </div>
+                )}
+
+                {/* 4. Desconectado / Pantalla Inicial de Vinculación */}
+                {baileysState.status === 'disconnected' && (
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-3.5">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-slate-900 dark:text-white text-xs">
+                        Vinculación Rápida por Código QR (Sin servidores ni límites)
+                      </h4>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                        Cada instalación de la app actúa como su propio servidor seguro en local mediante el protocolo oficial de WhatsApp Web. No necesitas crear cuentas de empresa en Meta, pagar suscripciones de servidores en la nube ni verificar documentos.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">IA Conversacional</span>
+                        <span className="text-slate-500 text-[10px]">Responde cualquier duda, saluda y te orienta en el móvil.</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">Audios con Whisper</span>
+                        <span className="text-slate-500 text-[10px]">Envía notas de voz: las transcribe y programa todo.</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">100% Local y Gratis</span>
+                        <span className="text-slate-500 text-[10px]">Tu equipo es tu servidor sin cuotas ni intermediarios.</span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleConnectBaileys}
+                      disabled={isBaileysActionLoading}
+                      className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 text-xs"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">qr_code_scanner</span>
+                      <span>Generar Código QR de Vinculación</span>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* AVISO DE PRIVACIDAD EN LETRA PEQUEÑA */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -1540,20 +1659,24 @@ export default function AutoOrganizerPage() {
 
             {/* Botones Inferiores */}
             <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={handleSendDailyBriefing}
-                className="py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-semibold transition-colors cursor-pointer flex items-center gap-1.5 text-xs"
-              >
-                <span className="material-symbols-outlined text-[15px]">send</span>
-                <span>Enviar Briefing Matutino</span>
-              </button>
+              {!isGuest && (
+                <button
+                  type="button"
+                  onClick={handleSendDailyBriefing}
+                  className="py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-semibold transition-colors cursor-pointer flex items-center gap-1.5 text-xs"
+                >
+                  <span className="material-symbols-outlined text-[15px]">send</span>
+                  <span>Enviar Briefing Matutino</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setIsWhatsAppModalOpen(false)}
-                className="py-2 px-4 bg-primary text-white rounded-xl font-semibold hover:opacity-95 transition-all cursor-pointer shadow-xs active:scale-95 text-xs"
+                className={`py-2 px-4 bg-primary text-white rounded-xl font-semibold hover:opacity-95 transition-all cursor-pointer shadow-xs active:scale-95 text-xs ${
+                  isGuest ? 'w-full' : 'ml-auto'
+                }`}
               >
-                Listo
+                {isGuest ? 'Continuar en modo invitado' : 'Listo'}
               </button>
             </div>
           </div>
