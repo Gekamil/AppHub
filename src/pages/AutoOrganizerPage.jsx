@@ -27,6 +27,7 @@ import {
   sendBaileysMessage,
   syncBaileysTasks,
   testBaileysChat,
+  deleteBaileysTask,
   subscribeToBaileysLiveUpdates,
 } from '../services/baileysBridge'
 
@@ -327,6 +328,7 @@ export default function AutoOrganizerPage() {
   // Eliminar tarea
   const handleDeleteTask = (id) => {
     setGlobalTasks((prev) => prev.filter((t) => t.id !== id))
+    deleteBaileysTask(id).catch(() => {})
   }
 
   // Auto-Organizar con IA: Reordena y envía logs estructurados y gráficos al asistente/bot

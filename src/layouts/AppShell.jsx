@@ -257,20 +257,29 @@ export default function AppShell() {
   }, [])
 
   // Función de mezcla atómica de tareas entrantes desde el servidor (SSE / Polling)
-  const mergeRemoteTasks = useCallback((syncedTasks) => {
-    if (!Array.isArray(syncedTasks) || syncedTasks.length === 0) return
+  const mergeRemoteTasks = useCallback((syncedTasks, deletedIds = []) => {
+    if (!Array.isArray(syncedTasks)) return
+
+    const delSet = new Set((deletedIds || []).map(String))
 
     setGlobalTasks((prevTasks) => {
-      let hasModifications = false
+      // 1. Quitar cualquier tarea cuyo ID esté explícitamente en deletedIds
+      let current = (prevTasks || []).filter((t) => !delSet.has(String(t.id)))
+
       const remoteMap = new Map()
       syncedTasks.forEach((st) => {
-        if (st.id) remoteMap.set(String(st.id), st)
+        if (st && st.id && !delSet.has(String(st.id))) {
+          remoteMap.set(String(st.id), st)
+        }
       })
 
-      // 1. Detectar actualizaciones en tareas existentes (renombrado, horas, notas, est, completado...)
-      let updatedExisting = prevTasks.map((t) => {
+      let hasModifications = false
+
+      // 2. Actualizar tareas existentes que hayan cambiado en el servidor (renombrado, hora, notas...)
+      current = current.map((t) => {
         const remote = remoteMap.get(String(t.id))
         if (remote) {
+          remoteMap.delete(String(t.id)) // Marcada como procesada
           const titleChanged = remote.title && remote.title !== t.title
           const timeChanged = remote.time && remote.time !== t.time
           const dateChanged = remote.date && remote.date !== t.date
@@ -293,57 +302,34 @@ export default function AppShell() {
               context: remote.context || t.context,
               color: remote.color || t.color,
               completed: remote.completed !== undefined ? remote.completed : t.completed,
+              updatedAt: remote.updatedAt || Date.now(),
             }
           }
         }
         return t
       })
 
-      // 2. Eliminar tareas marcadas como eliminadas en WhatsApp o en otro dispositivo (por ID o por Título)
-      const deletedTasks = syncedTasks.filter((st) => st._deleted)
-      const deletedIds = new Set(deletedTasks.filter((st) => st.id).map((st) => String(st.id)))
-      const deletedTitles = deletedTasks
-        .filter((st) => st.title)
-        .map((st) => st.title.trim().toLowerCase())
-
-      const filteredExisting = updatedExisting.filter((t) => {
-        if (deletedIds.has(String(t.id))) {
-          hasModifications = true
-          return false
-        }
-        const tTitle = (t.title || '').trim().toLowerCase()
-        if (
-          tTitle &&
-          deletedTitles.some(
-            (dt) => dt === tTitle || tTitle.includes(dt) || dt.includes(tTitle)
-          )
-        ) {
-          hasModifications = true
-          return false
-        }
-        return true
-      })
-
-      // 3. Incorporar tareas recién añadidas desde WhatsApp o desde otro dispositivo
-      const existingIds = new Set(filteredExisting.map((t) => String(t.id)))
+      // 3. Añadir nuevas tareas que vinieron del servidor y no teníamos
       const existingKeys = new Set(
-        filteredExisting.map((t) => `${t.title?.trim().toLowerCase()}_${t.date}_${t.time}`)
-      )
-      const newlyAdded = syncedTasks.filter(
-        (st) =>
-          !st._deleted &&
-          !existingIds.has(String(st.id)) &&
-          !existingKeys.has(`${st.title?.trim().toLowerCase()}_${st.date}_${st.time}`)
+        current.map((t) => `${(t.title || '').trim().toLowerCase()}_${t.date}_${t.time}`)
       )
 
-      if (newlyAdded.length > 0 || hasModifications) {
-        const result = [...newlyAdded, ...filteredExisting]
+      for (const [, newRemoteTask] of remoteMap) {
+        if (newRemoteTask._deleted) continue
+        const key = `${(newRemoteTask.title || '').trim().toLowerCase()}_${newRemoteTask.date}_${newRemoteTask.time}`
+        if (!existingKeys.has(key)) {
+          current.unshift(newRemoteTask)
+          hasModifications = true
+        }
+      }
+
+      if (hasModifications || delSet.size > 0) {
         isRemoteSyncRef.current = true
-        lastPushedTasksJsonRef.current = JSON.stringify(result)
+        lastPushedTasksJsonRef.current = JSON.stringify(current)
         try {
-          localStorage.setItem('app_global_tasks', JSON.stringify(result))
+          localStorage.setItem('app_global_tasks', JSON.stringify(current))
         } catch (e) {}
-        return result
+        return current
       }
       return prevTasks
     })
@@ -355,9 +341,9 @@ export default function AppShell() {
     let isCancelled = false
 
     // 1. Suscripción en tiempo real vía Server-Sent Events
-    const unsubscribe = subscribeToBaileysLiveUpdates((remoteTasks) => {
+    const unsubscribe = subscribeToBaileysLiveUpdates((remoteTasks, deletedIds) => {
       if (!isCancelled) {
-        mergeRemoteTasks(remoteTasks)
+        mergeRemoteTasks(remoteTasks, deletedIds)
       }
     })
 

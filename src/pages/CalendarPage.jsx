@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { syncTasksToCloud, syncCalendarsToCloud, loadUserDataFromCloud } from '../services/firebase'
 import { getSharedRoles, addSharedRole, deleteSharedRole } from '../services/sharedRoles'
+import { deleteBaileysTask } from '../services/baileysBridge'
 
 // Helpers de fecha dinámicos
 const formatYMD = (date) => {
@@ -865,6 +866,8 @@ export default function CalendarPage() {
     } else {
       setGlobalTasks((prev) => (prev || []).filter((t) => String(t.id) !== String(id)))
     }
+
+    deleteBaileysTask(id).catch(() => {})
 
     if (selectedDetailTask && String(selectedDetailTask.id) === String(id)) {
       setSelectedDetailTask(null)

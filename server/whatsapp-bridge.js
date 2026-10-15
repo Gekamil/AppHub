@@ -45,15 +45,13 @@ const conversationHistories = new Map()
 let lastUserJid = null
 let lastMidnightBriefingDate = null
 
-// Cargar tareas guardadas localmente (incluye tombstones de los últimos 15 min)
+// Cargar tareas guardadas localmente
 function loadSyncedTasks() {
   try {
     if (fs.existsSync(TASKS_FILE)) {
       const data = JSON.parse(fs.readFileSync(TASKS_FILE, 'utf-8'))
       if (Array.isArray(data)) {
-        return data.filter(
-          (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
-        )
+        return data.filter((t) => !t._deleted)
       }
     }
   } catch (e) {}
@@ -62,9 +60,7 @@ function loadSyncedTasks() {
 
 function saveSyncedTasks(tasks) {
   try {
-    const toSave = (tasks || []).filter(
-      (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
-    )
+    const toSave = (tasks || []).filter((t) => !t._deleted)
     fs.writeFileSync(TASKS_FILE, JSON.stringify(toSave, null, 2), 'utf-8')
   } catch (e) {}
 }
@@ -75,11 +71,15 @@ let currentKnownTasks = loadSyncedTasks()
 // Clientes conectados por Server-Sent Events (SSE) para sincronización ultra rápida en tiempo real (<50ms)
 const sseClients = new Set()
 
-export function broadcastTasksUpdate(tasks) {
-  const activeTasks = (tasks || currentKnownTasks).filter(
-    (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
-  )
-  const message = `data: ${JSON.stringify({ type: 'tasks_updated', tasks: activeTasks, timestamp: Date.now() })}\n\n`
+export function broadcastTasksUpdate(tasks, deletedIds = []) {
+  const activeTasks = (tasks || currentKnownTasks).filter((t) => !t._deleted)
+  const message = `data: ${JSON.stringify({
+    type: 'tasks_updated',
+    tasks: activeTasks,
+    deletedIds: Array.isArray(deletedIds) ? deletedIds.map(String) : [],
+    timestamp: Date.now(),
+  })}\n\n`
+
   for (const client of sseClients) {
     try {
       client.write(message)
@@ -111,72 +111,61 @@ setInterval(() => {
   }
 }, 20000)
 
+// Sincronización entrante desde el cliente web (Upsert seguro: nunca borra por omisión)
 export function updateKnownTasks(tasks) {
-  if (Array.isArray(tasks)) {
-    // 1. Identificar tombstones activos para que la sincronización del frontend nunca los resucite
-    const deletedIds = new Set(
-      currentKnownTasks.filter((t) => t._deleted).map((t) => String(t.id))
-    )
-    const deletedTitles = currentKnownTasks
-      .filter((t) => t._deleted && t.title)
-      .map((t) => t.title.trim().toLowerCase())
+  if (!Array.isArray(tasks) || tasks.length === 0) return
 
-    const validIncoming = tasks.filter((t) => {
-      if (deletedIds.has(String(t.id))) return false
-      const tTitle = (t.title || '').trim().toLowerCase()
-      if (
-        tTitle &&
-        deletedTitles.some((dt) => dt === tTitle || tTitle.includes(dt) || dt.includes(tTitle))
-      ) {
-        return false
+  let hasModifications = false
+  const serverMap = new Map()
+  currentKnownTasks.forEach((t) => {
+    if (t.id) serverMap.set(String(t.id), t)
+  })
+
+  for (const incoming of tasks) {
+    if (!incoming || !incoming.id || incoming._deleted) continue
+    const sId = String(incoming.id)
+    const existing = serverMap.get(sId)
+
+    if (existing) {
+      const changed =
+        existing.title !== incoming.title ||
+        existing.time !== incoming.time ||
+        existing.date !== incoming.date ||
+        existing.completed !== incoming.completed ||
+        existing.description !== incoming.description
+
+      if (changed) {
+        Object.assign(existing, {
+          title: incoming.title || existing.title,
+          time: incoming.time || existing.time,
+          date: incoming.date || existing.date,
+          completed: incoming.completed !== undefined ? incoming.completed : existing.completed,
+          description: incoming.description !== undefined ? incoming.description : existing.description,
+          effort: incoming.effort || existing.effort,
+          context: incoming.context || existing.context,
+          est: incoming.est || existing.est,
+          color: incoming.color || existing.color,
+          updatedAt: Date.now(),
+        })
+        hasModifications = true
       }
-      return true
-    })
+    } else {
+      // Verificar duplicado por clave (título + fecha + hora)
+      const incomingKey = `${(incoming.title || '').trim().toLowerCase()}_${incoming.date}_${incoming.time}`
+      const isDuplicate = currentKnownTasks.some(
+        (t) => `${(t.title || '').trim().toLowerCase()}_${t.date}_${t.time}` === incomingKey
+      )
+      if (!isDuplicate) {
+        currentKnownTasks.push({
+          ...incoming,
+          updatedAt: Date.now(),
+        })
+        hasModifications = true
+      }
+    }
+  }
 
-    const incomingIds = new Set(validIncoming.map((t) => String(t.id)))
-    const incomingKeys = new Set(
-      validIncoming.map((t) => `${(t.title || '').trim().toLowerCase()}_${t.date}_${t.time}`)
-    )
-
-    // Detectar tareas que estaban en el servidor y que el frontend ha eliminado para crear tombstones
-    const newlyDeletedTombstones = currentKnownTasks
-      .filter((serverTask) => {
-        if (serverTask._deleted) return false
-        // Si fue creada hace menos de 5 segundos por WhatsApp, darle una pequeña ventana de gracia
-        if (serverTask.source?.startsWith('whatsapp') && Date.now() - (serverTask.updatedAt || 0) < 5000) {
-          return false
-        }
-        const sId = String(serverTask.id)
-        const sKey = `${(serverTask.title || '').trim().toLowerCase()}_${serverTask.date}_${serverTask.time}`
-        return !incomingIds.has(sId) && !incomingKeys.has(sKey)
-      })
-      .map((t) => ({
-        ...t,
-        _deleted: true,
-        deletedAt: Date.now(),
-        updatedAt: Date.now(),
-      }))
-
-    // Tareas creadas por WhatsApp pendientes de incorporarse en frontend
-    const pendingWhatsAppTasks = currentKnownTasks.filter(
-      (bt) =>
-        !bt._deleted &&
-        !incomingIds.has(String(bt.id)) &&
-        !incomingKeys.has(`${(bt.title || '').trim().toLowerCase()}_${bt.date}_${bt.time}`) &&
-        bt.source?.startsWith('whatsapp') &&
-        Date.now() - (bt.updatedAt || 0) < 5000
-    )
-
-    const activeTombstones = currentKnownTasks.filter(
-      (t) => t._deleted && Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000
-    )
-
-    currentKnownTasks = [
-      ...activeTombstones,
-      ...newlyDeletedTombstones,
-      ...pendingWhatsAppTasks,
-      ...validIncoming,
-    ]
+  if (hasModifications) {
     saveSyncedTasks(currentKnownTasks)
     broadcastTasksUpdate(currentKnownTasks)
   }
@@ -272,22 +261,46 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
       modified.push(newTask)
     } else if (act.type === 'update_task') {
       const targetId = act.targetId
-      const targetTitle = (act.targetTitle || '').trim().toLowerCase()
+      let targetTitle = (act.targetTitle || '').trim().toLowerCase()
       const updates = act.updates || {}
+
+      // Si targetTitle es genérico ("el evento", "la tarea", "este evento"), ignorar como nombre literal
+      const isGeneric =
+        !targetTitle ||
+        /^(el\s+)?(evento|tarea|actividad|cita|asunto|ultimo|último|este|esta)$/i.test(targetTitle)
 
       let idx = -1
       if (targetId) {
         idx = currentKnownTasks.findIndex((t) => !t._deleted && String(t.id) === String(targetId))
       }
-      if (idx === -1 && targetTitle) {
-        idx = currentKnownTasks.findIndex((t) => {
-          if (t._deleted) return false
-          const tName = (t.title || '').toLowerCase()
-          return tName === targetTitle || tName.includes(targetTitle) || targetTitle.includes(tName)
-        })
+      if (idx === -1 && targetTitle && !isGeneric) {
+        // 1. Coincidencia exacta
+        idx = currentKnownTasks.findIndex(
+          (t) => !t._deleted && (t.title || '').trim().toLowerCase() === targetTitle
+        )
+        // 2. Coincidencia parcial si targetTitle >= 3 caracteres
+        if (idx === -1 && targetTitle.length >= 3) {
+          idx = currentKnownTasks.findIndex((t) => {
+            if (t._deleted) return false
+            const tName = (t.title || '').toLowerCase()
+            return tName.includes(targetTitle) || targetTitle.includes(tName)
+          })
+        }
       }
+      // 3. Si no se encontró por título o fue orden genérica, actualizar el evento más reciente
       if (idx === -1 && currentKnownTasks.length > 0) {
-        idx = currentKnownTasks.findIndex((t) => !t._deleted)
+        let bestIdx = -1
+        let maxTime = -1
+        for (let i = 0; i < currentKnownTasks.length; i++) {
+          const t = currentKnownTasks[i]
+          if (t._deleted) continue
+          const tTime = Number(t.updatedAt || t.id || 0)
+          if (tTime > maxTime) {
+            maxTime = tTime
+            bestIdx = i
+          }
+        }
+        idx = bestIdx
       }
 
       if (idx !== -1) {
@@ -295,6 +308,7 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
         const updated = {
           ...prev,
           ...updates,
+          _deleted: false,
           updatedAt: Date.now(),
         }
         if (updates.effort) {
@@ -310,7 +324,7 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
       }
     } else if (act.type === 'delete_task' || act.type === 'delete_all_tasks') {
       const targetId = act.targetId
-      const targetTitle = (act.targetTitle || '').trim().toLowerCase()
+      let targetTitle = (act.targetTitle || '').trim().toLowerCase()
       const isDeleteAll =
         act.type === 'delete_all_tasks' ||
         targetTitle === 'todas' ||
@@ -319,89 +333,54 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
         targetTitle === 'todas las tareas' ||
         targetTitle === 'todos los eventos'
 
-      const matchedIndices = []
-      for (let i = 0; i < currentKnownTasks.length; i++) {
-        const t = currentKnownTasks[i]
-        if (t._deleted) continue
-
-        if (isDeleteAll) {
-          matchedIndices.push(i)
-          continue
-        }
-
-        const tId = String(t.id)
-        const tName = (t.title || '').trim().toLowerCase()
-
-        if (targetId && tId === String(targetId)) {
-          matchedIndices.push(i)
-          continue
-        }
-
-        if (targetTitle) {
-          // 1. Coincidencia exacta
-          if (tName === targetTitle) {
-            matchedIndices.push(i)
-            continue
-          }
-
-          // 2. Si targetTitle o tName son muy cortos (<= 2 caracteres), exigir palabra completa
-          if (targetTitle.length <= 2 || tName.length <= 2) {
-            const shortWordRegex = new RegExp(`(^|\\s|[.,;:-])${targetTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\s|[.,;:-])`, 'i')
-            if (shortWordRegex.test(tName)) {
-              matchedIndices.push(i)
-              continue
-            }
-          } else {
-            // 3. Para 3 o más caracteres: coincidencia de inclusión segura
-            if (tName.includes(targetTitle)) {
-              matchedIndices.push(i)
-              continue
-            }
-            const nameRegex = new RegExp(`(^|\\s|[.,;:-])${tName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|\\s|[.,;:-])`, 'i')
-            if (nameRegex.test(targetTitle)) {
-              matchedIndices.push(i)
-              continue
-            }
-          }
-
-          // 4. Tokens significativos
-          const stopWords = new Set([
-            'para', 'esta', 'este', 'estos', 'estas', 'tres', 'dos', 'cuatro', 'cinco',
-            'evento', 'eventos', 'tarea', 'tareas', 'que', 'has', 'creado', 'los', 'las', 'mis',
-            'borra', 'elimina', 'quita', 'llamada', 'llamado', 'favor', 'por'
-          ])
-          const tokens = targetTitle
-            .split(/[\s,]+/)
-            .filter((w) => w.length >= 3 && !stopWords.has(w))
-
-          if (tokens.length > 0) {
-            const hasMatch = tokens.some((tok) => {
-              const singular = tok.endsWith('s') ? tok.slice(0, -1) : tok
-              return tName.includes(tok) || tName.includes(singular)
-            })
-            if (hasMatch) {
-              matchedIndices.push(i)
-              continue
-            }
-          }
-
-          // 5. Si pide borrar tareas falsas o de prueba explícitas
-          if (
-            (targetTitle.includes('falso') || targetTitle.includes('inventad') || targetTitle.includes('de prueba')) &&
-            (tName.includes('fals') || tName.includes('prueb') || tName.includes('invent') || t.source?.startsWith('whatsapp') || t.source?.startsWith('chat'))
-          ) {
-            matchedIndices.push(i)
-            continue
-          }
-        }
+      if (isDeleteAll) {
+        const delIds = currentKnownTasks.map((t) => t.id)
+        currentKnownTasks = []
+        saveSyncedTasks(currentKnownTasks)
+        broadcastTasksUpdate(currentKnownTasks, delIds)
+        return []
       }
 
-      for (const idx of matchedIndices) {
-        const item = currentKnownTasks[idx]
-        item._deleted = true
-        item.deletedAt = Date.now()
-        item.updatedAt = Date.now()
-        modified.push({ ...item })
+      const isGeneric =
+        !targetTitle ||
+        /^(el\s+)?(evento|tarea|actividad|cita|asunto|ultimo|último|este|esta)$/i.test(targetTitle)
+
+      let idx = -1
+      if (targetId) {
+        idx = currentKnownTasks.findIndex((t) => !t._deleted && String(t.id) === String(targetId))
+      }
+      if (idx === -1 && targetTitle && !isGeneric) {
+        idx = currentKnownTasks.findIndex(
+          (t) => !t._deleted && (t.title || '').trim().toLowerCase() === targetTitle
+        )
+        if (idx === -1 && targetTitle.length >= 3) {
+          idx = currentKnownTasks.findIndex((t) => {
+            if (t._deleted) return false
+            const tName = (t.title || '').toLowerCase()
+            return tName.includes(targetTitle) || targetTitle.includes(tName)
+          })
+        }
+      }
+      if (idx === -1 && isGeneric && currentKnownTasks.length > 0) {
+        let bestIdx = -1
+        let maxTime = -1
+        for (let i = 0; i < currentKnownTasks.length; i++) {
+          const t = currentKnownTasks[i]
+          if (t._deleted) continue
+          const tTime = Number(t.updatedAt || t.id || 0)
+          if (tTime > maxTime) {
+            maxTime = tTime
+            bestIdx = i
+          }
+        }
+        idx = bestIdx
+      }
+
+      if (idx !== -1) {
+        const [removed] = currentKnownTasks.splice(idx, 1)
+        saveSyncedTasks(currentKnownTasks)
+        broadcastTasksUpdate(currentKnownTasks, [removed.id])
+        return [removed]
       }
     }
   }
@@ -1058,9 +1037,7 @@ export function getBaileysStatus() {
 }
 
 export function getRecentSyncedTasks() {
-  return currentKnownTasks.filter(
-    (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
-  )
+  return currentKnownTasks.filter((t) => !t._deleted)
 }
 
 // Middleware para Vite / Express
@@ -1090,9 +1067,7 @@ export function handleBaileysApiRoute(req, res) {
     res.write(': connected\n\n')
 
     // Snapshot inmediato de tareas y estado al conectarse
-    const initialTasks = currentKnownTasks.filter(
-      (t) => !t._deleted || (Date.now() - (t.deletedAt || 0) < 15 * 60 * 1000)
-    )
+    const initialTasks = currentKnownTasks.filter((t) => !t._deleted)
     res.write(`data: ${JSON.stringify({ type: 'tasks_updated', tasks: initialTasks, timestamp: Date.now() })}\n\n`)
     res.write(`data: ${JSON.stringify({ type: 'status_updated', status: currentStatus, timestamp: Date.now() })}\n\n`)
 
@@ -1145,6 +1120,34 @@ export function handleBaileysApiRoute(req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify(getRecentSyncedTasks()))
+    return true
+  }
+
+  if (pathname === '/api/baileys/delete-task' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => {
+      body += chunk
+    })
+    req.on('end', () => {
+      try {
+        const { id } = JSON.parse(body)
+        if (id) {
+          const sId = String(id)
+          const idx = currentKnownTasks.findIndex((t) => String(t.id) === sId)
+          if (idx !== -1) {
+            currentKnownTasks.splice(idx, 1)
+            saveSyncedTasks(currentKnownTasks)
+            broadcastTasksUpdate(currentKnownTasks, [sId])
+          }
+        }
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true }))
+      } catch (e) {
+        res.statusCode = 400
+        res.end(JSON.stringify({ error: e.message }))
+      }
+    })
     return true
   }
 

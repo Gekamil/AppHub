@@ -94,6 +94,19 @@ export async function triggerMidnightBriefing() {
   }
 }
 
+export async function deleteBaileysTask(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/baileys/delete-task`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    return await res.json()
+  } catch (e) {
+    return { success: false, error: e.message }
+  }
+}
+
 // Suscribirse a actualizaciones en tiempo real instantáneas (<50ms) vía Server-Sent Events
 export function subscribeToBaileysLiveUpdates(onTasksUpdated, onStatusUpdated) {
   if (typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
@@ -115,7 +128,7 @@ export function subscribeToBaileysLiveUpdates(onTasksUpdated, onStatusUpdated) {
           const data = JSON.parse(event.data)
           if (data.type === 'tasks_updated' && Array.isArray(data.tasks)) {
             if (typeof onTasksUpdated === 'function') {
-              onTasksUpdated(data.tasks)
+              onTasksUpdated(data.tasks, data.deletedIds || [])
             }
           } else if (data.type === 'status_updated' && data.status) {
             if (typeof onStatusUpdated === 'function') {
