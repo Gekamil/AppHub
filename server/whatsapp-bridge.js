@@ -1246,6 +1246,59 @@ export function handleBaileysApiRoute(req, res) {
     return true
   }
 
+  // Proxy universal de feeds iCal / ICS (TeamUp, Google Calendar, Apple, etc.)
+  if (pathname === '/api/proxy-ics') {
+    const targetUrl = parsedUrl.searchParams.get('url')
+    if (!targetUrl) {
+      res.statusCode = 400
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Falta el parámetro url' }))
+      return true
+    }
+
+    let fetchUrl = targetUrl.trim()
+    if (fetchUrl.startsWith('webcal://')) {
+      fetchUrl = fetchUrl.replace('webcal://', 'https://')
+    }
+
+    // Auto-conversión universal para cualquier URL de TeamUp (ej: teamup.com/ks..., teamup.com/c/ks..., ics.teamup.com...)
+    const teamupMatch = fetchUrl.match(/(?:ics\.)?teamup\.com\/(?:feed\/|c\/)?([a-zA-Z0-9_-]+)/i)
+    if (teamupMatch && !fetchUrl.endsWith('.ics') && !fetchUrl.includes('/0.ics')) {
+      const teamupKey = teamupMatch[1]
+      fetchUrl = `https://ics.teamup.com/feed/${teamupKey}/0.ics`
+    }
+
+    console.log(`[Proxy-ICS]: Descargando calendario externo desde: ${fetchUrl}`)
+
+    fetch(fetchUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/calendar, text/plain, */*',
+      },
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          res.statusCode = response.status
+          res.setHeader('Content-Type', 'text/plain')
+          res.end(`Error del servidor iCal externo: ${response.status} ${response.statusText}`)
+          return
+        }
+        const text = await response.text()
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'text/calendar; charset=utf-8')
+        res.end(text)
+      })
+      .catch((err) => {
+        console.error('[Proxy-ICS Error]:', err.message)
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'text/plain')
+        res.end(`Error conectando con feed iCal: ${err.message}`)
+      })
+
+    return true
+  }
+
   // Canal Server-Sent Events (SSE) para sincronización en tiempo real (<50ms)
   if (pathname === '/api/baileys/events-stream') {
     res.writeHead(200, {

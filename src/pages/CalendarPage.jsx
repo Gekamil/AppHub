@@ -665,8 +665,8 @@ export default function CalendarPage() {
     const groupId = baseEvent.recurrenceGroupId || baseEvent.id
 
     if (baseEvent.recurrence === 'daily') {
-      // 365 días continuos (1 año completo)
-      for (let i = 1; i <= 365; i++) {
+      // 60 días continuos (2 meses) para un horizonte ágil y óptimo
+      for (let i = 1; i <= 60; i++) {
         const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setDate(nextD.getDate() + i)
         events.push({
@@ -677,8 +677,8 @@ export default function CalendarPage() {
         })
       }
     } else if (baseEvent.recurrence === 'weekly') {
-      // 104 semanas continuas (2 años)
-      for (let i = 1; i <= 104; i++) {
+      // 12 semanas continuas (3 meses) en vez de 104 semanas (2 años)
+      for (let i = 1; i <= 12; i++) {
         const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setDate(nextD.getDate() + i * 7)
         events.push({
@@ -689,8 +689,8 @@ export default function CalendarPage() {
         })
       }
     } else if (baseEvent.recurrence === 'monthly') {
-      // 60 meses continuos (5 años)
-      for (let i = 1; i <= 60; i++) {
+      // 12 meses continuos (1 año) en vez de 60 meses
+      for (let i = 1; i <= 12; i++) {
         const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setMonth(nextD.getMonth() + i)
         events.push({
@@ -701,8 +701,8 @@ export default function CalendarPage() {
         })
       }
     } else if (baseEvent.recurrence === 'yearly') {
-      // 10 años continuos
-      for (let i = 1; i <= 10; i++) {
+      // 3 años continuos en vez de 10
+      for (let i = 1; i <= 3; i++) {
         const nextD = new Date(baseEvent.date + 'T12:00:00')
         nextD.setFullYear(nextD.getFullYear() + i)
         events.push({
@@ -1016,16 +1016,18 @@ export default function CalendarPage() {
       cleanUrl = cleanUrl.replace('webcal://', 'https://')
     }
 
-    // Auto-conversión inteligente de URLs de TeamUp (ej: teamup.com/ks... -> feed iCal directo)
-    const teamupMatch = cleanUrl.match(/teamup\.com\/(?:feed\/)?(ks[a-zA-Z0-9_-]+)/i)
-    if (teamupMatch) {
+    // Auto-conversión universal e inteligente de URLs de TeamUp (ej: teamup.com/ks..., teamup.com/c/ks..., ics.teamup.com...)
+    const teamupMatch = cleanUrl.match(/(?:ics\.)?teamup\.com\/(?:feed\/|c\/)?([a-zA-Z0-9_-]+)/i)
+    if (teamupMatch && !cleanUrl.endsWith('.ics') && !cleanUrl.includes('/0.ics')) {
       const teamupKey = teamupMatch[1]
       cleanUrl = `https://ics.teamup.com/feed/${teamupKey}/0.ics`
     }
 
     try {
       let icsText = ''
+      const apiBase = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || ''
       const candidateProxies = [
+        `${apiBase}/api/proxy-ics?url=${encodeURIComponent(cleanUrl)}`,
         `/api/proxy-ics?url=${encodeURIComponent(cleanUrl)}`,
         cleanUrl,
         `https://api.allorigins.win/raw?url=${encodeURIComponent(cleanUrl)}`,

@@ -32,6 +32,117 @@ import {
 } from '../services/baileysBridge'
 import { getCurrentUser, isGuestUser } from '../services/firebase'
 
+export function isSportActivity(task) {
+  if (!task) return false
+  const ctx = (task.context || '').toLowerCase()
+  const title = (task.title || '').toLowerCase()
+  if (
+    ctx.includes('health') ||
+    ctx.includes('gym') ||
+    ctx.includes('deporte') ||
+    ctx.includes('salud') ||
+    ctx.includes('fitness')
+  ) {
+    return true
+  }
+  if (
+    title.includes('padel') ||
+    title.includes('pádel') ||
+    title.includes('gym') ||
+    title.includes('gimnasio') ||
+    title.includes('entreno') ||
+    title.includes('entrenamiento') ||
+    title.includes('partido') ||
+    title.includes('correr') ||
+    title.includes('crossfit') ||
+    title.includes('fitness') ||
+    title.includes('fútbol') ||
+    title.includes('futbol') ||
+    title.includes('natación') ||
+    title.includes('natacion')
+  ) {
+    return true
+  }
+  return false
+}
+
+function getTodayInfo() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const todayYmd = `${y}-${m}-${d}`
+
+  const dayOfWeek = (now.getDay() + 6) % 7 // 0 = Lunes, 6 = Domingo
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek)
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6)
+
+  const formatYmd = (dateObj) => {
+    const yr = dateObj.getFullYear()
+    const mo = String(dateObj.getMonth() + 1).padStart(2, '0')
+    const dy = String(dateObj.getDate()).padStart(2, '0')
+    return `${yr}-${mo}-${dy}`
+  }
+
+  const weekStart = formatYmd(monday)
+  const weekEnd = formatYmd(sunday)
+
+  const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const cur = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
+    const ymd = formatYmd(cur)
+    return {
+      label: dayLabels[i],
+      date: ymd,
+      dayNum: cur.getDate(),
+      isToday: ymd === todayYmd,
+    }
+  })
+
+  // Cabecera: "Jueves, 15 de octubre"
+  const rawHeader = now.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+  const headerDateStr = rawHeader ? rawHeader.charAt(0).toUpperCase() + rawHeader.slice(1) : ''
+
+  // Hoy: "Jueves, 15 Oct"
+  const rawTodayLabel = now.toLocaleDateString('es-ES', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+  const todayLabelStr = rawTodayLabel ? rawTodayLabel.charAt(0).toUpperCase() + rawTodayLabel.slice(1) : ''
+
+  // Resto de la semana
+  const nextDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  const restStartNum = nextDay.getDate()
+  const restEndNum = sunday.getDate()
+  const restMonthStr = sunday.toLocaleDateString('es-ES', { month: 'short' })
+  const restOfWeekLabelStr = `${restStartNum} - ${restEndNum} ${restMonthStr}`
+
+  // Rango semanal: ej "12 - 18 de octubre"
+  const weekMonthStr = sunday.toLocaleDateString('es-ES', { month: 'long' })
+  const weekRangeLabel = `${monday.getDate()} - ${sunday.getDate()} de ${weekMonthStr}`
+
+  // Próxima semana: "A partir del 19 Oct"
+  const nextMonday = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + 1)
+  const nextMondayStr = nextMonday.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+
+  return {
+    todayYmd,
+    weekStart,
+    weekEnd,
+    weekDays,
+    headerDateStr,
+    todayLabelStr,
+    restOfWeekLabelStr,
+    weekRangeLabel,
+    nextMondayStr,
+  }
+}
+
 export default function AutoOrganizerPage() {
   const { globalTasks = [], setGlobalTasks } = useOutletContext() || {}
   const navigate = useNavigate()
@@ -64,8 +175,9 @@ export default function AutoOrganizerPage() {
   const [filterStatus, setFilterStatus] = useState('all') // 'all' | 'pending' | 'completed'
   const [selectedContextFilter, setSelectedContextFilter] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showAllFutureTasks, setShowAllFutureTasks] = useState(false)
 
-  const [selectedRadarDate, setSelectedRadarDate] = useState('2026-10-14')
+  const [selectedRadarDate, setSelectedRadarDate] = useState(() => getTodayInfo().todayYmd)
 
   // Modal y Configuración de Bot de WhatsApp (Meta Cloud API + Baileys Puente Local)
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false)
@@ -314,7 +426,7 @@ export default function AutoOrganizerPage() {
     setIsQuickPromptOpen(false)
 
     try {
-      const result = await parseNaturalLanguageSchedule(rawText, selectedDate || '2026-10-14')
+      const result = await parseNaturalLanguageSchedule(rawText, selectedDate || getTodayInfo().todayYmd)
       if (result && result.tasks && result.tasks.length > 0) {
         setGlobalTasks((prev) => [...result.tasks, ...prev])
         setAiNotification(result.summary || `${result.tasks.length} evento(s) asignado(s) con éxito.`)
@@ -327,7 +439,7 @@ export default function AutoOrganizerPage() {
     }
 
     // Heurística local de ultra-precisión (fallback instantáneo sin latencia)
-    const localResult = parseScheduleLocalHeuristics(rawText, selectedDate || '2026-10-14')
+    const localResult = parseScheduleLocalHeuristics(rawText, selectedDate || getTodayInfo().todayYmd)
     if (localResult && localResult.tasks && localResult.tasks.length > 0) {
       setGlobalTasks((prev) => [...localResult.tasks, ...prev])
       setAiNotification(localResult.summary)
@@ -526,9 +638,16 @@ export default function AutoOrganizerPage() {
     }
   }
 
+  const todayInfo = useMemo(() => getTodayInfo(), [])
+  const { todayYmd, weekStart, weekEnd, weekDays } = todayInfo
+
   // Filtrado de Tareas
   const filteredTasks = globalTasks.filter((task) => {
-    if (filterStatus === 'pending' && task.completed) return false
+    if (filterStatus === 'pending') {
+      if (task.completed) return false
+      // Las actividades marcadas como deporte no son tareas pendientes a tachar como obligación
+      if (isSportActivity(task)) return false
+    }
     if (filterStatus === 'completed' && !task.completed) return false
     if (selectedContextFilter !== 'All' && task.context !== selectedContextFilter) return false
     if (searchQuery.trim()) {
@@ -540,29 +659,31 @@ export default function AutoOrganizerPage() {
     return true
   })
 
-  // Métricas y Alcance
-  const todayYmd = '2026-10-14'
-  const weekStart = '2026-10-12'
-  const weekEnd = '2026-10-18'
-
-  // Tareas de esta semana (Lunes 12 a Domingo 18 de octubre)
+  // Tareas de esta semana (Lunes a Domingo dinámico)
   const tasksThisWeek = useMemo(() => {
     return filteredTasks.filter((t) => t.date && t.date >= weekStart && t.date <= weekEnd)
-  }, [filteredTasks])
+  }, [filteredTasks, weekStart, weekEnd])
 
   // Tareas de hoy
   const tasksToday = useMemo(() => {
     return filteredTasks.filter((t) => t.date === todayYmd)
-  }, [filteredTasks])
+  }, [filteredTasks, todayYmd])
+
+  // Tareas de to-do reales (excluye deportes y eventos de sincronización externa para el conteo de pendientes)
+  const isPendingChore = (t) => !t.completed && !isSportActivity(t) && !t.isExternalSync
+
+  const pendingThisWeekCount = tasksThisWeek.filter(isPendingChore).length
+  const completedThisWeekCount = tasksThisWeek.filter((t) => t.completed && !isSportActivity(t)).length
+  const sportSessionsThisWeekCount = tasksThisWeek.filter(isSportActivity).length
 
   // Próxima actividad pendiente para el panel de Enfoque Rápido
   const nextTaskToday = useMemo(() => {
-    const pending = tasksToday.filter((t) => !t.completed)
+    const pending = tasksToday.filter(isPendingChore)
     if (pending.length === 0) return null
     return [...pending].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))[0]
   }, [tasksToday])
 
-  const completedTodayCount = tasksToday.filter((t) => t.completed).length
+  const completedTodayCount = tasksToday.filter((t) => t.completed && !isSportActivity(t)).length
 
   const estimatedTodayMins = useMemo(() => {
     return tasksToday.reduce((acc, t) => {
@@ -572,42 +693,33 @@ export default function AutoOrganizerPage() {
     }, 0)
   }, [tasksToday])
 
-  // Tareas del resto de la semana (Jueves 15 a Domingo 18 de octubre)
+  // Tareas del resto de la semana (a partir de mañana hasta fin de semana)
   const tasksRestOfWeek = useMemo(() => {
     return filteredTasks.filter((t) => t.date && t.date > todayYmd && t.date <= weekEnd)
-  }, [filteredTasks])
+  }, [filteredTasks, todayYmd, weekEnd])
 
   // Tareas de semanas posteriores (para no saturar la vista semanal)
   const tasksFutureWeeks = useMemo(() => {
     return filteredTasks.filter((t) => t.date && t.date > weekEnd)
-  }, [filteredTasks])
+  }, [filteredTasks, weekEnd])
 
   // Tareas pasadas o sin fecha
   const tasksPastOrOther = useMemo(() => {
     return filteredTasks.filter((t) => !t.date || t.date < todayYmd)
-  }, [filteredTasks])
+  }, [filteredTasks, todayYmd])
 
-  const totalCount = globalTasks.length
-  const completedCount = globalTasks.filter((t) => t.completed).length
+  const totalCount = globalTasks.filter((t) => !isSportActivity(t) && !t.isExternalSync).length
+  const completedCount = globalTasks.filter((t) => t.completed && !isSportActivity(t) && !t.isExternalSync).length
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   // Tareas relevantes para el balance visual semanal
   const relevantTasksForDistribution = tasksThisWeek
   const relevantTotalCount = relevantTasksForDistribution.length
 
-  // Alertas de Anticipación Inteligente (Exámenes 2 semanas antes, entregas 4 días antes, deportes hoy)
-  const anticipationAlerts = generateAnticipationAlerts(globalTasks, todayYmd)
-
-  // Días de la semana para el Cronograma Gráfico Semanal
-  const weekDays = [
-    { label: 'Lun', date: '2026-10-12', dayNum: 12 },
-    { label: 'Mar', date: '2026-10-13', dayNum: 13 },
-    { label: 'Mié', date: '2026-10-14', dayNum: 14, isToday: true },
-    { label: 'Jue', date: '2026-10-15', dayNum: 15 },
-    { label: 'Vie', date: '2026-10-16', dayNum: 16 },
-    { label: 'Sáb', date: '2026-10-17', dayNum: 17 },
-    { label: 'Dom', date: '2026-10-18', dayNum: 18 },
-  ]
+  // Alertas de Anticipación Inteligente (Exámenes 2 semanas antes, entregas 4 días antes, deportes de hoy y semana)
+  const anticipationAlerts = useMemo(() => {
+    return generateAnticipationAlerts(globalTasks, todayYmd)
+  }, [globalTasks, todayYmd])
 
   // Cálculo de distribución porcentual por rol para la barra gráfica
   const roleDistribution = roles.map((r) => {
@@ -704,12 +816,21 @@ export default function AutoOrganizerPage() {
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
               Organizador Semanal
             </h1>
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
-              <span>Miércoles, 14 de octubre</span>
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium flex-wrap">
+              <span>{todayInfo.headerDateStr}</span>
               <span className="text-slate-300 dark:text-slate-600">•</span>
-              <span>{totalCount - completedCount} pendientes</span>
+              <span>{pendingThisWeekCount} pendientes esta semana</span>
               <span className="text-slate-300 dark:text-slate-600">•</span>
-              <span>{completedCount} completadas ({progressPercent}%)</span>
+              <span>{completedThisWeekCount} completadas</span>
+              {sportSessionsThisWeekCount > 0 && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[13px]">fitness_center</span>
+                    {sportSessionsThisWeekCount} {sportSessionsThisWeekCount === 1 ? 'sesión de deporte' : 'sesiones de deporte'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -790,6 +911,43 @@ export default function AutoOrganizerPage() {
           </div>
         )}
 
+        {/* Alertas de Anticipación Inteligente & Deporte (Sin contarse como tareas pendientes) */}
+        {anticipationAlerts && anticipationAlerts.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
+              <span className="material-symbols-outlined text-[16px] text-amber-500">notifications_active</span>
+              <span>Avisos de Actividades y Radar</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {anticipationAlerts.slice(0, 3).map((alert) => (
+                <div
+                  key={alert.id}
+                  className={`px-3.5 py-2.5 rounded-2xl border flex items-center justify-between gap-2.5 shadow-2xs ${alert.color}`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-white/80 dark:bg-black/30 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[17px]">
+                        {alert.type === 'sport' ? 'fitness_center' : alert.type === 'exam' ? 'school' : 'flag'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold truncate text-slate-900 dark:text-white">
+                        {alert.taskTitle}
+                      </span>
+                      <span className="text-[11px] opacity-90 truncate">
+                        {alert.message}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/80 dark:bg-black/40 shrink-0">
+                    {alert.badge}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 2. Disposición Dividida en 2 Columnas: Izquierda (Ingesta Rápida) + Derecha (Radar Gráfico) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* COLUMNA IZQUIERDA: Barra de Ingesta Rápida + Centro de Enfoque de Hoy (Llena el espacio vacío con utilidad real) */}
@@ -843,7 +1001,7 @@ export default function AutoOrganizerPage() {
                       Enfoque de Hoy
                     </h3>
                     <p className="text-[10px] text-slate-500">
-                      Miércoles, 14 de Octubre • {tasksToday.length} {tasksToday.length === 1 ? 'actividad' : 'actividades'}
+                      {todayInfo.todayLabelStr} • {tasksToday.length} {tasksToday.length === 1 ? 'actividad' : 'actividades'}
                     </p>
                   </div>
                 </div>
@@ -965,7 +1123,7 @@ export default function AutoOrganizerPage() {
                     Plan Semanal
                   </h3>
                   <p className="text-[10px] text-slate-500">
-                    12 - 18 de octubre • Agenda de la semana
+                    {todayInfo.weekRangeLabel} • Agenda de la semana
                   </p>
                 </div>
               </div>
@@ -1055,7 +1213,7 @@ export default function AutoOrganizerPage() {
                       <span className="material-symbols-outlined text-[15px]">event</span>
                     </div>
                     <span className="font-semibold text-slate-900 dark:text-white">
-                      {weekDays.find((d) => d.date === selectedRadarDate)?.label || 'Día'}, {weekDays.find((d) => d.date === selectedRadarDate)?.dayNum || '14'} de Octubre
+                      {weekDays.find((d) => d.date === selectedRadarDate)?.label || 'Día'}, {weekDays.find((d) => d.date === selectedRadarDate)?.dayNum || ''} {selectedRadarDate ? new Date(selectedRadarDate + 'T12:00:00').toLocaleDateString('es-ES', { month: 'long' }) : ''}
                       {selectedRadarDate === todayYmd && (
                         <span className="ml-1.5 px-1.5 py-0.2 rounded-md bg-[#0071E3]/15 text-[#0071E3] dark:text-blue-400 text-[10px] font-bold">
                           HOY
@@ -1307,7 +1465,7 @@ export default function AutoOrganizerPage() {
             <div className="flex items-center gap-2 px-1">
               <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                Hoy (Miércoles, 14 Oct) • {tasksToday.length} tareas
+                Hoy ({todayInfo.todayLabelStr}) • {tasksToday.length} tareas
               </h3>
             </div>
 
@@ -1330,12 +1488,12 @@ export default function AutoOrganizerPage() {
             </div>
           </div>
 
-          {/* Bloque 2: Esta Semana (15 a 18 Octubre) */}
+          {/* Bloque 2: Esta Semana */}
           <div className="space-y-3 pt-3">
             <div className="flex items-center gap-2 px-1">
               <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                Esta Semana (15 - 18 Oct) • {tasksRestOfWeek.length} tareas
+                Esta Semana ({todayInfo.restOfWeekLabelStr}) • {tasksRestOfWeek.length} tareas
               </h3>
             </div>
 
@@ -1358,18 +1516,32 @@ export default function AutoOrganizerPage() {
             </div>
           </div>
 
-          {/* Bloque 3: Tareas de Próximas Semanas */}
+          {/* Bloque 3: Tareas de Próximas Semanas (Con límite contra scroll infinito) */}
           {tasksFutureWeeks.length > 0 && (
             <div className="space-y-3 pt-3">
-              <div className="flex items-center gap-2 px-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                  Próximas Semanas (A partir del 19 Oct) • {tasksFutureWeeks.length} tareas
-                </h3>
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
+                    Próximas Semanas ({todayInfo.nextMondayStr ? `A partir del ${todayInfo.nextMondayStr}` : 'Futuras'}) • {tasksFutureWeeks.length} tareas
+                  </h3>
+                </div>
+                {tasksFutureWeeks.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllFutureTasks((prev) => !prev)}
+                    className="text-xs text-primary font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{showAllFutureTasks ? 'Ver menos' : `Ver todas (${tasksFutureWeeks.length})`}</span>
+                    <span className="material-symbols-outlined text-[15px]">
+                      {showAllFutureTasks ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-col gap-2.5">
-                {tasksFutureWeeks.map((task) => (
+                {(showAllFutureTasks ? tasksFutureWeeks : tasksFutureWeeks.slice(0, 5)).map((task) => (
                   <TaskCardItem
                     key={task.id}
                     task={task}
@@ -1380,6 +1552,17 @@ export default function AutoOrganizerPage() {
                   />
                 ))}
               </div>
+
+              {tasksFutureWeeks.length > 5 && !showAllFutureTasks && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllFutureTasks(true)}
+                  className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[15px]">more_horiz</span>
+                  <span>Mostrar {tasksFutureWeeks.length - 5} tareas futuras más</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -2187,6 +2370,12 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus }) {
             <span className={`px-2 py-0.2 rounded-full font-medium border ${contextBadges[task.context] || 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
               {task.context}
             </span>
+            {isSportActivity(task) && (
+              <span className="px-2 py-0.2 rounded-full font-semibold border bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/80 flex items-center gap-1 text-[10px]">
+                <span className="material-symbols-outlined text-[12px]">fitness_center</span>
+                Deporte
+              </span>
+            )}
           </div>
 
           <h4

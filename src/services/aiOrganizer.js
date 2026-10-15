@@ -5,6 +5,65 @@ const GROQ_API_KEY = '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'
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const AI_MODEL = 'qwen/qwen3.8-27b'
 
+export function getCalendarReference(targetDate = null) {
+  const baseD = targetDate
+    ? new Date(targetDate + (targetDate.length === 10 ? 'T12:00:00' : ''))
+    : new Date()
+  const todayYmd = `${baseD.getFullYear()}-${String(baseD.getMonth() + 1).padStart(2, '0')}-${String(baseD.getDate()).padStart(2, '0')}`
+
+  const dayOfWeekNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  const dayOfWeek = dayOfWeekNames[baseD.getDay()]
+
+  const dayNum = baseD.getDay() // 0 = Domingo, 1 = Lunes...
+  const diffToMonday = (dayNum === 0 ? -6 : 1) - dayNum
+  const monday = new Date(baseD)
+  monday.setDate(baseD.getDate() + diffToMonday)
+
+  const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+  const thisWeekDates = {}
+  const nextWeekDates = {}
+
+  for (let i = 0; i < 7; i++) {
+    const cur = new Date(monday)
+    cur.setDate(monday.getDate() + i)
+    const ymd = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`
+    thisWeekDates[dayNames[i].toLowerCase()] = ymd
+  }
+
+  for (let i = 7; i < 14; i++) {
+    const cur = new Date(monday)
+    cur.setDate(monday.getDate() + i)
+    const ymd = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`
+    nextWeekDates[dayNames[i - 7].toLowerCase()] = ymd
+  }
+
+  const calendarTableText = `CALENDARIO DE FECHAS OFICIALES EXACTAS (HOY ES ${dayOfWeek.toUpperCase()} ${todayYmd}):
+Esta semana en curso:
+- Lunes: ${thisWeekDates['lunes']}
+- Martes: ${thisWeekDates['martes']}
+- Miércoles: ${thisWeekDates['miércoles']}
+- Jueves: ${thisWeekDates['jueves']}
+- Viernes: ${thisWeekDates['viernes']}
+- Sábado: ${thisWeekDates['sábado']}
+- Domingo: ${thisWeekDates['domingo']}
+Próxima semana:
+- Lunes que viene: ${nextWeekDates['lunes']}
+- Martes que viene: ${nextWeekDates['martes']}
+- Miércoles que viene: ${nextWeekDates['miércoles']}
+- Jueves que viene: ${nextWeekDates['jueves']}
+- Viernes que viene: ${nextWeekDates['viernes']}
+- Sábado que viene: ${nextWeekDates['sábado']}
+- Domingo que viene: ${nextWeekDates['domingo']}`
+
+  return {
+    todayYmd,
+    dayOfWeek,
+    calendarTableText,
+    thisWeekDates,
+    nextWeekDates,
+  }
+}
+
 /**
  * Organiza inteligentemente las tareas del usuario por orden de prioridad,
  * bloques de enfoque recomendados y distribucion balanceada para la semana.
@@ -119,25 +178,20 @@ function addDays(baseDateStr, days) {
  * o eventos recurrentes (ej. "2 actividades de mates para el jueves de 50m cada una"
  * o "clase de pádel todos los miércoles a las 7").
  */
-export async function parseNaturalLanguageSchedule(text, baseDate = '2026-10-14') {
+export async function parseNaturalLanguageSchedule(text, baseDate = null) {
   if (!text || !text.trim()) return null
 
-  // Fecha de referencia: 2026-10-14 (Miércoles)
+  const calRef = getCalendarReference(baseDate)
+
   const prompt = `Analiza esta petición del usuario para programar tareas o eventos: "${text}".
-Fecha de hoy de referencia: ${baseDate} (es Miércoles).
+${calRef.calendarTableText}
 El usuario puede pedir una sola tarea, múltiples tareas simultáneas (ej. "2 actividades de mates...") o eventos recurrentes periódicos (ej. "todos los miércoles a las 7").
 
 Instrucciones de extracción:
 1. Identifica si pide múltiples tareas (ej: "2 actividades" -> crea un array con 2 objetos de tarea separados).
 2. Si menciona periodicidad ("todos los miércoles", "cada semana"), márcalo con isRecurring: true y recurrence: "weekly".
-3. Determina fecha exacta en formato YYYY-MM-DD relativa al ${baseDate}:
-   - "jueves" -> 2026-10-15
-   - "viernes" -> 2026-10-16
-   - "sábado" -> 2026-10-17
-   - "domingo" -> 2026-10-18
-   - "lunes" -> 2026-10-19
-   - "martes" -> 2026-10-20
-   - "miércoles" -> 2026-10-14 o 2026-10-21 si es próximo
+3. Determina fecha exacta en formato YYYY-MM-DD consultando la tabla de fechas:
+   - Consulta el día nombrado en la tabla oficial de fechas y extrae estrictamente su fecha YYYY-MM-DD correspondiente.
 4. Determina la hora HH:MM (si dice a las 7 de la tarde -> 19:00, si no se indica -> 10:00).
 5. Determina el contexto: "University" | "Health & Gym" | "Personal" | "Projects".
 6. Determina el esfuerzo: "Low" | "Medium" | "High".
@@ -242,44 +296,53 @@ Devuelve ÚNICAMENTE un JSON con este formato exacto:
  * Heurística local instantánea para detección de lenguaje natural
  * (días relativos, horas, recurrencia, contexto académico/fitness/personal/proyectos)
  */
-export function parseScheduleLocalHeuristics(text, baseDate = '2026-10-14') {
+export function parseScheduleLocalHeuristics(text, baseDate = null) {
   if (!text || !text.trim()) return { summary: 'Sin texto', tasks: [], isRecurring: false }
+
+  const calRef = getCalendarReference(baseDate)
+  const effBaseDate = calRef.todayYmd
 
   const lower = text.toLowerCase()
 
   // 1. Detección de fecha relativa al baseDate
-  let targetDate = baseDate
+  let targetDate = effBaseDate
 
   if (lower.includes('hoy')) {
-    targetDate = baseDate
+    targetDate = effBaseDate
   } else if (lower.includes('pasado mañana') || lower.includes('pasado manana')) {
-    targetDate = addDays(baseDate, 2)
+    targetDate = addDays(effBaseDate, 2)
   } else if (lower.includes('mañana') || lower.includes('manana')) {
-    targetDate = addDays(baseDate, 1)
+    targetDate = addDays(effBaseDate, 1)
   } else {
-    const [bYear, bMonth, bDay] = baseDate.split('-').map(Number)
-    const baseD = new Date(bYear, bMonth - 1, bDay, 12, 0, 0)
-    const baseDayOfWeek = baseD.getDay() // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-
     const dayTargetMap = {
-      'domingo': 0,
-      'lunes': 1,
-      'martes': 2,
-      'miércoles': 3,
-      'miercoles': 3,
-      'jueves': 4,
-      'viernes': 5,
-      'sábado': 6,
-      'sabado': 6,
+      'domingo': calRef.thisWeekDates['domingo'],
+      'lunes': calRef.thisWeekDates['lunes'],
+      'martes': calRef.thisWeekDates['martes'],
+      'miércoles': calRef.thisWeekDates['miércoles'],
+      'miercoles': calRef.thisWeekDates['miércoles'],
+      'jueves': calRef.thisWeekDates['jueves'],
+      'viernes': calRef.thisWeekDates['viernes'],
+      'sábado': calRef.thisWeekDates['sábado'],
+      'sabado': calRef.thisWeekDates['sábado'],
     }
 
-    for (const [dayKey, targetDayNum] of Object.entries(dayTargetMap)) {
+    for (const [dayKey, dayYmd] of Object.entries(dayTargetMap)) {
       if (lower.includes(dayKey)) {
-        let diff = targetDayNum - baseDayOfWeek
-        if (diff <= 0) {
-          diff += 7
+        targetDate = dayYmd
+        if (dayYmd < effBaseDate || lower.includes('que viene') || lower.includes('proximo') || lower.includes('próximo')) {
+          const nextDayMap = {
+            'domingo': calRef.nextWeekDates['domingo'],
+            'lunes': calRef.nextWeekDates['lunes'],
+            'martes': calRef.nextWeekDates['martes'],
+            'miércoles': calRef.nextWeekDates['miércoles'],
+            'miercoles': calRef.nextWeekDates['miércoles'],
+            'jueves': calRef.nextWeekDates['jueves'],
+            'viernes': calRef.nextWeekDates['viernes'],
+            'sábado': calRef.nextWeekDates['sábado'],
+            'sabado': calRef.nextWeekDates['sábado'],
+          }
+          targetDate = nextDayMap[dayKey] || dayYmd
         }
-        targetDate = addDays(baseDate, diff)
         break
       }
     }
@@ -404,7 +467,7 @@ export function applyAIActions(currentTasks = [], actions = []) {
         id: t.id || Date.now() + idx * 75,
         title: t.title || 'Nueva tarea',
         description: t.description || '',
-        date: t.date || '2026-10-14',
+        date: t.date || getCalendarReference().todayYmd,
         time: t.time || '10:00',
         effort: t.effort || 'Medium',
         context: t.context || 'University',
@@ -464,7 +527,7 @@ export function applyAIActions(currentTasks = [], actions = []) {
         updatedTasks = updatedTasks.map((t) => (t.id === base.id ? { ...t, isRecurring: true, recurrence: frequency } : t))
         const recurringList = []
         for (let i = 1; i < count; i++) {
-          const nextDate = addDays(base.date || '2026-10-14', i * 7)
+          const nextDate = addDays(base.date || getCalendarReference().todayYmd, i * 7)
           recurringList.push({
             ...base,
             id: Date.now() + i * 110,
@@ -486,7 +549,8 @@ export function applyAIActions(currentTasks = [], actions = []) {
  * Conversación inteligente con el Asistente IA (Groq) con CONTROL TOTAL sobre el calendario y tareas
  */
 export async function chatWithAICopilot({ userMessage, currentTasks = [], chatHistory = [] }) {
-  const todayStr = '2026-10-14'
+  const calRef = getCalendarReference()
+  const todayStr = calRef.todayYmd
 
   // Contexto conciso de tareas actuales
   const tasksSummary = currentTasks.map(t => ({
@@ -502,7 +566,7 @@ export async function chatWithAICopilot({ userMessage, currentTasks = [], chatHi
   }))
 
   const systemPrompt = `Eres el Asistente Inteligente de Productividad integrado en StudentHub con CONTROL TOTAL sobre el calendario y tareas del usuario.
-Fecha actual de referencia: ${todayStr} (Miércoles).
+${calRef.calendarTableText}
 Tareas actuales del usuario en el sistema:
 ${JSON.stringify(tasksSummary, null, 2)}
 

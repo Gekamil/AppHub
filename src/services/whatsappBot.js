@@ -207,8 +207,19 @@ export function logWhatsAppEvent(event) {
 }
 
 // Generar resumen matutino para WhatsApp / Telegram
-export function generateDailyBriefing(tasks, todayYmd = '2026-10-14') {
-  const todayTasks = (tasks || []).filter((t) => t.date === todayYmd && !t.completed)
+// Helper para fecha local YYYY-MM-DD
+function getLocalDateString() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// Generar resumen matutino para WhatsApp / Telegram
+export function generateDailyBriefing(tasks, todayYmd = null) {
+  const targetDate = todayYmd || getLocalDateString()
+  const todayTasks = (tasks || []).filter((t) => t.date === targetDate && !t.completed)
   if (todayTasks.length === 0) {
     return '¡Buenos días Jorge! No tienes tareas urgentes pendientes para hoy. Disfruta del día.'
   }
@@ -217,21 +228,38 @@ export function generateDailyBriefing(tasks, todayYmd = '2026-10-14') {
   return `¡Buenos días Jorge! Tu agenda para hoy:\n${lines.join('\n')}\n¡A por el día!`
 }
 
-// Generar alertas de anticipación inteligente (Exámenes 2 semanas antes, entregas 4 días antes, eventos de hoy)
-export function generateAnticipationAlerts(tasks, todayYmd = '2026-10-14') {
+// Generar alertas de anticipación inteligente (Exámenes 2 semanas antes, entregas 4 días antes, eventos de deporte y agenda)
+export function generateAnticipationAlerts(tasks, todayYmd = null) {
   const alerts = []
-  const today = new Date(todayYmd)
+  const targetDate = todayYmd || getLocalDateString()
+  const today = new Date(targetDate + 'T00:00:00')
 
   ;(tasks || []).forEach((task) => {
     if (task.completed || !task.date) return
-    const taskDate = new Date(task.date)
+    const taskDate = new Date(task.date + 'T00:00:00')
     const diffTime = taskDate.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
 
     const titleLower = (task.title || '').toLowerCase()
+    const ctxLower = (task.context || '').toLowerCase()
     const isExam = titleLower.includes('examen') || titleLower.includes('parcial') || titleLower.includes('final')
     const isDelivery = titleLower.includes('entrega') || titleLower.includes('proyecto') || titleLower.includes('practica')
-    const isSport = titleLower.includes('padel') || titleLower.includes('pádel') || titleLower.includes('gym') || titleLower.includes('gimnasio')
+    const isSport =
+      ctxLower.includes('health') ||
+      ctxLower.includes('gym') ||
+      ctxLower.includes('deporte') ||
+      ctxLower.includes('fitness') ||
+      titleLower.includes('padel') ||
+      titleLower.includes('pádel') ||
+      titleLower.includes('gym') ||
+      titleLower.includes('gimnasio') ||
+      titleLower.includes('entreno') ||
+      titleLower.includes('entrenamiento') ||
+      titleLower.includes('partido') ||
+      titleLower.includes('correr') ||
+      titleLower.includes('crossfit') ||
+      titleLower.includes('fútbol') ||
+      titleLower.includes('futbol')
 
     // Alerta de Examen (Anticipación de hasta 14 días)
     if (isExam && diffDays > 0 && diffDays <= 14) {
@@ -240,7 +268,7 @@ export function generateAnticipationAlerts(tasks, todayYmd = '2026-10-14') {
         type: 'exam',
         taskTitle: task.title,
         diffDays,
-        message: `Examen en ${diffDays} día${diffDays > 1 ? 's' : ''}: Periodo de estudio activo sugerido (2 semanas de antelación).`,
+        message: `Examen en ${diffDays} día${diffDays > 1 ? 's' : ''}: Periodo de estudio activo sugerido.`,
         time: task.time,
         date: task.date,
         badge: 'Examen Próximo',
@@ -261,7 +289,7 @@ export function generateAnticipationAlerts(tasks, todayYmd = '2026-10-14') {
         color: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
       })
     }
-    // Recordatorio de Deporte / Ocio de Hoy
+    // Recordatorio de Deporte de Hoy
     else if (isSport && diffDays === 0) {
       alerts.push({
         id: `sport-${task.id}`,
@@ -271,7 +299,23 @@ export function generateAnticipationAlerts(tasks, todayYmd = '2026-10-14') {
         message: `Hoy tienes ${task.title} programado a las ${task.time || 'la tarde'}.`,
         time: task.time,
         date: task.date,
-        badge: 'Actividad de Hoy',
+        badge: 'Deporte Hoy',
+        color: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+      })
+    }
+    // Recordatorio de Deporte en los próximos días de la semana (1 a 6 días)
+    else if (isSport && diffDays > 0 && diffDays <= 6) {
+      const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+      const dayName = dayNames[taskDate.getDay()]
+      alerts.push({
+        id: `sport-${task.id}`,
+        type: 'sport',
+        taskTitle: task.title,
+        diffDays,
+        message: `${task.title} el ${dayName} a las ${task.time || 'su hora'}.`,
+        time: task.time,
+        date: task.date,
+        badge: `Deporte en ${diffDays}d`,
         color: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
       })
     }

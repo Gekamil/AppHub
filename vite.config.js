@@ -5,12 +5,19 @@ import { defineConfig } from 'vite'
 function icsProxyPlugin() {
   const handler = async (req, res) => {
     try {
-      const parsedUrl = new URL(req.url, 'http://localhost')
-      const targetUrl = parsedUrl.searchParams.get('url')
+      let targetUrl = parsedUrl.searchParams.get('url')
       if (!targetUrl) {
         res.statusCode = 400
         res.end('Missing url parameter')
         return
+      }
+      if (targetUrl.startsWith('webcal://')) {
+        targetUrl = targetUrl.replace('webcal://', 'https://')
+      }
+      const teamupMatch = targetUrl.match(/(?:ics\.)?teamup\.com\/(?:feed\/|c\/)?([a-zA-Z0-9_-]+)/i)
+      if (teamupMatch && !targetUrl.endsWith('.ics') && !targetUrl.includes('/0.ics')) {
+        const teamupKey = teamupMatch[1]
+        targetUrl = `https://ics.teamup.com/feed/${teamupKey}/0.ics`
       }
       const response = await fetch(targetUrl, {
         headers: {
