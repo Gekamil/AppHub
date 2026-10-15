@@ -1143,9 +1143,7 @@ export default function AutoOrganizerPage() {
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   placeholder={
-                    appTheme === 'executive'
-                      ? '¿Qué necesitas hacer? (ej. Reunión el jueves a las 11:00, Enviar presupuesto...)'
-                      : appTheme === 'brutalista'
+                    appTheme === 'brutalista'
                       ? '// INGRESO DE PROTOCOLO O MISIÓN OPERATIVA...'
                       : '¿Qué necesitas hacer? (ej. Deberes de sistemas el viernes, Gimnasio todos los martes...)'
                   }
@@ -2833,7 +2831,7 @@ export default function AutoOrganizerPage() {
 function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme }) {
   const currentTheme = appTheme || 'clasica'
 
-  // --- 1. BLOSSOM STUDY (GIRLY PINK & WHITE AESTHETIC - BORDES SUAVES & ICONOS ESTÁNDAR) ---
+  // --- 1. ROSA PASTEL & BLANCO (BORDES SUAVES & ICONOS ESTÁNDAR) ---
   if (currentTheme === 'aura') {
     const pastelContextColors = {
       University: 'bg-pink-50 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300 border-pink-200/70',
