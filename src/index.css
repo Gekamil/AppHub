@@ -245,15 +245,19 @@ header, aside, main, nav, footer, .theme-transition {
 
 /* ==========================================================================
    SISTEMA DE FUENTES Y ESTILOS VISUALES RADICALES (APPHUB THEME ENGINE)
-   4 Diseños: Clásica (Apple), Aura Rose & Silk, Executive Editorial, Neo-Brutalista
+   4 Diseños Completamente Irreconocibles y Distintos:
+   1. Clásica (Apple Cupertino): Suave, Inter, rounded-2xl, azul Apple
+   2. Aura Rose & Velvet: Lujo editorial, Fraunces itálico + Outfit, curvas orgánicas y ambientación rosa seda
+   3. The Architectural Ledger: Libro mayor de planos y finanzas, Cinzel + Instrument Serif, pergamino y marcos milimétricos
+   4. Neo-Brutalista Industrial: Esquinas a 0px, marcos de 2px, Syne 800 + Space Mono, sombras duras sin solapamientos
    ========================================================================== */
 
 /* Animación Lateral de Transición de Diseño */
 @keyframes themeLateralSlide {
   0% {
-    opacity: 0.55;
-    transform: translateX(24px) scale(0.998);
-    filter: blur(1px);
+    opacity: 0.5;
+    transform: translateX(28px) scale(0.995);
+    filter: blur(1.5px);
   }
   100% {
     opacity: 1;
@@ -263,48 +267,35 @@ header, aside, main, nav, footer, .theme-transition {
 }
 
 .animate-theme-switch {
-  animation: themeLateralSlide 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  animation: themeLateralSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 
-/* --------------------------------------------------------------------------
-   1. NEO-BRUTALISTA INDUSTRIAL (Bordes 0px, Marcos 2px, Sombras Sólidas)
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   1. NEO-BRUTALISTA INDUSTRIAL (Radical, 0px, Marcos 2px, Sin Sombras Solapadas)
+   ========================================================================== */
 html[data-theme-style="brutalista"],
 html[data-theme-style="brutalista"] body {
-  font-family: 'Space Grotesk', 'JetBrains Mono', -apple-system, sans-serif !important;
+  font-family: 'Space Mono', monospace !important;
 }
 
 html[data-theme-style="brutalista"] h1,
 html[data-theme-style="brutalista"] h2,
 html[data-theme-style="brutalista"] h3,
 html[data-theme-style="brutalista"] h4 {
-  font-family: 'Space Grotesk', sans-serif !important;
-  font-weight: 700 !important;
+  font-family: 'Syne', sans-serif !important;
+  font-weight: 800 !important;
   letter-spacing: -0.02em !important;
   text-transform: uppercase !important;
 }
 
-/* Esquinas estrictamente 0px (Sin redondear) */
-html[data-theme-style="brutalista"] .rounded-3xl,
-html[data-theme-style="brutalista"] .rounded-2xl,
-html[data-theme-style="brutalista"] .rounded-xl,
-html[data-theme-style="brutalista"] .rounded-lg,
-html[data-theme-style="brutalista"] .rounded-md,
-html[data-theme-style="brutalista"] button,
-html[data-theme-style="brutalista"] input,
-html[data-theme-style="brutalista"] textarea,
-html[data-theme-style="brutalista"] select,
-html[data-theme-style="brutalista"] .shadow-2xs,
-html[data-theme-style="brutalista"] .shadow-xs,
-html[data-theme-style="brutalista"] .shadow-sm,
-html[data-theme-style="brutalista"] .shadow-md,
-html[data-theme-style="brutalista"] .shadow-lg,
-html[data-theme-style="brutalista"] .shadow-xl,
-html[data-theme-style="brutalista"] .shadow-2xl {
+/* Esquinas estrictamente 0px en TODO el ecosistema */
+html[data-theme-style="brutalista"] *,
+html[data-theme-style="brutalista"] *::before,
+html[data-theme-style="brutalista"] *::after {
   border-radius: 0px !important;
 }
 
-/* Marcos sólidos negros / blancos */
+/* Marcos técnicos sólidos de 2px en paneles y divisores */
 html[data-theme-style="brutalista"] .border,
 html[data-theme-style="brutalista"] .border-slate-200,
 html[data-theme-style="brutalista"] .border-slate-200\/80,
@@ -312,7 +303,7 @@ html[data-theme-style="brutalista"] .border-slate-200\/70,
 html[data-theme-style="brutalista"] .border-outline-variant\/30,
 html[data-theme-style="brutalista"] .border-surface-muted {
   border-width: 2px !important;
-  border-color: #0f172a !important;
+  border-color: #000000 !important;
 }
 
 html.dark[data-theme-style="brutalista"] .border,
@@ -322,173 +313,237 @@ html.dark[data-theme-style="brutalista"] .border-slate-700\/60,
 html.dark[data-theme-style="brutalista"] .border-outline-variant\/30,
 html.dark[data-theme-style="brutalista"] .border-surface-muted {
   border-width: 2px !important;
-  border-color: #f8fafc !important;
+  border-color: #ffffff !important;
 }
 
-/* Sombras gráficas desplazadas duras */
-html[data-theme-style="brutalista"] .shadow-sm,
-html[data-theme-style="brutalista"] .shadow-md,
-html[data-theme-style="brutalista"] .shadow-lg,
-html[data-theme-style="brutalista"] .shadow-xl,
+/* Sombras duras SOLO en contenedores principales de primer nivel para EVITAR SOLAPAMIENTOS */
+html[data-theme-style="brutalista"] .bg-white.p-4,
+html[data-theme-style="brutalista"] .bg-white.p-5,
+html[data-theme-style="brutalista"] .bg-white.p-6,
+html[data-theme-style="brutalista"] .bg-surface-pure.p-4,
+html[data-theme-style="brutalista"] .bg-surface-pure.p-5,
+html[data-theme-style="brutalista"] .bg-surface-pure.p-6,
+html[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-3xl"],
+html[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-2xl"],
+html[data-theme-style="brutalista"] .shadow-xl {
+  box-shadow: 5px 5px 0px 0px #000000 !important;
+}
+
+html.dark[data-theme-style="brutalista"] .bg-white.p-4,
+html.dark[data-theme-style="brutalista"] .bg-white.p-5,
+html.dark[data-theme-style="brutalista"] .bg-white.p-6,
+html.dark[data-theme-style="brutalista"] .bg-surface-pure.p-4,
+html.dark[data-theme-style="brutalista"] .bg-surface-pure.p-5,
+html.dark[data-theme-style="brutalista"] .bg-surface-pure.p-6,
+html.dark[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-3xl"],
+html.dark[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-2xl"],
+html.dark[data-theme-style="brutalista"] .shadow-xl {
+  box-shadow: 5px 5px 0px 0px #ffffff !important;
+}
+
+html[data-theme-style="brutalista"] span,
 html[data-theme-style="brutalista"] .shadow-2xs,
-html[data-theme-style="brutalista"] .shadow-xs {
-  box-shadow: 4px 4px 0px 0px #0f172a !important;
+html[data-theme-style="brutalista"] .shadow-xs,
+html[data-theme-style="brutalista"] .shadow-inner,
+html[data-theme-style="brutalista"] div[class*="p-1"],
+html[data-theme-style="brutalista"] span[class*="px-2"],
+html[data-theme-style="brutalista"] button[class*="px-2"] {
+  box-shadow: none !important;
 }
 
-html.dark[data-theme-style="brutalista"] .shadow-sm,
-html.dark[data-theme-style="brutalista"] .shadow-md,
-html.dark[data-theme-style="brutalista"] .shadow-lg,
-html.dark[data-theme-style="brutalista"] .shadow-xl,
-html.dark[data-theme-style="brutalista"] .shadow-2xs,
-html.dark[data-theme-style="brutalista"] .shadow-xs {
-  box-shadow: 4px 4px 0px 0px #f8fafc !important;
+/* Botones con respuesta física táctica al pulsar */
+html[data-theme-style="brutalista"] button {
+  border-width: 2px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
 }
 
-/* Pulsación táctica con desplazamiento 2px */
 html[data-theme-style="brutalista"] button:active {
   transform: translate(2px, 2px) !important;
-  box-shadow: 2px 2px 0px 0px #0f172a !important;
+  box-shadow: none !important;
 }
 
-html.dark[data-theme-style="brutalista"] button:active {
-  box-shadow: 2px 2px 0px 0px #f8fafc !important;
+/* Calendario en Brutalismo: Cuadrícula pura de ingeniería */
+html[data-theme-style="brutalista"] .scrollbar-thin {
+  border: 2px solid #000000 !important;
 }
 
-/* --------------------------------------------------------------------------
-   2. AURA ROSE & SILK (Elegante & Soft, Curvas Orgánicas, Reflejos de Seda)
-   -------------------------------------------------------------------------- */
+html.dark[data-theme-style="brutalista"] .scrollbar-thin {
+  border: 2px solid #ffffff !important;
+}
+
+html[data-theme-style="brutalista"] div[style*="top:"][style*="height:"] {
+  border: 2px solid #000000 !important;
+  box-shadow: 2px 2px 0px 0px #000000 !important;
+  font-weight: 700 !important;
+}
+
+html.dark[data-theme-style="brutalista"] div[style*="top:"][style*="height:"] {
+  border: 2px solid #ffffff !important;
+  box-shadow: 2px 2px 0px 0px #ffffff !important;
+}
+
+
+/* ==========================================================================
+   2. AURA ROSE & VELVET (Lujo Editorial, Fraunces Itálico, Seda & Curvas)
+   ========================================================================== */
 html[data-theme-style="aura"],
 html[data-theme-style="aura"] body {
-  font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
+  font-family: 'Outfit', -apple-system, sans-serif !important;
+  background: radial-gradient(circle at 10% 20%, #fff0f5 0%, #fdf2f8 40%, #faf5ff 100%) !important;
+  background-attachment: fixed !important;
 }
 
+html.dark[data-theme-style="aura"],
+html.dark[data-theme-style="aura"] body {
+  background: radial-gradient(circle at 10% 20%, #170919 0%, #1b0e22 45%, #130718 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Titulares en Fraunces itálico voluptuoso de alta costura */
 html[data-theme-style="aura"] h1,
 html[data-theme-style="aura"] h2,
-html[data-theme-style="aura"] h3 {
-  font-family: 'Playfair Display', Georgia, serif !important;
+html[data-theme-style="aura"] h3,
+html[data-theme-style="aura"] h4 {
+  font-family: 'Fraunces', Georgia, serif !important;
+  font-style: italic !important;
   font-weight: 600 !important;
-  letter-spacing: -0.01em !important;
+  letter-spacing: -0.015em !important;
 }
 
-/* Curvas ultra-amplias y amables */
-html[data-theme-style="aura"] .rounded-2xl {
-  border-radius: 28px !important;
+/* Paneles con Glassmorphism suave y sombras etéreas rosa-seda */
+html[data-theme-style="aura"] .bg-white,
+html[data-theme-style="aura"] .bg-surface-pure {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  border: 1.5px solid rgba(244, 63, 94, 0.28) !important;
+  border-radius: 26px !important;
+  box-shadow: 0 16px 36px -8px rgba(244, 63, 94, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.8) inset !important;
 }
 
-html[data-theme-style="aura"] .rounded-3xl {
-  border-radius: 36px !important;
+html.dark[data-theme-style="aura"] .bg-white,
+html.dark[data-theme-style="aura"] .bg-surface-pure,
+html.dark[data-theme-style="aura"] .bg-\[\#161b26\] {
+  background-color: rgba(28, 16, 34, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  border: 1.5px solid rgba(244, 63, 94, 0.22) !important;
+  border-radius: 26px !important;
+  box-shadow: 0 16px 36px -8px rgba(217, 70, 239, 0.16) !important;
 }
 
-html[data-theme-style="aura"] .rounded-xl {
-  border-radius: 22px !important;
-}
-
-html[data-theme-style="aura"] .rounded-lg {
-  border-radius: 18px !important;
-}
-
-html[data-theme-style="aura"] button:not(.rounded-none) {
+/* Botones en píldora con degradado de seda puesta de sol */
+html[data-theme-style="aura"] button {
   border-radius: 9999px !important;
 }
 
-html[data-theme-style="aura"] input,
-html[data-theme-style="aura"] textarea,
-html[data-theme-style="aura"] select {
-  border-radius: 20px !important;
+html[data-theme-style="aura"] .bg-primary,
+html[data-theme-style="aura"] .bg-primary-container {
+  background: linear-gradient(135deg, #f43f5e 0%, #c026d3 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 8px 24px -4px rgba(244, 63, 94, 0.45) !important;
 }
 
-/* Sombras etéreas suaves tipo aura */
-html[data-theme-style="aura"] .shadow-sm,
-html[data-theme-style="aura"] .shadow-md,
-html[data-theme-style="aura"] .shadow-2xs,
-html[data-theme-style="aura"] .shadow-xs {
-  box-shadow: 0 10px 30px -5px rgba(244, 114, 182, 0.16), 0 4px 12px -2px rgba(232, 121, 249, 0.08) !important;
-}
-
-/* Tinte rosado en bordes sutiles */
+/* Calendario en Aura: Celdas sedosas y tarjetas de evento flotantes */
 html[data-theme-style="aura"] .border-slate-200,
-html[data-theme-style="aura"] .border-slate-200\/80,
-html[data-theme-style="aura"] .border-slate-200\/70,
-html[data-theme-style="aura"] .border-outline-variant\/30 {
-  border-color: rgba(244, 114, 182, 0.3) !important;
+html[data-theme-style="aura"] .border-slate-200\/80 {
+  border-color: rgba(244, 63, 94, 0.2) !important;
 }
 
 html.dark[data-theme-style="aura"] .border-slate-800,
-html.dark[data-theme-style="aura"] .border-slate-700,
-html.dark[data-theme-style="aura"] .border-slate-700\/60,
-html.dark[data-theme-style="aura"] .border-outline-variant\/30 {
-  border-color: rgba(244, 114, 182, 0.22) !important;
+html.dark[data-theme-style="aura"] .border-slate-700 {
+  border-color: rgba(244, 63, 94, 0.18) !important;
 }
 
-/* Botones principales en degradado joya / rosa seda */
-html[data-theme-style="aura"] .bg-primary,
-html[data-theme-style="aura"] .bg-primary-container {
-  background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 6px 20px -2px rgba(236, 72, 153, 0.4) !important;
+html[data-theme-style="aura"] div[style*="top:"][style*="height:"] {
+  border-radius: 18px !important;
+  border: 1.5px solid rgba(244, 63, 94, 0.35) !important;
+  box-shadow: 0 4px 15px -2px rgba(244, 63, 94, 0.2) !important;
+  font-family: 'Outfit', sans-serif !important;
 }
 
-/* --------------------------------------------------------------------------
-   3. EXECUTIVE EDITORIAL (Prensa Financiera, Titulares Newsreader, Sobriedad)
-   -------------------------------------------------------------------------- */
+/* Números de día en burbujas suaves */
+html[data-theme-style="aura"] .font-headline-md.text-headline-md {
+  font-family: 'Fraunces', serif !important;
+  font-style: italic !important;
+}
+
+
+/* ==========================================================================
+   3. THE ARCHITECTURAL LEDGER (Libro Mayor de Finanzas & Planos Técnicos)
+   ========================================================================== */
 html[data-theme-style="executive"],
 html[data-theme-style="executive"] body {
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  background-color: #f7f5ee !important;
+  background-image: radial-gradient(#d6ceb8 0.85px, transparent 0.85px) !important;
+  background-size: 24px 24px !important;
+  background-attachment: fixed !important;
 }
 
+html.dark[data-theme-style="executive"],
+html.dark[data-theme-style="executive"] body {
+  background-color: #0b1019 !important;
+  background-image: radial-gradient(#1f293d 0.85px, transparent 0.85px) !important;
+  background-size: 24px 24px !important;
+  background-attachment: fixed !important;
+}
+
+/* Titulares con clase imperial Cinzel en mayúsculas sobrias */
 html[data-theme-style="executive"] h1,
 html[data-theme-style="executive"] h2,
-html[data-theme-style="executive"] h3 {
-  font-family: 'Newsreader', Georgia, 'Times New Roman', serif !important;
-  font-weight: 600 !important;
-  letter-spacing: -0.01em !important;
-  font-style: normal !important;
+html[data-theme-style="executive"] h3,
+html[data-theme-style="executive"] h4 {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
 }
 
-/* Curvatura arquitectónica mínima y precisa */
+/* Paneles tipo libro mayor: marcos finos de 1px en pergamino con borde superior azul marino */
+html[data-theme-style="executive"] .bg-white,
+html[data-theme-style="executive"] .bg-surface-pure {
+  background-color: #ffffff !important;
+  border: 1px solid #d5cbaf !important;
+  border-top: 3px solid #1e3a5f !important;
+  border-radius: 3px !important;
+  box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+html.dark[data-theme-style="executive"] .bg-white,
+html.dark[data-theme-style="executive"] .bg-surface-pure,
+html.dark[data-theme-style="executive"] .bg-\[\#161b26\] {
+  background-color: #121824 !important;
+  border: 1px solid #28364c !important;
+  border-top: 3px solid #3b82f6 !important;
+  border-radius: 3px !important;
+  box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Curvatura mínima y uniforme de 2px a 4px */
 html[data-theme-style="executive"] .rounded-3xl,
-html[data-theme-style="executive"] .rounded-2xl {
-  border-radius: 8px !important;
-}
-
+html[data-theme-style="executive"] .rounded-2xl,
 html[data-theme-style="executive"] .rounded-xl,
 html[data-theme-style="executive"] .rounded-lg {
-  border-radius: 6px !important;
+  border-radius: 3px !important;
 }
 
-html[data-theme-style="executive"] button,
-html[data-theme-style="executive"] input,
-html[data-theme-style="executive"] textarea,
-html[data-theme-style="executive"] select {
-  border-radius: 6px !important;
+/* Botones institucionales de alta precisión */
+html[data-theme-style="executive"] button {
+  border-radius: 3px !important;
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.06em !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
 }
 
-/* Marcos sobrios de 1px */
-html[data-theme-style="executive"] .border-slate-200,
-html[data-theme-style="executive"] .border-slate-200\/80,
-html[data-theme-style="executive"] .border-outline-variant\/30 {
-  border-color: #cbd5e1 !important;
-}
-
-html.dark[data-theme-style="executive"] .border-slate-800,
-html.dark[data-theme-style="executive"] .border-slate-700 {
-  border-color: #334155 !important;
-}
-
-/* Sombras mínimas y limpias */
-html[data-theme-style="executive"] .shadow-sm,
-html[data-theme-style="executive"] .shadow-md,
-html[data-theme-style="executive"] .shadow-2xs,
-html[data-theme-style="executive"] .shadow-xs {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Botones ejecutivos en azul marino zafiro */
 html[data-theme-style="executive"] .bg-primary,
 html[data-theme-style="executive"] .bg-primary-container {
-  background-color: #0f2942 !important;
+  background-color: #1e3a5f !important;
   color: #ffffff !important;
-  border: 1px solid #1e3a5f !important;
+  border: 1px solid #0f243d !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
 }
 
 html.dark[data-theme-style="executive"] .bg-primary,
@@ -496,4 +551,33 @@ html.dark[data-theme-style="executive"] .bg-primary-container {
   background-color: #1e3a5f !important;
   border-color: #3b82f6 !important;
 }
+
+/* Calendario en The Architectural Ledger: Cuadrícula milimétrica sepia / plano técnico */
+html[data-theme-style="executive"] .border-slate-200,
+html[data-theme-style="executive"] .border-slate-200\/80 {
+  border-color: #ded6c3 !important;
+}
+
+html.dark[data-theme-style="executive"] .border-slate-800,
+html.dark[data-theme-style="executive"] .border-slate-700 {
+  border-color: #232d3f !important;
+}
+
+html[data-theme-style="executive"] div[style*="top:"][style*="height:"] {
+  border-radius: 2px !important;
+  border: 1px solid #b8a989 !important;
+  background-color: #faf8f2 !important;
+  color: #1e3a5f !important;
+  font-family: 'Instrument Serif', Georgia, serif !important;
+  font-size: 13.5px !important;
+  box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 0.08) !important;
+}
+
+html.dark[data-theme-style="executive"] div[style*="top:"][style*="height:"] {
+  background-color: #162030 !important;
+  border-color: #384b66 !important;
+  color: #93c5fd !important;
+  box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 0.3) !important;
+}
+
 
