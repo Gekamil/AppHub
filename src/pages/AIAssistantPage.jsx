@@ -1,18 +1,24 @@
 import { useState, useRef, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { chatWithAICopilot, applyAIActions } from '../services/aiOrganizer'
+import { getCurrentUser, isGuestUser } from '../services/firebase'
 import AIBotIcon from '../components/AIBotIcon'
 
 export default function AIAssistantPage() {
   const { globalTasks = [], setGlobalTasks } = useOutletContext() || {}
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'assistant',
-      text: '¡Hola Jorge! Soy tu asistente de productividad inteligente. Puedo revisar tu agenda de hoy, optimizar tus bloques de estudio o añadir cualquier tarea o evento a tu calendario.',
-      timestamp: '13:24',
-    },
-  ])
+  const [messages, setMessages] = useState(() => {
+    const cur = getCurrentUser()
+    const guest = isGuestUser(cur)
+    const name = !guest && cur.displayName ? ` ${cur.displayName.split(' ')[0]}` : ''
+    return [
+      {
+        id: 1,
+        sender: 'assistant',
+        text: `¡Hola${name}! Soy tu asistente de productividad inteligente. Puedo revisar tu agenda, organizar tus tareas o añadir cualquier evento a tu calendario.`,
+        timestamp: 'Ahora',
+      },
+    ]
+  })
   const [inputVal, setInputVal] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef(null)

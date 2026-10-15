@@ -144,7 +144,7 @@ export default function ProfilePopover({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-slate-900 dark:text-white truncate text-[13px] leading-tight">
-                {isGuest ? 'Invitado' : user.displayName}
+                {isGuest ? 'Invitado' : user.displayName || 'Usuario'}
               </span>
               <span
                 className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
@@ -157,7 +157,7 @@ export default function ProfilePopover({
               </span>
             </div>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5 font-normal">
-              {isGuest ? 'Sin sesión activa' : user.email || 'jorge.m@focushub.workspace'}
+              {isGuest ? 'Sin sesión activa' : user.email || ''}
             </p>
           </div>
         </div>

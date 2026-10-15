@@ -293,7 +293,7 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
                           .slice(0, 2)
                           .join('')
                           .toUpperCase()
-                      : 'JG'}
+                      : 'U'}
                   </div>
                   <span
                     className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-[#161b26]"
@@ -303,7 +303,7 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
                 <div className="flex flex-col min-w-0 flex-1">
                   <div className="flex items-center justify-between">
                     <span className="font-headline-sm text-body-sm text-on-surface font-semibold truncate">
-                      {user.displayName || 'Jorge'}
+                      {user.displayName || 'Usuario'}
                     </span>
                     <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.2 rounded border border-blue-100/80 dark:border-blue-800/80">
                       {user.plan || 'Pro'}

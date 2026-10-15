@@ -1,17 +1,23 @@
 import { useState, useRef, useEffect } from 'react'
 import { chatWithAICopilot, applyAIActions } from '../services/aiOrganizer'
+import { getCurrentUser, isGuestUser } from '../services/firebase'
 import AIBotIcon from './AIBotIcon'
 
 export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'assistant',
-      text: 'Hola Jorge. Soy tu Copiloto IA con control total. Puedo añadir tareas, corregir horas o fechas si te has equivocado, cambiar la dificultad o programar eventos recurrentes.',
-      timestamp: 'Ahora',
-    },
-  ])
+  const [messages, setMessages] = useState(() => {
+    const cur = getCurrentUser()
+    const guest = isGuestUser(cur)
+    const name = !guest && cur.displayName ? ` ${cur.displayName.split(' ')[0]}` : ''
+    return [
+      {
+        id: 1,
+        sender: 'assistant',
+        text: `¡Hola${name}! Soy tu Copiloto IA con control total. Puedo añadir tareas, organizar tus bloques de estudio, corregir horas o fechas y responder a tus dudas.`,
+        timestamp: 'Ahora',
+      },
+    ]
+  })
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)

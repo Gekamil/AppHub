@@ -79,7 +79,7 @@ const INITIAL_RESOURCES = [
     verified: true,
     title: 'Mechanical Puzzle 3D models',
     link: 'https://printables.com',
-    linkDisplay: 'printables.com/@jorge_makers',
+    linkDisplay: 'printables.com/@maker_hub',
     description: 'Tolerance test files (.stl) and assembly diagrams for multi-layer gear puzzle. Designed for 0.16mm layer height with 0.2mm clearance gaps on interlocked rotation axles.',
     tags: [
       { label: '#3DPrinting', bg: 'bg-tag-personal-bg', text: 'text-tag-personal-text' },

@@ -4,45 +4,17 @@
 const ACCOUNTS_DB_KEY = 'studenthub_accounts_database'
 const ACTIVE_USER_KEY = 'studenthub_active_user'
 
-const DEFAULT_ACCOUNTS = [
-  {
-    uid: 'user-jorge',
-    displayName: 'Jorge García',
-    email: 'jorge.m@focushub.workspace',
-    plan: 'Pro',
-    focusStatus: 'Deep Work Block',
-    location: 'Málaga, ES',
-    password: 'password123',
-    createdAt: '2026-10-12T10:00:00.000Z',
-    calendars: [
-      {
-        id: 'cal-default',
-        name: 'Personal & General',
-        color: '#3b82f6',
-        dot: 'bg-blue-500',
-        sharedFrom: [],
-        isDefault: true,
-        syncUrl: '',
-      },
-      {
-        id: 'cal-uni',
-        name: 'Universidad',
-        color: '#8b5cf6',
-        dot: 'bg-purple-500',
-        sharedFrom: [],
-        syncUrl: '',
-      },
-      {
-        id: 'cal-all',
-        name: 'Todo (Vista Unificada)',
-        color: '#10b981',
-        dot: 'bg-emerald-500',
-        sharedFrom: ['cal-default', 'cal-uni'],
-        syncUrl: '',
-      },
-    ],
-  },
-]
+export const GUEST_USER = {
+  uid: 'guest',
+  displayName: 'Invitado',
+  email: '',
+  plan: 'Free',
+  isGuest: true,
+  focusStatus: 'Sin sesión',
+  location: 'Málaga, ES',
+}
+
+const DEFAULT_ACCOUNTS = []
 
 // Obtener todas las cuentas registradas en la base de datos
 export const getAllAccounts = () => {
@@ -50,14 +22,12 @@ export const getAllAccounts = () => {
     const raw = localStorage.getItem(ACCOUNTS_DB_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      if (Array.isArray(parsed)) return parsed
     }
   } catch (e) {
     console.warn('Error leyendo base de datos de cuentas:', e)
   }
-  // Si no existe, inicializar con la cuenta por defecto
-  localStorage.setItem(ACCOUNTS_DB_KEY, JSON.stringify(DEFAULT_ACCOUNTS))
-  return DEFAULT_ACCOUNTS
+  return []
 }
 
 // Guardar lista de cuentas
@@ -72,38 +42,33 @@ const saveAllAccounts = (accounts) => {
 // Comprobar si el usuario actual está en modo invitado o sin sesión iniciada
 export const isGuestUser = (user) => {
   if (!user) return true
-  return (
-    user.uid === 'guest' ||
-    user.isGuest === true ||
-    user.email === 'invitado@studenthub.app' ||
-    !user.email
-  )
+  if (user.uid === 'guest' || user.isGuest === true || !user.email) return true
+  try {
+    const isAuth = localStorage.getItem('studenthub_is_authenticated')
+    return isAuth !== 'true'
+  } catch (e) {
+    return true
+  }
 }
 
-// Obtener usuario actualmente activo
+// Obtener usuario actualmente activo (por defecto siempre Invitado a menos que haya login explícito)
 export const getCurrentUser = () => {
   try {
+    const isAuth = localStorage.getItem('studenthub_is_authenticated')
+    if (isAuth !== 'true') {
+      return GUEST_USER
+    }
     const raw = localStorage.getItem(ACTIVE_USER_KEY)
     if (raw) {
       const user = JSON.parse(raw)
-      if (user && user.uid) return user
+      if (user && user.uid && user.uid !== 'guest' && !user.isGuest && user.email) {
+        return user
+      }
     }
   } catch (e) {
     console.warn('Error leyendo usuario activo:', e)
   }
-  // Por defecto, usar la primera cuenta registrada
-  const accounts = getAllAccounts()
-  const defaultUser = accounts[0] || {
-    uid: 'guest',
-    displayName: 'Invitado',
-    email: '',
-    plan: 'Free',
-    isGuest: true,
-    focusStatus: 'Sin sesión',
-    location: 'Málaga, ES',
-  }
-  localStorage.setItem(ACTIVE_USER_KEY, JSON.stringify(defaultUser))
-  return defaultUser
+  return GUEST_USER
 }
 
 // Establecer usuario activo
@@ -128,6 +93,7 @@ export const loginUser = async (email, password) => {
     throw new Error('Contraseña incorrecta')
   }
 
+  localStorage.setItem('studenthub_is_authenticated', 'true')
   setActiveUser(found)
   return found
 }
@@ -166,18 +132,23 @@ export const registerUser = async (email, password, displayName = '') => {
 
   accounts.push(newUser)
   saveAllAccounts(accounts)
+  localStorage.setItem('studenthub_is_authenticated', 'true')
   setActiveUser(newUser)
   return newUser
 }
 
 // Cambiar de cuenta activa con 1 click
 export const switchAccount = (uid) => {
+  if (uid === 'guest') {
+    return logoutUser()
+  }
   const accounts = getAllAccounts()
   const target = accounts.find((a) => a.uid === uid)
   if (target) {
+    localStorage.setItem('studenthub_is_authenticated', 'true')
     return setActiveUser(target)
   }
-  return getCurrentUser()
+  return logoutUser()
 }
 
 // Eliminar una cuenta guardada en el dispositivo
@@ -188,6 +159,7 @@ export const deleteAccount = async (uid) => {
   const current = getCurrentUser()
   if (current.uid === uid) {
     if (accounts.length > 0) {
+      localStorage.setItem('studenthub_is_authenticated', 'true')
       setActiveUser(accounts[0])
     } else {
       await logoutUser()
@@ -216,16 +188,8 @@ export const updateUserProfileData = async (data) => {
 
 // Cerrar sesion (pasa a modo invitado sin sesion)
 export const logoutUser = async () => {
-  const guestUser = {
-    uid: 'guest',
-    displayName: 'Invitado',
-    email: '',
-    plan: 'Free',
-    focusStatus: 'Sin sesión',
-    location: 'Málaga, ES',
-    isGuest: true,
-  }
-  return setActiveUser(guestUser)
+  localStorage.setItem('studenthub_is_authenticated', 'false')
+  return setActiveUser(GUEST_USER)
 }
 
 // Sincronizar tareas del usuario activo

@@ -278,7 +278,7 @@ export default function Header({
                       .slice(0, 2)
                       .join('')
                       .toUpperCase()
-                  : 'JG'}
+                  : 'U'}
                 <span
                   className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#161b26]"
                   title="Sesión activa"

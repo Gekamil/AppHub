@@ -322,7 +322,7 @@ export default function AccountModal({
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                   {isGuest
                     ? 'Tus tareas y notas se almacenan solo localmente'
-                    : user.email || 'jorge.m@focushub.workspace'}
+                    : user.email || ''}
                 </p>
               </div>
             </div>
@@ -509,7 +509,7 @@ export default function AccountModal({
                 required
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="ejemplo@focushub.workspace"
+                placeholder="tu.correo@ejemplo.com"
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-xs"
               />
             </div>
@@ -561,7 +561,7 @@ export default function AccountModal({
                 required
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
-                placeholder="Jorge García"
+                placeholder="Tu nombre y apellidos"
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-xs"
               />
             </div>
