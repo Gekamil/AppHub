@@ -2552,18 +2552,54 @@ export default function AutoOrganizerPage() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">IA Conversacional</span>
-                        <span className="text-slate-500 text-[10px]">Responde cualquier duda, saluda y te orienta en el móvil.</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                        <span>¿Qué puedes hacer desde tu WhatsApp?</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                          Comando /help disponible
+                        </span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">Audios con Whisper</span>
-                        <span className="text-slate-500 text-[10px]">Envía notas de voz: las transcribe y programa todo.</span>
-                      </div>
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/70 dark:border-slate-800 space-y-0.5">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">100% Local y Gratis</span>
-                        <span className="text-slate-500 text-[10px]">Tu equipo es tu servidor sin cuotas ni intermediarios.</span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div className="p-3 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+                            <span className="material-symbols-outlined text-[16px] text-emerald-500">mic</span>
+                            <span>Chat contigo mismo & Audios</span>
+                          </div>
+                          <p className="text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed">
+                            Mándate notas de voz o textos en tu chat personal. Whisper transcribe el audio al instante y la IA lo añade a tu planning.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+                            <span className="material-symbols-outlined text-[16px] text-blue-500">groups</span>
+                            <span>Comando /ia en Grupos</span>
+                          </div>
+                          <p className="text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed">
+                            En grupos con amigos o clase, escribe <code className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono">/ia</code> para hacer consultas, buscar entregas o pedir resúmenes.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+                            <span className="material-symbols-outlined text-[16px] text-purple-500">record_voice_over</span>
+                            <span>Citar audios de otros</span>
+                          </div>
+                          <p className="text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed">
+                            Responde a cualquier nota de voz de otra persona escribiendo <code className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono">/ia añade esto</code> y lo agendará automáticamente.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-white">
+                            <span className="material-symbols-outlined text-[16px] text-amber-500">tune</span>
+                            <span>Selector y Modo Automático</span>
+                          </div>
+                          <p className="text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed">
+                            Te pregunta el calendario con opciones [1, 2, 3...] o asigna de forma autónoma diciendo &ldquo;activa modo automático&rdquo;.
+                          </p>
+                        </div>
                       </div>
                     </div>
 

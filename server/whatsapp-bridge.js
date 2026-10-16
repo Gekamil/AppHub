@@ -20,6 +20,157 @@ import http from 'http'
 const AUTH_DIR = path.resolve(process.cwd(), '.whatsapp_auth')
 const TASKS_FILE = path.resolve(process.cwd(), '.whatsapp_synced_tasks.json')
 const SHARED_CALENDARS_FILE = path.resolve(process.cwd(), '.whatsapp_shared_calendars.json')
+const BOT_SETTINGS_FILE = path.resolve(process.cwd(), '.whatsapp_bot_settings.json')
+const USER_CALENDARS_FILE = path.resolve(process.cwd(), '.whatsapp_user_calendars.json')
+
+export const DEFAULT_USER_CALENDARS = [
+  { id: 'cal-default', name: 'Personal & General', color: '#3b82f6', keywords: ['personal', 'general', 'casa', 'compra', 'quedada', 'cena', 'amigos'] },
+  { id: 'cal-university', name: 'Universidad & Estudios', color: '#8b5cf6', keywords: ['uni', 'universidad', 'examen', 'estudio', 'clase', 'profesor', 'entrega', 'ia', 'redes'] },
+  { id: 'cal-health', name: 'Salud & Deporte', color: '#10b981', keywords: ['gym', 'gimnasio', 'deporte', 'pádel', 'padel', 'entreno', 'entrenamiento', 'correr', 'partido', 'futbol'] },
+  { id: 'cal-work', name: 'Trabajo & Proyectos', color: '#f59e0b', keywords: ['trabajo', 'curro', 'proyecto', 'cliente', 'reunion', 'reunión', 'deploy', 'código'] },
+]
+
+export const DEFAULT_BOT_SETTINGS = {
+  mode: 'interactive', // 'interactive' (pregunta en qué calendario) | 'auto' (asigna automáticamente)
+  routingRules: {
+    deporte: 'cal-health',
+    gym: 'cal-health',
+    padel: 'cal-health',
+    pádel: 'cal-health',
+    entrenamiento: 'cal-health',
+    universidad: 'cal-university',
+    uni: 'cal-university',
+    estudios: 'cal-university',
+    examen: 'cal-university',
+    personal: 'cal-default',
+    quedadas: 'cal-default',
+    amigos: 'cal-default',
+    trabajo: 'cal-work',
+    curro: 'cal-work',
+    proyectos: 'cal-work',
+  },
+  pendingSelection: null, // { taskId, taskTitle, expiresAt, from }
+}
+
+function loadBotSettings() {
+  try {
+    if (fs.existsSync(BOT_SETTINGS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(BOT_SETTINGS_FILE, 'utf-8'))
+      return { ...DEFAULT_BOT_SETTINGS, ...data }
+    }
+  } catch (e) {}
+  return { ...DEFAULT_BOT_SETTINGS }
+}
+
+function saveBotSettings(settings) {
+  try {
+    fs.writeFileSync(BOT_SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8')
+  } catch (e) {}
+}
+
+function loadUserCalendars() {
+  try {
+    if (fs.existsSync(USER_CALENDARS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(USER_CALENDARS_FILE, 'utf-8'))
+      if (Array.isArray(data) && data.length > 0) return data
+    }
+  } catch (e) {}
+  return DEFAULT_USER_CALENDARS
+}
+
+function saveUserCalendars(cals) {
+  try {
+    fs.writeFileSync(USER_CALENDARS_FILE, JSON.stringify(cals, null, 2), 'utf-8')
+  } catch (e) {}
+}
+
+let botSettings = loadBotSettings()
+let currentKnownCalendars = loadUserCalendars()
+
+export function matchCalendarForTask(taskTitle = '', taskContext = '', taskDesc = '') {
+  const text = `${taskTitle} ${taskContext} ${taskDesc}`.toLowerCase()
+  const rules = botSettings.routingRules || {}
+  for (const [kw, calId] of Object.entries(rules)) {
+    if (text.includes(kw.toLowerCase())) {
+      const found = currentKnownCalendars.find((c) => c.id === calId)
+      if (found) return found
+    }
+  }
+
+  for (const cal of currentKnownCalendars) {
+    if (Array.isArray(cal.keywords)) {
+      for (const kw of cal.keywords) {
+        if (text.includes(kw.toLowerCase())) return cal
+      }
+    }
+    const calName = (cal.name || '').toLowerCase()
+    if (text.includes(calName)) return cal
+  }
+
+  return currentKnownCalendars[0] || DEFAULT_USER_CALENDARS[0]
+}
+
+export function formatCalendarOptionsText(taskTitle = '') {
+  const options = currentKnownCalendars.map((c, idx) => `[${idx + 1}] ${c.name}`).join('\n')
+  return `¿En qué calendario quieres guardarlo?\n${options}\n\n_(Responde con el número [1, 2, 3...], el nombre del calendario, o escribe 'modo auto' para que decida yo directamente)_`
+}
+
+export function getHelpMessage() {
+  return `*GUÍA COMPLETA DE STUDENTHUB EN WHATSAPP*
+
+*1. Chat personal (contigo mismo)*:
+- Envía notas de voz o textos: Whisper transcribe el audio al instante y la IA lo añade a tu calendario.
+- Consultas rápidas: "¿Qué tengo hoy?", "¿Cuál es mi próxima clase?", "Planning de mañana".
+- Modificaciones: "Cámbialo a las 18:00", "Marca como hecha la tarea de gym", "Borra el pádel".
+
+*2. En grupos y chats con otras personas*:
+- Escribe */ia* en cualquier mensaje para invocar a tu asistente sin salir del grupo.
+- Ejemplos:
+  - "/ia cuándo es el examen de redes?"
+  - "/ia resume las tareas que tenemos para el viernes"
+
+*3. Citar audios de otros para tu calendario*:
+- Si un amigo o compañero te manda una nota de voz con una cita o plan, responde a ese audio escribiendo:
+  \`/ia añade esto a mi calendario\`
+- El asistente descargará y transcribirá el audio citado, detectará la fecha y la hora, y creará el evento en tu StudentHub automáticamente.
+
+*4. Elección y enrutamiento de Calendarios*:
+- *Modo interactivo* (por defecto): Cada vez que añades un evento, el bot te pregunta con opciones rápidas [1, 2, 3...] a qué calendario asignarlo.
+- *Modo automático*: Asigna por categoría sin preguntar. Para activarlo dile: "activa modo automático" o "modo silencioso".
+- *Reglas personalizadas en lenguaje natural*: Puedes decirle:
+  _"Quiero que las cosas de deporte vayan a Salud & Deporte y las quedadas a Personal"_.
+  El bot aprenderá tus preferencias y las guardará.
+
+*Comandos rápidos*:
+- */help* o *ayuda*: Muestra este manual interactivo.
+- */calendarios*: Lista tus calendarios actuales y reglas activas.
+- */modo auto*: Activa la asignación autónoma inmediata.
+- */modo interactivo*: Activa las preguntas con selector numérico.
+- */resumen*: Resumen estructurado de tu día.`
+}
+
+export function getCalendarsSummaryMessage() {
+  const calsList = currentKnownCalendars.map((c, idx) => `[${idx + 1}] *${c.name}* (ID: \`${c.id}\`)`).join('\n')
+  const modeText = botSettings.mode === 'auto' ? 'Automático (sin preguntar)' : 'Interactivo (pregunta con selector [1, 2, 3...])'
+  const rulesList = Object.entries(botSettings.routingRules || {})
+    .map(([kw, cId]) => {
+      const c = currentKnownCalendars.find((x) => x.id === cId)
+      return `• _${kw}_ -> ${c ? c.name : cId}`
+    })
+    .join('\n')
+
+  return `*TUS CALENDARIOS EN STUDENTHUB*
+
+${calsList}
+
+*Modo actual*: ${modeText}
+_(Dile "modo automático" o "modo interactivo" para cambiarlo)_
+
+*Reglas de asignación activas*:
+${rulesList || 'Ninguna regla personalizada.'}
+
+_(Puedes decirle: "quiero que el deporte vaya a Salud & Deporte" para crear nuevas reglas)_`
+}
 
 function loadSharedCalendarsStore() {
   try {
@@ -394,6 +545,9 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
         }
       }
 
+      const matchedCal = matchCalendarForTask(t.title, t.context, t.description)
+      const chosenCalId = t.calendarId || matchedCal.id || 'cal-default'
+
       const newTask = {
         id: Date.now() + Math.floor(Math.random() * 100000),
         title: t.title || 'Nueva tarea',
@@ -405,7 +559,7 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
         description: t.description || '',
         recurrence: t.recurrence || 'none',
         completed: false,
-        calendarId: 'cal-default',
+        calendarId: chosenCalId,
         color:
           t.effort === 'High'
             ? 'bg-rose-500'
@@ -418,6 +572,17 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
       }
       currentKnownTasks = [newTask, ...currentKnownTasks]
       modified.push(newTask)
+
+      // Si el bot está en modo interactivo, registrar para confirmación o cambio de calendario
+      if (botSettings.mode === 'interactive') {
+        botSettings.pendingSelection = {
+          taskId: newTask.id,
+          taskTitle: newTask.title,
+          matchedCalId: chosenCalId,
+          expiresAt: Date.now() + 15 * 60 * 1000,
+        }
+        saveBotSettings(botSettings)
+      }
     } else if (act.type === 'update_task') {
       const targetId = act.targetId
       let targetTitle = (act.targetTitle || '').trim().toLowerCase()
@@ -541,6 +706,15 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
         broadcastTasksUpdate(currentKnownTasks, [removed.id])
         return [removed]
       }
+    } else if (act.type === 'set_bot_mode') {
+      botSettings.mode = act.mode === 'auto' ? 'auto' : 'interactive'
+      saveBotSettings(botSettings)
+    } else if (act.type === 'set_routing_rule') {
+      if (act.keyword && act.calendarId) {
+        if (!botSettings.routingRules) botSettings.routingRules = {}
+        botSettings.routingRules[act.keyword.toLowerCase().trim()] = act.calendarId
+        saveBotSettings(botSettings)
+      }
     }
   }
 
@@ -619,12 +793,25 @@ export async function processMessageWithAI(userText, fromUser = 'default') {
   const dayOfWeek = calRef.dayOfWeek
   const currentTimeStr = calRef.currentTimeStr
   const tasksSummary = formatTasksSummary(currentKnownTasks)
+  const calsText = currentKnownCalendars
+    .map((c, idx) => `[${idx + 1}] ID: "${c.id}" - Nombre: "${c.name}"`)
+    .join('\n')
+  const routingRulesText = Object.entries(botSettings.routingRules || {})
+    .map(([k, v]) => `- "${k}" -> Calendario "${v}"`)
+    .join('\n')
 
   const systemPrompt = `Eres "AI Helper", el asistente personal de élite de Jorge en su WhatsApp.
 Fecha y hora actual: ${todayStr} (${dayOfWeek}), ${currentTimeStr}.
 Usuario: Jorge (estudiante universitario de informática/sistemas, desarrollador tech, deportista pádel/gym, vida personal).
 
 ${calRef.calendarTableText}
+
+CALENDARIOS ACTIVOS EN STUDENTHUB:
+${calsText}
+
+MODO DE ASIGNACIÓN ACTUAL: ${botSettings.mode === 'auto' ? 'AUTOMÁTICO (asigna de forma autónoma sin preguntar)' : 'INTERACTIVO (pregunta con selector [1, 2, 3...])'}
+REGLAS DE ASIGNACIÓN GUARDADAS:
+${routingRulesText || 'Sin reglas específicas'}
 
 AGENDA ACTUAL EN SU APLICACIÓN (ORDEN CRONOLÓGICO):
 ${tasksSummary}
@@ -682,13 +869,21 @@ REGLAS DE ACTUACIÓN, PERSONALIDAD Y FORMATO (ESTRICTAS):
       ¡Hecho, Jorge! He eliminado las tareas que me pediste de tu agenda.
       - - - - - - - - - - - - - - - - - - - -
 
-   C) AÑADIR TAREAS Y MEMORIA POR LOTES TRAS HISTORIAL ("add_task"):
+   C) AÑADIR TAREAS Y SELECCIÓN DE CALENDARIO ("add_task"):
       - Si pide añadir actividades directamente ("añade X mañana a las 18:00", "apúntame pádel el jueves a las 19"): emite la acción "add_task".
       - Si en mensajes previos te estuvo contando cosas que tiene que hacer (ej. "tengo que estudiar redes, luego ir al gym, después reunión...") sin pedirte agendarlas, y luego dice "añádelas al calendario" o "apúntamelas todas":
         REVISA TODO EL HISTORIAL y rescata TODAS las actividades mencionadas, creando una acción "add_task" individual para CADA UNA sin dejarte ninguna.
       - Si se indica duración (ej. "dura 1 hora"), pon est: "60m" y description: "Duración estimada: 1 hora. Bloque reservado en planning.".
-      - Si es un examen con preparación (ej. 2 semanas), crea el examen más un hito previo de inicio de estudio 7-10 días antes ("Comenzar estudio para...") y un repaso intensivo 2 días antes ("Repaso intensivo...").
-      - Responde amablemente confirmando los eventos añadidos.
+      - Si el modo es INTERACTIVO:
+        En tu mensaje de confirmación, añade al final de forma limpia y atractiva la pregunta de a qué calendario asignarlo con los botones numéricos:
+        ¿En qué calendario quieres guardarlo?
+        [1] Personal & General
+        [2] Universidad & Estudios
+        [3] Salud & Deporte
+        [4] Trabajo & Proyectos
+        (Responde con el número [1, 2, 3...], el nombre del calendario o 'modo auto')
+      - Si el modo es AUTOMÁTICO:
+        Asigna directamente en el campo "calendarId" el calendario más adecuado según el tema (ej: pádel/gym -> cal-health, uni/examen -> cal-university, trabajo -> cal-work, ocio/personal -> cal-default). En tu respuesta confirma en qué calendario quedó guardado.
 
    D) MODIFICAR, RENOMBRAR O MARCAR COMO HECHA ("update_task"):
       - Renombrar: "cambia el nombre de X por Y" -> { "type": "update_task", "targetTitle": "X", "updates": { "title": "Y" } }.
@@ -705,6 +900,14 @@ REGLAS DE ACTUACIÓN, PERSONALIDAD Y FORMATO (ESTRICTAS):
       - Para cada actividad extraída, genera una acción "add_task" individual con su fecha (YYYY-MM-DD), hora (HH:MM), contexto y duración estimada adecuada.
       - En tu respuesta amigable, confirma qué actividades has extraído del audio y añadido a su calendario.
 
+   G) CAMBIAR MODO DE ASIGNACIÓN O REGLAS EN LENGUAJE NATURAL:
+      - Si Jorge pide "activa modo automático" / "modo predeterminado" / "asigna tú directamente":
+        Emite acción { "type": "set_bot_mode", "mode": "auto" } y confirma amablemente.
+      - Si Jorge pide "modo interactivo" / "pregúntame siempre":
+        Emite acción { "type": "set_bot_mode", "mode": "interactive" } y confirma amablemente.
+      - Si Jorge te dice reglas como "quiero que las cosas de deporte vayan a Salud & Deporte y las quedadas a Personal":
+        Emite acciones { "type": "set_routing_rule", "keyword": "deporte", "calendarId": "cal-health" } y confirma amablemente.
+
 ESTRUCTURA JSON OBLIGATORIA DE RETORNO:
 {
   "reply": "- - - - - - - - - - - - - - - - - - - -\\n¡Claro, Jorge! ...\\n- - - - - - - - - - - - - - - - - - - -",
@@ -719,6 +922,7 @@ ESTRUCTURA JSON OBLIGATORIA DE RETORNO:
         "context": "University" | "Projects" | "Personal" | "Health & Gym",
         "est": "30m" | "45m" | "60m" | "90m" | "120m",
         "description": "...",
+        "calendarId": "cal-default" | "cal-university" | "cal-health" | "cal-work",
         "recurrence": "none" | "daily" | "weekly"
       }
     },
@@ -731,6 +935,7 @@ ESTRUCTURA JSON OBLIGATORIA DE RETORNO:
         "time": "HH:MM",
         "date": "YYYY-MM-DD",
         "est": "60m",
+        "calendarId": "...",
         "completed": true/false,
         "description": "..."
       }
@@ -739,6 +944,15 @@ ESTRUCTURA JSON OBLIGATORIA DE RETORNO:
       "type": "delete_task",
       "targetTitle": "Título o parte del título a eliminar (o 'todos')",
       "targetId": null
+    },
+    {
+      "type": "set_bot_mode",
+      "mode": "auto" | "interactive"
+    },
+    {
+      "type": "set_routing_rule",
+      "keyword": "deporte",
+      "calendarId": "cal-health"
     }
   ],
   "isNewTask": true/false
@@ -1157,6 +1371,115 @@ export async function startBaileysConnection() {
 
         // 4. Limpiar el prefijo /ia del comando del usuario
         const cleanInstruction = rawText.replace(iaTriggerRegex, ' ').replace(/\s+/g, ' ').trim()
+        const lowerInstruction = cleanInstruction.toLowerCase()
+
+        // 4.1. COMANDO /help o ayuda
+        if (/^(\/|!|\.)?(help|ayuda)$/i.test(cleanInstruction) || lowerInstruction === 'ayuda' || lowerInstruction === 'help') {
+          const helpReply = `${DIVIDER}\n${getHelpMessage()}\n${DIVIDER}`
+          try {
+            const sent = await sock.sendMessage(from, { text: helpReply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: helpReply }).catch(() => {})
+          }
+          continue
+        }
+
+        // 4.2. COMANDO /calendarios
+        if (/^(\/|!|\.)?(calendarios|calendars)$/i.test(cleanInstruction)) {
+          const calsReply = `${DIVIDER}\n${getCalendarsSummaryMessage()}\n${DIVIDER}`
+          try {
+            const sent = await sock.sendMessage(from, { text: calsReply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: calsReply }).catch(() => {})
+          }
+          continue
+        }
+
+        // 4.3. CAMBIOS DIRECTOS DE MODO (AUTOMÁTICO / INTERACTIVO)
+        if (
+          /^(\/|!|\.)?modo\s+(auto|predeterminado|automatico)$/i.test(cleanInstruction) ||
+          lowerInstruction.includes('activar modo automatico') ||
+          lowerInstruction.includes('activa modo automatico') ||
+          lowerInstruction.includes('activar modo predeterminado') ||
+          lowerInstruction.includes('modo predeterminado') ||
+          lowerInstruction.includes('asigna automaticamente')
+        ) {
+          botSettings.mode = 'auto'
+          saveBotSettings(botSettings)
+          const modeReply = `${DIVIDER}\n¡Entendido, Jorge! He activado el *Modo Automático*.\nA partir de ahora clasificaré y asignaré cada nuevo evento al calendario más apropiado (deporte, uni, personal, trabajo...) de forma autónoma sin preguntarte para ahorrar tiempo.\n${DIVIDER}`
+          try {
+            const sent = await sock.sendMessage(from, { text: modeReply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: modeReply }).catch(() => {})
+          }
+          continue
+        }
+
+        if (
+          /^(\/|!|\.)?modo\s+(interactivo|manual)$/i.test(cleanInstruction) ||
+          lowerInstruction.includes('activar modo interactivo') ||
+          lowerInstruction.includes('activa modo interactivo') ||
+          lowerInstruction.includes('preguntame siempre') ||
+          lowerInstruction.includes('pregúntame siempre')
+        ) {
+          botSettings.mode = 'interactive'
+          saveBotSettings(botSettings)
+          const modeReply = `${DIVIDER}\n¡Hecho, Jorge! He activado el *Modo Interactivo*.\nCada vez que detecte una nueva cita o evento te preguntaré con opciones rápidas [1, 2, 3...] a qué calendario deseas asignarlo.\n${DIVIDER}`
+          try {
+            const sent = await sock.sendMessage(from, { text: modeReply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: modeReply }).catch(() => {})
+          }
+          continue
+        }
+
+        // 4.4. RESPONDER A SELECCIÓN PENDIENTE DE CALENDARIO ([1], [2], [3] o nombre de calendario)
+        if (botSettings.pendingSelection && botSettings.pendingSelection.expiresAt > Date.now()) {
+          const pending = botSettings.pendingSelection
+          const numMatch = cleanInstruction.match(/^\[?(\d+)\]?$/)
+          let chosenCal = null
+
+          if (numMatch) {
+            const idx = parseInt(numMatch[1], 10) - 1
+            if (idx >= 0 && idx < currentKnownCalendars.length) {
+              chosenCal = currentKnownCalendars[idx]
+            }
+          } else if (cleanInstruction.length >= 2 && !cleanInstruction.startsWith('/')) {
+            chosenCal = currentKnownCalendars.find((c) => {
+              const cName = (c.name || '').toLowerCase()
+              return (
+                cName === lowerInstruction ||
+                cName.includes(lowerInstruction) ||
+                (Array.isArray(c.keywords) && c.keywords.some((kw) => lowerInstruction.includes(kw)))
+              )
+            })
+          }
+
+          if (chosenCal) {
+            const tIdx = currentKnownTasks.findIndex((t) => String(t.id) === String(pending.taskId))
+            if (tIdx >= 0) {
+              currentKnownTasks[tIdx].calendarId = chosenCal.id
+              currentKnownTasks[tIdx].updatedAt = Date.now()
+              saveSyncedTasks(currentKnownTasks)
+              broadcastTasksUpdate(currentKnownTasks)
+            }
+            botSettings.pendingSelection = null
+            saveBotSettings(botSettings)
+
+            const chosenReply = `${DIVIDER}\n¡Perfecto, Jorge! He guardado "*${pending.taskTitle}*" en tu calendario de *${chosenCal.name}*.\n${DIVIDER}`
+            try {
+              const sent = await sock.sendMessage(from, { text: chosenReply }, { quoted: msg })
+              if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+            } catch (e) {
+              await sock.sendMessage(from, { text: chosenReply }).catch(() => {})
+            }
+            continue
+          }
+        }
 
         // 5. Construir el prompt completo para la Inteligencia Artificial
         let userText = ''
@@ -1188,11 +1511,16 @@ export async function startBaileysConnection() {
         const aiResult = await processMessageWithAI(userText.trim(), from)
 
         // Si se generaron acciones (añadir, modificar, eliminar), aplicarlas inmediatamente
+        let addedTaskRef = null
         if (Array.isArray(aiResult.actions) && aiResult.actions.length > 0) {
           const modified = applyBridgeActions(
             aiResult.actions,
             isVoiceNote || quotedAudioTranscript ? 'whatsapp_audio_whisper' : 'whatsapp_text_baileys'
           )
+          const addedAction = aiResult.actions.find((a) => a.type === 'add_task')
+          if (addedAction?.task) {
+            addedTaskRef = addedAction.task
+          }
           console.log(
             `[Baileys]: ${modified.length} acción(es) aplicadas en local:`,
             modified.map((m) => `${m.title || m.id} (${m._deleted ? 'eliminada' : 'actualizada/creada'})`).join(', ')
@@ -1207,6 +1535,13 @@ export async function startBaileysConnection() {
           .replace(/^(- - - - - - - - - - - - - - - - - - - -|\*{5,}|━{5,}|─{5,}|-{5,})\s*/i, '')
           .replace(/\s*(- - - - - - - - - - - - - - - - - - - -|\*{5,}|━{5,}|─{5,}|-{5,})$/i, '')
           .trim()
+
+        // Si se añadió una tarea en modo interactivo y la respuesta no contiene aún los botones numéricos, añadirlos
+        if (addedTaskRef && botSettings.mode === 'interactive') {
+          if (!replyToSend.includes('¿En qué calendario') && !replyToSend.includes('[1]')) {
+            replyToSend += `\n\n${formatCalendarOptionsText(addedTaskRef.title)}`
+          }
+        }
 
         // Garantizar barras de guiones espaciados exactamente arriba y abajo
         replyToSend = `${DIVIDER}\n${replyToSend}\n${DIVIDER}`
@@ -1558,6 +1893,58 @@ export function handleBaileysApiRoute(req, res) {
       }
     })
     return true
+  }
+
+  if (pathname === '/api/baileys/sync-calendars' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => {
+      body += chunk
+    })
+    req.on('end', () => {
+      try {
+        const { calendars } = JSON.parse(body)
+        if (Array.isArray(calendars) && calendars.length > 0) {
+          currentKnownCalendars = calendars
+          saveUserCalendars(calendars)
+        }
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true, count: currentKnownCalendars.length }))
+      } catch (e) {
+        res.statusCode = 400
+        res.end(JSON.stringify({ error: e.message }))
+      }
+    })
+    return true
+  }
+
+  if (pathname === '/api/baileys/bot-settings') {
+    if (req.method === 'GET') {
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify(botSettings))
+      return true
+    }
+    if (req.method === 'POST') {
+      let body = ''
+      req.on('data', (chunk) => {
+        body += chunk
+      })
+      req.on('end', () => {
+        try {
+          const updates = JSON.parse(body)
+          botSettings = { ...botSettings, ...updates }
+          saveBotSettings(botSettings)
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ success: true, settings: botSettings }))
+        } catch (e) {
+          res.statusCode = 400
+          res.end(JSON.stringify({ error: e.message }))
+        }
+      })
+      return true
+    }
   }
 
   if (pathname === '/api/baileys/chat-test' && req.method === 'POST') {

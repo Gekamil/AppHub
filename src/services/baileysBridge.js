@@ -173,4 +173,41 @@ export function subscribeToBaileysLiveUpdates(onTasksUpdated, onStatusUpdated) {
   }
 }
 
+export async function syncBaileysCalendars(calendars) {
+  try {
+    const res = await fetch(`${API_BASE}/api/baileys/sync-calendars`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ calendars }),
+    })
+    return await res.json()
+  } catch (e) {
+    return { success: false, error: e.message }
+  }
+}
+
+export async function getBaileysBotSettings() {
+  try {
+    const res = await fetch(`${API_BASE}/api/baileys/bot-settings`)
+    if (res.ok) {
+      return await res.json()
+    }
+  } catch (e) {}
+  return null
+}
+
+export async function saveBaileysBotSettings(settings) {
+  try {
+    const res = await fetch(`${API_BASE}/api/baileys/bot-settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    })
+    return await res.json()
+  } catch (e) {
+    return { success: false, error: e.message }
+  }
+}
+
+
 

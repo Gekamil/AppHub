@@ -19,7 +19,7 @@ import {
   ROLE_PRESET_COLORS,
   ROLE_PRESET_ICONS,
 } from '../services/sharedRoles'
-import { deleteBaileysTask, syncBaileysTasks } from '../services/baileysBridge'
+import { deleteBaileysTask, syncBaileysTasks, syncBaileysCalendars } from '../services/baileysBridge'
 import { getAppTheme, getAppThemeTokens } from '../services/appTheme'
 import {
   generateShareCode,
@@ -602,9 +602,10 @@ export default function CalendarPage() {
     return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
   }, [])
 
-  // Sincronizar calendarios de forma aislada para la cuenta activa
+  // Sincronizar calendarios de forma aislada para la cuenta activa y con el puente WhatsApp
   useEffect(() => {
     saveUserCalendars(calendars, getCurrentUser())
+    syncBaileysCalendars(calendars).catch(() => {})
   }, [calendars])
 
   // Cargar datos remotos de calendarios al iniciar si el usuario está registrado
