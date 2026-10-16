@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Set up Java 17
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -77,3 +77,45 @@ jobs:
           name: AppHub-Windows-EXE
           path: release/*.exe
           if-no-files-found: warn
+
+  publish-release:
+    name: Publish Release Packages
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: AppHub-Android-APK
+          path: release-assets
+        continue-on-error: true
+
+      - name: Download Windows EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: AppHub-Windows-EXE
+          path: release-assets
+        continue-on-error: true
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p dist-release
+          find release-assets/ -name "*.apk" -exec cp {} dist-release/AppHub.apk \; 2>/dev/null || true
+          find release-assets/ -name "*.exe" -exec cp {} dist-release/AppHub-Setup.exe \; 2>/dev/null || true
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: AppHub Official Release
+          body: |
+            Descargas oficiales de AppHub:
+            - **Windows**: `AppHub-Setup.exe` (Instalador nativo de escritorio)
+            - **Android**: `AppHub.apk` (Paquete nativo)
+          files: |
+            dist-release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

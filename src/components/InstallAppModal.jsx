@@ -42,12 +42,12 @@ export default function InstallAppModal({ isOpen, onClose }) {
     }
   }
 
-  const triggerDownload = async (fileUrl, fileName, fallbackUrl) => {
-    setDownloadNotice('Iniciando descarga...')
+  const triggerDownload = async (fileUrl, fileName) => {
+    setDownloadNotice(`Preparando descarga de ${fileName}...`)
     try {
       const res = await fetch(fileUrl, { method: 'HEAD' })
       const contentType = res.headers.get('content-type') || ''
-      // Si el archivo existe físicamente y no es el index.html de la SPA
+      // Si el archivo existe físicamente y es un binario real (no el HTML fallback de la SPA)
       if (res.ok && !contentType.includes('text/html')) {
         const link = document.createElement('a')
         link.href = fileUrl
@@ -55,22 +55,19 @@ export default function InstallAppModal({ isOpen, onClose }) {
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        setDownloadNotice('Descarga iniciada con éxito.')
-        setTimeout(() => setDownloadNotice(null), 3000)
+        setDownloadNotice(`Descarga de ${fileName} iniciada correctamente.`)
+        setTimeout(() => setDownloadNotice(null), 4000)
         return
       }
     } catch {
-      // Ignorar fallo de fetch HEAD y pasar a fallback
+      // Ignorar fallo de fetch HEAD
     }
 
-    // Fallback: abrir releases de GitHub
-    window.open(fallbackUrl, '_blank')
-    setDownloadNotice('Redirigiendo a las descargas oficiales de GitHub...')
-    setTimeout(() => setDownloadNotice(null), 4000)
+    setDownloadNotice(`El archivo ${fileName} se está compilando en el servidor. En breve estará disponible para descarga directa.`)
+    setTimeout(() => setDownloadNotice(null), 5000)
   }
 
   const GITHUB_REPO_URL = 'https://github.com/Gekamil/AppHub'
-  const GITHUB_RELEASES_URL = 'https://github.com/Gekamil/AppHub/releases'
 
   return (
     <div
@@ -181,8 +178,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   onClick={() =>
                     triggerDownload(
                       '/download/AppHub.apk',
-                      'AppHub.apk',
-                      `${GITHUB_RELEASES_URL}/latest`
+                      'AppHub.apk'
                     )
                   }
                   className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer"
@@ -259,8 +255,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   onClick={() =>
                     triggerDownload(
                       '/download/AppHub.ipa',
-                      'AppHub.ipa',
-                      `${GITHUB_RELEASES_URL}/latest`
+                      'AppHub.ipa'
                     )
                   }
                   className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer"
@@ -323,8 +318,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   onClick={() =>
                     triggerDownload(
                       '/download/AppHub-Setup.exe',
-                      'AppHub-Setup.exe',
-                      `${GITHUB_RELEASES_URL}/latest`
+                      'AppHub-Setup.exe'
                     )
                   }
                   className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer"
