@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 .whatsapp_auth
 .whatsapp_synced_tasks.json
+.whatsapp_shared_calendars.json
 .env
 .env.local
 *.zip

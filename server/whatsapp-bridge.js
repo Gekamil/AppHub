@@ -19,6 +19,25 @@ import http from 'http'
 
 const AUTH_DIR = path.resolve(process.cwd(), '.whatsapp_auth')
 const TASKS_FILE = path.resolve(process.cwd(), '.whatsapp_synced_tasks.json')
+const SHARED_CALENDARS_FILE = path.resolve(process.cwd(), '.whatsapp_shared_calendars.json')
+
+function loadSharedCalendarsStore() {
+  try {
+    if (fs.existsSync(SHARED_CALENDARS_FILE)) {
+      return JSON.parse(fs.readFileSync(SHARED_CALENDARS_FILE, 'utf-8')) || {}
+    }
+  } catch (e) {}
+  return {}
+}
+
+function saveSharedCalendarsStore(store) {
+  try {
+    fs.writeFileSync(SHARED_CALENDARS_FILE, JSON.stringify(store, null, 2), 'utf-8')
+  } catch (e) {}
+}
+
+let sharedCalendarsMap = loadSharedCalendarsStore()
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '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'
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_AUDIO_ENDPOINT = 'https://api.groq.com/openai/v1/audio/transcriptions'
@@ -92,6 +111,23 @@ export function broadcastTasksUpdate(tasks, deletedIds = []) {
 
 export function broadcastStatusUpdate(status) {
   const message = `data: ${JSON.stringify({ type: 'status_updated', status: status || currentStatus, timestamp: Date.now() })}\n\n`
+  for (const client of sseClients) {
+    try {
+      client.write(message)
+    } catch (err) {
+      sseClients.delete(client)
+    }
+  }
+}
+
+export function broadcastSharedCalendarUpdate(shareCode, calendar, events = []) {
+  const message = `data: ${JSON.stringify({
+    type: 'shared_calendar_updated',
+    shareCode,
+    calendar,
+    events,
+    timestamp: Date.now(),
+  })}\n\n`
   for (const client of sseClients) {
     try {
       client.write(message)
@@ -1348,6 +1384,86 @@ export function handleBaileysApiRoute(req, res) {
 
     req.on('close', () => {
       sseClients.delete(res)
+    })
+    return true
+  }
+
+  // Canal SSE exclusivo o compatible para calendarios compartidos
+  if (pathname === '/api/shared-calendars/stream') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no',
+    })
+    res.write(': connected\n\n')
+
+    const reqCode = parsedUrl.searchParams.get('code')
+    if (reqCode && sharedCalendarsMap[reqCode]) {
+      const initial = sharedCalendarsMap[reqCode]
+      res.write(`data: ${JSON.stringify({
+        type: 'shared_calendar_updated',
+        shareCode: reqCode,
+        calendar: initial.calendar,
+        events: initial.events || [],
+        timestamp: Date.now(),
+      })}\n\n`)
+    }
+
+    sseClients.add(res)
+    req.on('close', () => {
+      sseClients.delete(res)
+    })
+    return true
+  }
+
+  // Obtener calendario compartido por código
+  if (pathname === '/api/shared-calendars/get' && req.method === 'GET') {
+    const code = parsedUrl.searchParams.get('code')
+    if (code && sharedCalendarsMap[code]) {
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify(sharedCalendarsMap[code]))
+      return true
+    }
+    res.statusCode = 404
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ error: 'Calendario no encontrado' }))
+    return true
+  }
+
+  // Sincronizar y publicar calendario compartido
+  if (pathname === '/api/shared-calendars/sync' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => {
+      body += chunk
+    })
+    req.on('end', () => {
+      try {
+        const { shareCode, calendar, events } = JSON.parse(body)
+        if (!shareCode) {
+          res.statusCode = 400
+          res.end(JSON.stringify({ error: 'Falta shareCode' }))
+          return
+        }
+        const record = {
+          shareCode,
+          calendar,
+          events: Array.isArray(events) ? events : [],
+          updatedAt: Date.now(),
+        }
+        sharedCalendarsMap[shareCode] = record
+        saveSharedCalendarsStore(sharedCalendarsMap)
+        broadcastSharedCalendarUpdate(shareCode, calendar, events)
+
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true }))
+      } catch (e) {
+        res.statusCode = 400
+        res.end(JSON.stringify({ error: e.message }))
+      }
     })
     return true
   }

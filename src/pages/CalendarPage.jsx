@@ -21,6 +21,13 @@ import {
 } from '../services/sharedRoles'
 import { deleteBaileysTask, syncBaileysTasks } from '../services/baileysBridge'
 import { getAppTheme, getAppThemeTokens } from '../services/appTheme'
+import {
+  generateShareCode,
+  normalizeShareCode,
+  fetchSharedCalendar,
+  publishSharedCalendarUpdate,
+  subscribeToSharedCalendar,
+} from '../services/sharedCalendarService'
 
 // Helpers de fecha dinámicos
 const formatYMD = (date) => {
@@ -652,12 +659,20 @@ export default function CalendarPage() {
   const [collapsedCalIds, setCollapsedCalIds] = useState([])
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false)
   const [editingCalendarId, setEditingCalendarId] = useState(null)
+  const [calendarModalTab, setCalendarModalTab] = useState('edit') // 'edit' | 'import'
+  const [importCalendarCode, setImportCalendarCode] = useState('')
+  const [isConnectingSharedCal, setIsConnectingSharedCal] = useState(false)
+  const [copiedCodeToast, setCopiedCodeToast] = useState(false)
+  const [copiedLinkToast, setCopiedLinkToast] = useState(false)
   const [isSyncingCalendar, setIsSyncingCalendar] = useState(false)
   const [calendarForm, setCalendarForm] = useState({
     name: '',
     color: '#3b82f6',
     sharedFrom: [],
     syncUrl: '',
+    isShared: false,
+    shareCode: '',
+    sharedRole: 'owner',
   })
 
   // Widgets reordenables, eliminables y con animaciones de arrastre en panel lateral derecho
@@ -691,6 +706,88 @@ export default function CalendarPage() {
     }
     window.addEventListener('shared_roles_updated', handleRolesUpdated)
     return () => window.removeEventListener('shared_roles_updated', handleRolesUpdated)
+  }, [])
+
+  // Suscripción en tiempo real a los calendarios compartidos activos
+  useEffect(() => {
+    const unsubs = []
+    const sharedCals = (calendars || []).filter((c) => c.isShared && c.shareCode)
+
+    for (const cal of sharedCals) {
+      const unsub = subscribeToSharedCalendar(cal.shareCode, (remoteCal, remoteEvents) => {
+        if (remoteCal && remoteCal.name) {
+          setCalendars((prev) =>
+            prev.map((c) =>
+              c.shareCode === cal.shareCode
+                ? { ...c, name: remoteCal.name, color: remoteCal.color || c.color }
+                : c
+            )
+          )
+        }
+        if (Array.isArray(remoteEvents)) {
+          setGlobalTasks((prev) => {
+            const currentForCal = (prev || []).filter((t) => t.calendarId === cal.id)
+            const currentKey = currentForCal.map((t) => `${t.id}_${t.date}_${t.time}_${t.title}_${t.completed}`).sort().join('|')
+            const remoteKey = remoteEvents.map((t) => `${t.id}_${t.date}_${t.time}_${t.title}_${t.completed}`).sort().join('|')
+            if (currentKey === remoteKey) return prev
+
+            const others = (prev || []).filter((t) => t.calendarId !== cal.id)
+            const mappedRemote = remoteEvents.map((t) => ({
+              ...t,
+              calendarId: cal.id,
+            }))
+            return [...others, ...mappedRemote]
+          })
+        }
+      })
+      if (typeof unsub === 'function') unsubs.push(unsub)
+    }
+
+    return () => {
+      unsubs.forEach((u) => typeof u === 'function' && u())
+    }
+  }, [calendars.map((c) => `${c.id}:${c.shareCode}:${c.isShared}`).join(',')])
+
+  // Sincronización saliente hacia calendarios compartidos cuando se modifican sus eventos
+  const isInitialSyncMount = useRef(true)
+  useEffect(() => {
+    if (isInitialSyncMount.current) {
+      isInitialSyncMount.current = false
+      return
+    }
+    const sharedCals = (calendars || []).filter((c) => c.isShared && c.shareCode)
+    if (sharedCals.length === 0) return
+
+    const timer = setTimeout(() => {
+      for (const cal of sharedCals) {
+        const eventsForCal = (globalTasks || []).filter((t) => t.calendarId === cal.id)
+        publishSharedCalendarUpdate(cal.shareCode, cal, eventsForCal).catch(() => {})
+      }
+    }, 350)
+
+    return () => clearTimeout(timer)
+  }, [globalTasks, calendars])
+
+  // Auto-detección de enlace de conexión compartida en la URL (?connectCode=HUB-CAL-...)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const connectCode = params.get('connectCode')
+      if (connectCode) {
+        const cleanCode = normalizeShareCode(connectCode)
+        const alreadyConnected = calendars.some((c) => c.shareCode === cleanCode)
+        if (!alreadyConnected) {
+          const confirmConnect = window.confirm(
+            `Se ha detectado una invitación para conectar el calendario compartido [${cleanCode}]. ¿Deseas conectarte y sincronizarlo en tiempo real?`
+          )
+          if (confirmConnect) {
+            handleConnectSharedCalendar(cleanCode)
+          }
+        }
+        const cleanUrl = window.location.pathname
+        window.history.replaceState({}, '', cleanUrl)
+      }
+    } catch (e) {}
   }, [])
 
   // Modales y selectores personalizados elegantes (sin desplegables nativos cuadrados)
@@ -1209,11 +1306,15 @@ export default function CalendarPage() {
   const handleOpenAddCalendar = () => {
     const newCalId = `cal-${Date.now()}`
     setEditingCalendarId(newCalId)
+    setCalendarModalTab('edit')
     setCalendarForm({
       name: '',
       color: '#3b82f6',
       sharedFrom: [],
       syncUrl: '',
+      isShared: false,
+      shareCode: '',
+      sharedRole: 'owner',
     })
     setIsCalendarModalOpen(true)
   }
@@ -1221,13 +1322,119 @@ export default function CalendarPage() {
   const handleOpenEditCalendar = (cal, e) => {
     if (e) e.stopPropagation()
     setEditingCalendarId(cal.id)
+    setCalendarModalTab('edit')
     setCalendarForm({
       name: cal.name,
       color: cal.color || '#3b82f6',
       sharedFrom: cal.sharedFrom || [],
       syncUrl: cal.syncUrl || '',
+      isShared: Boolean(cal.isShared),
+      shareCode: cal.shareCode || '',
+      sharedRole: cal.sharedRole || 'owner',
     })
     setIsCalendarModalOpen(true)
+  }
+
+  const handleToggleShareCurrentCalendar = () => {
+    if (calendarForm.isShared && calendarForm.shareCode) {
+      setCalendarForm((prev) => ({
+        ...prev,
+        isShared: false,
+      }))
+      setFeedbackToast('Modo compartido desactivado para este calendario')
+      setTimeout(() => setFeedbackToast(null), 3000)
+    } else {
+      const newCode = calendarForm.shareCode || generateShareCode()
+      setCalendarForm((prev) => ({
+        ...prev,
+        isShared: true,
+        shareCode: newCode,
+        sharedRole: 'owner',
+      }))
+      setFeedbackToast(`Código generado: ${newCode}`)
+      setTimeout(() => setFeedbackToast(null), 3000)
+    }
+  }
+
+  const handleCopyShareCode = (code) => {
+    if (!code) return
+    navigator.clipboard.writeText(code).then(() => {
+      setCopiedCodeToast(true)
+      setTimeout(() => setCopiedCodeToast(false), 2000)
+      setFeedbackToast(`Código ${code} copiado al portapapeles`)
+      setTimeout(() => setFeedbackToast(null), 2500)
+    }).catch(() => {})
+  }
+
+  const handleCopyShareLink = (code) => {
+    if (!code) return
+    const link = `${window.location.origin}/calendar?connectCode=${encodeURIComponent(code)}`
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedLinkToast(true)
+      setTimeout(() => setCopiedLinkToast(false), 2000)
+      setFeedbackToast(`Enlace directo copiado al portapapeles`)
+      setTimeout(() => setFeedbackToast(null), 2500)
+    }).catch(() => {})
+  }
+
+  const handleConnectSharedCalendar = async (customCode) => {
+    const codeToConnect = normalizeShareCode(customCode || importCalendarCode)
+    if (!codeToConnect) {
+      setFeedbackToast('Introduce un código o enlace de calendario válido')
+      setTimeout(() => setFeedbackToast(null), 3000)
+      return
+    }
+
+    const existing = calendars.find((c) => c.shareCode === codeToConnect)
+    if (existing) {
+      setActiveCalendarId(existing.id)
+      setIsCalendarModalOpen(false)
+      setFeedbackToast(`Ya estás conectado a "${existing.name}"`)
+      setTimeout(() => setFeedbackToast(null), 3000)
+      return
+    }
+
+    setIsConnectingSharedCal(true)
+    try {
+      const data = await fetchSharedCalendar(codeToConnect)
+      const remoteCal = data.calendar || {}
+      const remoteEvents = Array.isArray(data.events) ? data.events : []
+
+      const newCalId = `cal-shared-${Date.now()}`
+      const newCal = {
+        id: newCalId,
+        name: remoteCal.name || `Calendario Compartido (${codeToConnect.slice(-4)})`,
+        color: remoteCal.color || '#f43f5e',
+        dot: 'bg-rose-500',
+        sharedFrom: [],
+        syncUrl: '',
+        isShared: true,
+        shareCode: codeToConnect,
+        sharedRole: 'member',
+        connectedAt: Date.now(),
+      }
+
+      setCalendars((prev) => [...prev, newCal])
+      setActiveCalendarId(newCal.id)
+
+      if (remoteEvents.length > 0) {
+        const mappedEvents = remoteEvents.map((t) => ({
+          ...t,
+          calendarId: newCal.id,
+        }))
+        setGlobalTasks((prev) => [...(prev || []), ...mappedEvents])
+      }
+
+      setImportCalendarCode('')
+      setIsCalendarModalOpen(false)
+      setFeedbackToast(`Conectado en tiempo real a "${newCal.name}"`)
+      setTimeout(() => setFeedbackToast(null), 3500)
+    } catch (err) {
+      setFeedbackToast(err.message || 'Error al conectar con el calendario compartido')
+      setTimeout(() => setFeedbackToast(null), 4000)
+    } finally {
+      setIsConnectingSharedCal(false)
+    }
   }
 
   const handleSaveCalendar = (e) => {
@@ -1239,23 +1446,27 @@ export default function CalendarPage() {
     const existing = calendars.find((c) => c.id === targetCalId)
 
     if (existing) {
+      const updatedCal = {
+        ...existing,
+        name: calendarForm.name.trim(),
+        color: calendarForm.color,
+        sharedFrom: calendarForm.sharedFrom,
+        syncUrl: cleanSyncUrl,
+        isShared: Boolean(calendarForm.isShared),
+        shareCode: calendarForm.shareCode || existing.shareCode || '',
+        sharedRole: calendarForm.sharedRole || existing.sharedRole || 'owner',
+      }
       setCalendars((prev) =>
-        prev.map((c) =>
-          c.id === targetCalId
-            ? {
-                ...c,
-                name: calendarForm.name.trim(),
-                color: calendarForm.color,
-                sharedFrom: calendarForm.sharedFrom,
-                syncUrl: cleanSyncUrl,
-              }
-            : c
-        )
+        prev.map((c) => (c.id === targetCalId ? updatedCal : c))
       )
       setFeedbackToast(`Calendario "${calendarForm.name.trim()}" guardado`)
       setTimeout(() => setFeedbackToast(null), 3000)
       if (cleanSyncUrl && cleanSyncUrl !== existing.syncUrl) {
         handleSyncCalendar(targetCalId, cleanSyncUrl)
+      }
+      if (updatedCal.isShared && updatedCal.shareCode) {
+        const calEvents = (globalTasks || []).filter((t) => t.calendarId === targetCalId)
+        publishSharedCalendarUpdate(updatedCal.shareCode, updatedCal, calEvents).catch(() => {})
       }
     } else {
       const newCal = {
@@ -1265,6 +1476,9 @@ export default function CalendarPage() {
         dot: 'bg-primary',
         sharedFrom: calendarForm.sharedFrom,
         syncUrl: cleanSyncUrl,
+        isShared: Boolean(calendarForm.isShared),
+        shareCode: calendarForm.shareCode || '',
+        sharedRole: calendarForm.sharedRole || 'owner',
       }
       setCalendars((prev) => [...prev, newCal])
       setActiveCalendarId(newCal.id)
@@ -1272,6 +1486,10 @@ export default function CalendarPage() {
       setTimeout(() => setFeedbackToast(null), 3000)
       if (cleanSyncUrl) {
         handleSyncCalendar(newCal.id, cleanSyncUrl)
+      }
+      if (newCal.isShared && newCal.shareCode) {
+        const calEvents = (globalTasks || []).filter((t) => t.calendarId === targetCalId)
+        publishSharedCalendarUpdate(newCal.shareCode, newCal, calEvents).catch(() => {})
       }
     }
     setIsCalendarModalOpen(false)
@@ -2852,6 +3070,11 @@ export default function CalendarPage() {
                                   sync
                                 </span>
                               )}
+                              {cal.isShared && (
+                                <span className="material-symbols-outlined text-[13px] text-rose-500 shrink-0" title={`Compartido en tiempo real (${cal.shareCode || ''})`}>
+                                  hub
+                                </span>
+                              )}
                             </button>
                           </div>
                           <div className="flex items-center gap-1 shrink-0 ml-1">
@@ -2900,12 +3123,26 @@ export default function CalendarPage() {
                       type="button"
                       onClick={() => {
                         handleOpenAddCalendar()
+                        setCalendarModalTab('edit')
                         setIsCalDropdownOpen(false)
                       }}
                       className="p-1.5 rounded-lg hover:bg-primary/10 text-primary text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-[16px]">add</span>
                       <span>+ Nuevo calendario</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleOpenAddCalendar()
+                        setCalendarModalTab('import')
+                        setIsCalDropdownOpen(false)
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">hub</span>
+                      <span>Conectar con código compartido</span>
                     </button>
                   </div>
                 </div>
@@ -4576,32 +4813,147 @@ export default function CalendarPage() {
             className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] w-full max-w-4xl max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col border border-slate-200/90 dark:border-slate-800 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 ease-out pb-safe sm:pb-0"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#161b26] shrink-0">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md text-white font-bold"
-                  style={{ backgroundColor: calendarForm.color || '#3b82f6' }}
+            <div className="flex flex-col px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#161b26] shrink-0 gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md text-white font-bold"
+                    style={{ backgroundColor: calendarModalTab === 'import' ? '#f43f5e' : (calendarForm.color || '#3b82f6') }}
+                  >
+                    <span className="material-symbols-outlined text-[22px]">
+                      {calendarModalTab === 'import' ? 'hub' : 'calendar_month'}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-headline-sm text-base text-on-surface font-bold tracking-tight">
+                      {editingCalendarId && calendars.some((c) => c.id === editingCalendarId)
+                        ? 'Configurar Calendario'
+                        : calendarModalTab === 'import'
+                        ? 'Importar Calendario Compartido'
+                        : 'Añadir Nuevo Calendario'}
+                    </h3>
+                    <p className="text-[11px] text-secondary font-medium">
+                      {calendarModalTab === 'import'
+                        ? 'Conecta mediante código o enlace para trabajar a tiempo real'
+                        : 'Define nombre, color, enlace externo y compartición'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseCalendarModal}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[22px]">calendar_month</span>
-                </div>
-                <div>
-                  <h3 className="font-headline-sm text-base text-on-surface font-bold tracking-tight">
-                    {editingCalendarId ? 'Configurar Calendario' : 'Añadir Nuevo Calendario'}
-                  </h3>
-                  <p className="text-[11px] text-secondary font-medium">Define nombre, color, enlace externo y compartición</p>
-                </div>
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleCloseCalendarModal}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-secondary hover:text-on-surface hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
+
+              {/* Si estamos creando un nuevo calendario, permitir alternar entre crear desde cero o conectar código */}
+              {(!editingCalendarId || !calendars.some((c) => c.id === editingCalendarId)) && (
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarModalTab('edit')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      calendarModalTab === 'edit'
+                        ? 'bg-primary text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-secondary hover:text-on-surface'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">add_circle</span>
+                    <span>Crear nuevo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarModalTab('import')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      calendarModalTab === 'import'
+                        ? 'bg-rose-500 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-secondary hover:text-on-surface'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">hub</span>
+                    <span>Importar / Conectar con código</span>
+                  </button>
+                </div>
+              )}
             </div>
 
-            <form onSubmit={handleSaveCalendar} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto flex-1">
+            {/* PANEL 1: IMPORTAR CALENDARIO COMPARTIDO CON CÓDIGO / ENLACE */}
+            {calendarModalTab === 'import' ? (
+              <div className="p-6 flex flex-col gap-4 overflow-y-auto flex-1">
+                <div className="p-5 rounded-3xl bg-gradient-to-br from-rose-50/60 via-slate-50 to-blue-50/60 dark:from-rose-950/20 dark:via-slate-800/40 dark:to-blue-950/20 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+                      <span className="material-symbols-outlined text-[22px]">hub</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                        Conectar Calendario en Tiempo Real
+                      </h4>
+                      <p className="text-xs text-secondary">
+                        Pega el código de conexión (ej: HUB-CAL-XXXX-XXXX) o el enlace completo para sincronizarte
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Código de conexión o Enlace *
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        placeholder="Ej: HUB-CAL-8F42-9D17 o https://.../?connectCode=..."
+                        value={importCalendarCode}
+                        onChange={(e) => setImportCalendarCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleConnectSharedCalendar()
+                          }
+                        }}
+                        className="flex-1 h-11 px-3.5 bg-white dark:bg-slate-900/80 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500 font-mono text-xs uppercase shadow-inner"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        disabled={isConnectingSharedCal || !importCalendarCode.trim()}
+                        onClick={() => handleConnectSharedCalendar()}
+                        className="h-11 px-5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 shrink-0"
+                      >
+                        <span className={`material-symbols-outlined text-[17px] ${isConnectingSharedCal ? 'animate-spin' : ''}`}>
+                          {isConnectingSharedCal ? 'progress_activity' : 'cloud_sync'}
+                        </span>
+                        <span>{isConnectingSharedCal ? 'Conectando...' : 'Conectar y Sincronizar'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-[11px] text-secondary space-y-2">
+                    <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px] text-rose-500">sync_alt</span>
+                      <span>Sincronización Bidireccional Automática</span>
+                    </div>
+                    <p className="leading-relaxed text-slate-600 dark:text-slate-400">
+                      Ambos usuarios trabajaréis sobre el mismo calendario. Cuando cualquiera agregue, edite, reprograme o elimine un evento, se reflejará al instante en las aplicaciones de ambos sin tener que recargar.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCloseCalendarModal}
+                    className="px-4 py-2.5 rounded-2xl text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 text-label-md font-medium transition-colors cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveCalendar} className="flex flex-col flex-1 overflow-hidden">
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto flex-1">
                 {/* Columna Izquierda: Identidad y Compartición */}
                 <div className="flex flex-col gap-4">
                   <div>
@@ -4719,8 +5071,103 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                {/* Columna Derecha: Sincronización Externa TeamUp, Google Calendar, Móvil */}
+                {/* Columna Derecha: Sincronización Externa TeamUp, Google Calendar, Móvil y Conexión Compartida */}
                 <div className="flex flex-col gap-3.5 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800 pt-4 md:pt-0 md:pl-6">
+                  {/* Tarjeta de Compartición en Tiempo Real */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-rose-50/50 via-slate-50 to-rose-50/30 dark:from-rose-950/20 dark:via-slate-800/40 dark:to-rose-950/10 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[18px] text-rose-500">hub</span>
+                        <span className="font-label-sm text-label-sm text-on-surface font-bold">
+                          Compartir en tiempo real
+                        </span>
+                      </div>
+                      {calendarForm.isShared && calendarForm.shareCode ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Conectado
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-700 text-secondary font-semibold font-mono">
+                          Privado
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-secondary leading-relaxed">
+                      Conecta este calendario con tu pareja o amigos. Ambos veréis y modificaréis eventos de forma sincronizada en tiempo real.
+                    </p>
+
+                    {calendarForm.isShared && calendarForm.shareCode ? (
+                      <div className="space-y-2.5 pt-1">
+                        {/* Caja de Código */}
+                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-700/80 flex items-center justify-between gap-2">
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] uppercase tracking-wider font-bold text-secondary">Código de conexión</span>
+                            <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400 truncate tracking-wider">
+                              {calendarForm.shareCode}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyShareCode(calendarForm.shareCode)}
+                            className="h-8 px-2.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shrink-0 active:scale-95"
+                            title="Copiar código al portapapeles"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">
+                              {copiedCodeToast ? 'check' : 'content_copy'}
+                            </span>
+                            <span>{copiedCodeToast ? 'Copiado' : 'Copiar'}</span>
+                          </button>
+                        </div>
+
+                        {/* Caja de Enlace Directo */}
+                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-700/80 flex items-center justify-between gap-2">
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] uppercase tracking-wider font-bold text-secondary">Enlace directo para compartir</span>
+                            <span className="text-[11px] text-secondary font-mono truncate">
+                              {`${window.location.origin}/calendar?connectCode=${calendarForm.shareCode}`}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyShareLink(calendarForm.shareCode)}
+                            className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer shrink-0 active:scale-95"
+                            title="Copiar enlace directo"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">
+                              {copiedLinkToast ? 'check' : 'link'}
+                            </span>
+                            <span>{copiedLinkToast ? 'Copiado' : 'Enlace'}</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px]">cloud_sync</span>
+                            Sincronización bidireccional activa
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleToggleShareCurrentCalendar}
+                            className="text-[10px] text-error hover:underline font-semibold cursor-pointer"
+                          >
+                            Desactivar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleToggleShareCurrentCalendar}
+                        className="h-10 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">share</span>
+                        <span>Activar y Generar Código Compartido</span>
+                      </button>
+                    )}
+                  </div>
+
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -4850,6 +5297,7 @@ export default function CalendarPage() {
                 </div>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

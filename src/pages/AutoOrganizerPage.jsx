@@ -205,6 +205,74 @@ export default function AutoOrganizerPage() {
 
   const [selectedRadarDate, setSelectedRadarDate] = useState(() => getTodayInfo().todayYmd)
 
+  // Vista del bloque superior derecho: 'week' (Plan Semanal) o 'kanban' (Tablero Kanban de Hoy)
+  const [planViewMode, setPlanViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('auto_plan_view_mode') || 'week'
+    } catch (e) {
+      return 'week'
+    }
+  })
+  const handleSetPlanViewMode = (mode) => {
+    setPlanViewMode(mode)
+    try {
+      localStorage.setItem('auto_plan_view_mode', mode)
+    } catch (e) {}
+  }
+
+  // Estado de Drag and Drop para el Tablero Kanban de Hoy
+  const [draggedKanbanTaskId, setDraggedKanbanTaskId] = useState(null)
+  const [dropOverKanbanCol, setDropOverKanbanCol] = useState(null) // 'todo' | 'in_progress' | 'done'
+
+  const handleMoveKanbanTask = (taskId, targetStatus) => {
+    setGlobalTasks((prev) =>
+      (prev || []).map((t) => {
+        if (t.id !== taskId) return t
+        if (targetStatus === 'done') {
+          return { ...t, status: 'done', completed: true, inProgress: false }
+        } else if (targetStatus === 'in_progress') {
+          return { ...t, status: 'in_progress', completed: false, inProgress: true }
+        } else {
+          return { ...t, status: 'todo', completed: false, inProgress: false }
+        }
+      })
+    )
+  }
+
+  const handleKanbanDrop = (targetCol) => {
+    if (draggedKanbanTaskId) {
+      handleMoveKanbanTask(draggedKanbanTaskId, targetCol)
+      setDraggedKanbanTaskId(null)
+      setDropOverKanbanCol(null)
+    }
+  }
+
+  const handleKanbanTouchStart = (taskId) => {
+    setDraggedKanbanTaskId(taskId)
+  }
+
+  const handleKanbanTouchMove = (e) => {
+    if (!draggedKanbanTaskId) return
+    const touch = e.touches[0]
+    if (!touch) return
+    const elem = document.elementFromPoint(touch.clientX, touch.clientY)
+    if (elem) {
+      const colElem = elem.closest('[data-kanban-col]')
+      if (colElem) {
+        const col = colElem.getAttribute('data-kanban-col')
+        setDropOverKanbanCol(col)
+      }
+    }
+  }
+
+  const handleKanbanTouchEnd = () => {
+    if (draggedKanbanTaskId && dropOverKanbanCol) {
+      handleMoveKanbanTask(draggedKanbanTaskId, dropOverKanbanCol)
+    }
+    setDraggedKanbanTaskId(null)
+    setDropOverKanbanCol(null)
+  }
+
   // Modal y Configuración de Bot de WhatsApp (Meta Cloud API + Baileys Puente Local)
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false)
   const [whatsAppConfig, setWhatsAppConfig] = useState(getWhatsAppConfig())
@@ -818,6 +886,19 @@ export default function AutoOrganizerPage() {
     return filteredTasks.filter((t) => t.date === todayYmd)
   }, [filteredTasks, todayYmd])
 
+  // Tareas clasificadas para el Tablero Kanban de Hoy (Por hacer, En progreso, Hecho)
+  const kanbanTodoTasks = useMemo(() => {
+    return tasksToday.filter((t) => !t.completed && t.status !== 'in_progress' && !t.inProgress)
+  }, [tasksToday])
+
+  const kanbanInProgressTasks = useMemo(() => {
+    return tasksToday.filter((t) => !t.completed && (t.status === 'in_progress' || t.inProgress))
+  }, [tasksToday])
+
+  const kanbanDoneTasks = useMemo(() => {
+    return tasksToday.filter((t) => t.completed || t.status === 'done')
+  }, [tasksToday])
+
   // Tareas de to-do reales (excluye deportes y eventos de sincronización externa para el conteo de pendientes)
   const isPendingChore = (t) => !t.completed && !isSportActivity(t) && !t.isExternalSync
 
@@ -1347,29 +1428,70 @@ export default function AutoOrganizerPage() {
 
           {/* COLUMNA DERECHA: PLAN SEMANAL ESTRICTAMENTE SEMANAL (DISEÑO APPLE LIMPIO) */}
           <div className="w-full bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
-            {/* Cabecera Apple del Plan Semanal (Sin switchers redundantes) */}
+            {/* Cabecera Apple del Plan Semanal con Switcher Kanban */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[19px]">view_week</span>
+                  <span className="material-symbols-outlined text-[19px]">
+                    {planViewMode === 'kanban' ? 'view_kanban' : 'view_week'}
+                  </span>
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
-                    Plan Semanal
+                    {planViewMode === 'kanban' ? 'Tablero Kanban de Hoy' : 'Plan Semanal'}
                   </h3>
                   <p className="text-[10px] text-slate-500">
-                    {todayInfo.weekRangeLabel} • Agenda de la semana
+                    {planViewMode === 'kanban'
+                      ? `${todayInfo.headerDateStr} • Flujo ágil de actividades`
+                      : `${todayInfo.weekRangeLabel} • Agenda de la semana`}
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium font-mono">
-                {tasksThisWeek.length} {tasksThisWeek.length === 1 ? 'tarea' : 'tareas'}
-              </span>
+              {/* Selector de Pestaña: Semana vs Kanban Hoy */}
+              <div className="flex items-center gap-2">
+                <div className="inline-flex p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                  <button
+                    type="button"
+                    onClick={() => handleSetPlanViewMode('week')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      planViewMode === 'week'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">view_week</span>
+                    <span>Semana</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetPlanViewMode('kanban')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      planViewMode === 'kanban'
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">view_kanban</span>
+                    <span>Kanban Hoy</span>
+                  </button>
+                </div>
+
+                {planViewMode === 'week' ? (
+                  <span className="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium font-mono">
+                    {tasksThisWeek.length} {tasksThisWeek.length === 1 ? 'tarea' : 'tareas'}
+                  </span>
+                ) : (
+                  <span className="text-xs px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium font-mono">
+                    {tasksToday.length} {tasksToday.length === 1 ? 'actividad' : 'actividades'}
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* RUNWAY DE 7 DÍAS ESTILO APPLE + AGENDA DIARIA */}
-            <div className="space-y-3">
+            {/* VISTA 1: RUNWAY DE 7 DÍAS ESTILO APPLE + AGENDA DIARIA */}
+            {planViewMode === 'week' && (
+              <div className="space-y-3">
               {/* Runway Compacto de 7 Días Estilo Apple */}
               <div className="grid grid-cols-7 gap-1 sm:gap-1.5 pt-0.5">
                 {weekDays.map((day) => {
@@ -1604,8 +1726,336 @@ export default function AutoOrganizerPage() {
                 </div>
               </div>
             </div>
+            )}
 
-            {/* Fila del Bot de WhatsApp Conectado (Sin número personal harcodeado) */}
+            {/* VISTA 2: TABLERO KANBAN DE HOY (POR HACER • EN PROGRESO • HECHO) */}
+            {planViewMode === 'kanban' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+                  {/* Columna 1: Por hacer */}
+                  <div
+                    data-kanban-col="todo"
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = 'move'
+                      setDropOverKanbanCol('todo')
+                    }}
+                    onDragLeave={() => setDropOverKanbanCol(null)}
+                    onDrop={() => handleKanbanDrop('todo')}
+                    className={`p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[220px] max-h-[380px] ${
+                      dropOverKanbanCol === 'todo'
+                        ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20'
+                        : 'border-slate-200/60 dark:border-slate-800/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50 shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[17px] text-amber-500">pending_actions</span>
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">Por hacer</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                        {kanbanTodoTasks.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+                      {kanbanTodoTasks.map((t) => {
+                        const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
+                        const isBeingDragged = draggedKanbanTaskId === t.id
+                        return (
+                          <div
+                            key={t.id}
+                            draggable="true"
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', t.id)
+                              setDraggedKanbanTaskId(t.id)
+                            }}
+                            onDragEnd={() => {
+                              setDraggedKanbanTaskId(null)
+                              setDropOverKanbanCol(null)
+                            }}
+                            onTouchStart={() => handleKanbanTouchStart(t.id)}
+                            onTouchMove={handleKanbanTouchMove}
+                            onTouchEnd={handleKanbanTouchEnd}
+                            className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/70 dark:border-slate-700/70 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs hover:border-slate-300 dark:hover:border-slate-600 flex flex-col gap-1.5 ${
+                              isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1 text-[10px]">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
+                                />
+                                <span
+                                  className="px-1.5 py-0.2 rounded font-semibold truncate"
+                                  style={{
+                                    backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
+                                    color: roleMatch?.hex || '#0071E3',
+                                  }}
+                                >
+                                  {roleMatch?.label || roleMatch?.name || t.context || 'General'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0 text-slate-400 dark:text-slate-500 font-mono">
+                                <span>{t.time || '10:00'}</span>
+                                <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-slate-600 cursor-grab">
+                                  drag_indicator
+                                </span>
+                              </div>
+                            </div>
+                            <h4 className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2">
+                              {t.title}
+                            </h4>
+                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMoveKanbanTask(t.id, 'in_progress')
+                                }}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                title="Iniciar y mover a En progreso"
+                              >
+                                <span>Iniciar</span>
+                                <span className="material-symbols-outlined text-[11px]">arrow_forward</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEditingTaskId(t.id)
+                                  setIsFocusModalOpen(true)
+                                }}
+                                className="text-[10px] text-slate-400 hover:text-primary transition-colors flex items-center gap-0.5 cursor-pointer"
+                                title="Enfocar con cronómetro"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">play_circle</span>
+                                <span className="hidden sm:inline">Focus</span>
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {kanbanTodoTasks.length === 0 && (
+                        <div className="h-28 flex flex-col items-center justify-center text-center p-2 text-slate-400 dark:text-slate-500 text-[11px] border border-dashed border-slate-200 dark:border-slate-700/60 rounded-xl">
+                          <span className="material-symbols-outlined text-[20px] mb-1 opacity-50">done_all</span>
+                          <span>Sin tareas por hacer hoy</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Columna 2: En progreso */}
+                  <div
+                    data-kanban-col="in_progress"
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = 'move'
+                      setDropOverKanbanCol('in_progress')
+                    }}
+                    onDragLeave={() => setDropOverKanbanCol(null)}
+                    onDrop={() => handleKanbanDrop('in_progress')}
+                    className={`p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[220px] max-h-[380px] ${
+                      dropOverKanbanCol === 'in_progress'
+                        ? 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20'
+                        : 'border-slate-200/60 dark:border-slate-800/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50 shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[17px] text-blue-500">timelapse</span>
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">En progreso</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                        {kanbanInProgressTasks.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+                      {kanbanInProgressTasks.map((t) => {
+                        const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
+                        const isBeingDragged = draggedKanbanTaskId === t.id
+                        return (
+                          <div
+                            key={t.id}
+                            draggable="true"
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', t.id)
+                              setDraggedKanbanTaskId(t.id)
+                            }}
+                            onDragEnd={() => {
+                              setDraggedKanbanTaskId(null)
+                              setDropOverKanbanCol(null)
+                            }}
+                            onTouchStart={() => handleKanbanTouchStart(t.id)}
+                            onTouchMove={handleKanbanTouchMove}
+                            onTouchEnd={handleKanbanTouchEnd}
+                            className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-blue-200/80 dark:border-blue-900/60 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs flex flex-col gap-1.5 ${
+                              isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1 text-[10px]">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
+                                />
+                                <span
+                                  className="px-1.5 py-0.2 rounded font-semibold truncate"
+                                  style={{
+                                    backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
+                                    color: roleMatch?.hex || '#0071E3',
+                                  }}
+                                >
+                                  {roleMatch?.label || roleMatch?.name || t.context || 'General'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0 text-slate-400 dark:text-slate-500 font-mono">
+                                <span>{t.time || '10:00'}</span>
+                                <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-slate-600 cursor-grab">
+                                  drag_indicator
+                                </span>
+                              </div>
+                            </div>
+                            <h4 className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2">
+                              {t.title}
+                            </h4>
+                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMoveKanbanTask(t.id, 'todo')
+                                }}
+                                className="p-1 rounded-md text-[10px] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                title="Volver a Por hacer"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">arrow_back</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMoveKanbanTask(t.id, 'done')
+                                }}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                title="Marcar como Hecho"
+                              >
+                                <span className="material-symbols-outlined text-[12px]">check</span>
+                                <span>Completar</span>
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {kanbanInProgressTasks.length === 0 && (
+                        <div className="h-28 flex flex-col items-center justify-center text-center p-2 text-slate-400 dark:text-slate-500 text-[11px] border border-dashed border-slate-200 dark:border-slate-700/60 rounded-xl">
+                          <span className="material-symbols-outlined text-[20px] mb-1 opacity-50">drag_pan</span>
+                          <span>Arrastra aquí para empezar a enfocar</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Columna 3: Hecho */}
+                  <div
+                    data-kanban-col="done"
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = 'move'
+                      setDropOverKanbanCol('done')
+                    }}
+                    onDragLeave={() => setDropOverKanbanCol(null)}
+                    onDrop={() => handleKanbanDrop('done')}
+                    className={`p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[220px] max-h-[380px] ${
+                      dropOverKanbanCol === 'done'
+                        ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
+                        : 'border-slate-200/60 dark:border-slate-800/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50 shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[17px] text-emerald-500">task_alt</span>
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">Hecho</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                        {kanbanDoneTasks.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+                      {kanbanDoneTasks.map((t) => {
+                        const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
+                        const isBeingDragged = draggedKanbanTaskId === t.id
+                        return (
+                          <div
+                            key={t.id}
+                            draggable="true"
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', t.id)
+                              setDraggedKanbanTaskId(t.id)
+                            }}
+                            onDragEnd={() => {
+                              setDraggedKanbanTaskId(null)
+                              setDropOverKanbanCol(null)
+                            }}
+                            onTouchStart={() => handleKanbanTouchStart(t.id)}
+                            onTouchMove={handleKanbanTouchMove}
+                            onTouchEnd={handleKanbanTouchEnd}
+                            className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/60 dark:border-slate-800 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs flex flex-col gap-1.5 opacity-75 ${
+                              isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-1 text-[10px]">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
+                                />
+                                <span
+                                  className="px-1.5 py-0.2 rounded font-semibold truncate"
+                                  style={{
+                                    backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
+                                    color: roleMatch?.hex || '#0071E3',
+                                  }}
+                                >
+                                  {roleMatch?.label || roleMatch?.name || t.context || 'General'}
+                                </span>
+                              </div>
+                              <span className="material-symbols-outlined text-[15px] text-emerald-500">check_circle</span>
+                            </div>
+                            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 line-through line-clamp-2">
+                              {t.title}
+                            </h4>
+                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMoveKanbanTask(t.id, 'todo')
+                                }}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                title="Reabrir tarea"
+                              >
+                                <span className="material-symbols-outlined text-[12px]">undo</span>
+                                <span>Reabrir</span>
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {kanbanDoneTasks.length === 0 && (
+                        <div className="h-28 flex flex-col items-center justify-center text-center p-2 text-slate-400 dark:text-slate-500 text-[11px] border border-dashed border-slate-200 dark:border-slate-700/60 rounded-xl">
+                          <span className="material-symbols-outlined text-[20px] mb-1 opacity-50">pending</span>
+                          <span>Sin actividades completadas hoy</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                 <span
