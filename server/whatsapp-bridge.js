@@ -1188,10 +1188,6 @@ export async function startBaileysConnection() {
 
         if (shouldReconnect) {
           setTimeout(() => startBaileysConnection(), 3000)
-        } else {
-          try {
-            fs.rmSync(AUTH_DIR, { recursive: true, force: true })
-          } catch (e) {}
         }
       } else if (connection === 'open') {
         const userJid = sock.user?.id || ''
@@ -2071,5 +2067,14 @@ if (process.argv[1] && process.argv[1].endsWith('whatsapp-bridge.js')) {
 
   server.listen(PORT, HOST, () => {
     console.log(`[WhatsApp Baileys Bridge] Servidor escuchando en http://${HOST}:${PORT}`)
+
+    // Auto-restaurar sesión persistente de WhatsApp si ya estaba vinculado previamente
+    const credsPath = path.join(AUTH_DIR, 'creds.json')
+    if (fs.existsSync(credsPath)) {
+      console.log('[Baileys]: Sesión previa detectada en .whatsapp_auth. Restaurando conexión automáticamente...')
+      startBaileysConnection().catch((err) => {
+        console.warn('[Baileys Auto-Connect Warn]:', err.message)
+      })
+    }
   })
 }
