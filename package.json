@@ -3,16 +3,41 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "start": "node server/whatsapp-bridge.js"
+    "start": "node server/whatsapp-bridge.js",
+    "cap:sync": "vite build && cap sync",
+    "cap:open": "cap open android",
+    "electron:start": "electron .",
+    "electron:build": "vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.apphub.workspace",
+    "productName": "AppHub",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
   },
   "dependencies": {
     "@blocknote/core": "^0.55.0",
     "@blocknote/react": "^0.55.0",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
@@ -28,6 +53,8 @@
   "devDependencies": {
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "electron": "^44.8.0",
+    "electron-builder": "^26.15.3",
     "oxlint": "^1.81.0"
   }
 }

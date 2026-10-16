@@ -1,0 +1,31 @@
+{
+  "name": "AppHub - Tu Espacio de Productividad",
+  "short_name": "AppHub",
+  "description": "Calendario inteligente, priorización de tareas con IA y puente WhatsApp sincronizado.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0f19",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Calendario",
+      "url": "/calendar",
+      "description": "Ver agenda y eventos"
+    },
+    {
+      "name": "Tareas",
+      "url": "/",
+      "description": "Organizador inteligente de tareas"
+    }
+  ]
+}

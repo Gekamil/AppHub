@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import ProfilePopover from './ProfilePopover'
 import AccountModal from './AccountModal'
+import InstallAppModal from './InstallAppModal'
 import AIBotIcon from './AIBotIcon'
 import { getCurrentUser, isGuestUser } from '../services/firebase'
 import { APP_THEMES, getAppTheme, setAppTheme } from '../services/appTheme'
@@ -29,6 +30,7 @@ export default function Header({
   const [user, setUser] = useState(getCurrentUser())
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
   const [accountModalTab, setAccountModalTab] = useState('profile')
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false)
   const profileButtonRef = useRef(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
   const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'es')
@@ -281,6 +283,15 @@ export default function Header({
           )}
 
           <div className="flex items-center gap-1 sm:gap-space-xs">
+            <button
+              type="button"
+              onClick={() => setIsInstallModalOpen(true)}
+              className="h-8 px-2.5 rounded-xl flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs"
+              title="Descargar o instalar AppHub en tu móvil (Android / iOS) o PC"
+            >
+              <span className="material-symbols-outlined text-[17px]">install_mobile</span>
+              <span className="hidden sm:inline font-bold">Instalar App</span>
+            </button>
             <button
               onClick={() => alert('Módulo en desarrollo')}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer"
@@ -789,6 +800,11 @@ export default function Header({
         isOpen={isAccountModalOpen}
         onClose={() => setIsAccountModalOpen(false)}
         initialTab={accountModalTab}
+      />
+      {/* MODAL DE INSTALACIÓN Y DESCARGA MULTIPLATAFORMA (ANDROID / IOS / PC) */}
+      <InstallAppModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
       />
     </>
   )
