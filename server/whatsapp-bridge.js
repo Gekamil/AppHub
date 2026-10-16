@@ -189,6 +189,113 @@ function saveSharedCalendarsStore(store) {
 
 let sharedCalendarsMap = loadSharedCalendarsStore()
 
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyACDRKCK8O50w1FIoYhBMgqsM9yYUzX-io",
+  authDomain: "apphub-662ff.firebaseapp.com",
+  projectId: "apphub-662ff",
+  storageBucket: "apphub-662ff.firebasestorage.app",
+  messagingSenderId: "674118426958",
+  appId: "1:674118426958:web:2c4afc7b11219c360efe1f",
+  measurementId: "G-EWQ8PRXWYX"
+}
+
+let bridgeDb = null
+async function getBridgeFirestore() {
+  if (bridgeDb) return bridgeDb
+  try {
+    const { initializeApp, getApps, getApp } = await import('firebase/app')
+    const { getFirestore } = await import('firebase/firestore')
+    const app = getApps().length > 0 ? getApp() : initializeApp(FIREBASE_CONFIG)
+    bridgeDb = getFirestore(app)
+    return bridgeDb
+  } catch (e) {
+    console.warn('[Baileys Firestore]: Error inicializando Firebase:', e.message)
+    return null
+  }
+}
+
+// Restaurar archivos de sesión desde Firestore (sobrevive a despliegues y reinicios de Render)
+export async function restoreAuthFromFirestore() {
+  try {
+    const db = await getBridgeFirestore()
+    if (!db) return false
+    const { doc, getDoc } = await import('firebase/firestore')
+    const snap = await getDoc(doc(db, 'shared_calendars', 'baileys_auth_backup'))
+    if (!snap.exists()) {
+      console.log('[Baileys Cloud Persistence]: No hay sesión previa guardada en Firestore. Esperando vinculación por QR.')
+      return false
+    }
+
+    const data = snap.data()
+    if (!data || !data.files || typeof data.files !== 'object') {
+      console.log('[Baileys Cloud Persistence]: Documento de sesión vacío en Firestore.')
+      return false
+    }
+
+    if (!fs.existsSync(AUTH_DIR)) {
+      fs.mkdirSync(AUTH_DIR, { recursive: true })
+    }
+
+    let count = 0
+    for (const [filename, content] of Object.entries(data.files)) {
+      if (filename && content && typeof content === 'string') {
+        fs.writeFileSync(path.join(AUTH_DIR, filename), content, 'utf-8')
+        count++
+      }
+    }
+
+    console.log(`[Baileys Cloud Persistence]: ${count} archivos de autenticación restaurados desde Firestore en Render.`)
+    return count > 0
+  } catch (e) {
+    console.warn('[Baileys Cloud Persistence]: Error al restaurar sesión desde Firestore:', e.message)
+    return false
+  }
+}
+
+// Respaldar sesión en Firestore para que Render nunca desconecte WhatsApp tras un git push
+let backupDebounceTimer = null
+export function backupAuthToFirestore() {
+  if (backupDebounceTimer) clearTimeout(backupDebounceTimer)
+  backupDebounceTimer = setTimeout(async () => {
+    try {
+      if (!fs.existsSync(AUTH_DIR)) return
+      const db = await getBridgeFirestore()
+      if (!db) return
+
+      const files = fs.readdirSync(AUTH_DIR)
+      const filesMap = {}
+      for (const file of files) {
+        if (!file.endsWith('.json')) continue
+        try {
+          filesMap[file] = fs.readFileSync(path.join(AUTH_DIR, file), 'utf-8')
+        } catch (readErr) {}
+      }
+
+      if (Object.keys(filesMap).length === 0) return
+
+      const { doc, setDoc } = await import('firebase/firestore')
+      await setDoc(doc(db, 'shared_calendars', 'baileys_auth_backup'), {
+        files: filesMap,
+        updatedAt: Date.now(),
+      })
+      console.log(`[Baileys Cloud Persistence]: Sesión de WhatsApp respaldada en Firestore (${Object.keys(filesMap).length} archivos).`)
+    } catch (e) {
+      console.warn('[Baileys Cloud Persistence]: Error al respaldar sesión en Firestore:', e.message)
+    }
+  }, 2500)
+}
+
+// Borrar sesión en Firestore al desvincular explícitamente
+export async function clearAuthFromFirestore() {
+  try {
+    const db = await getBridgeFirestore()
+    if (!db) return
+    const { doc, deleteDoc } = await import('firebase/firestore')
+    await deleteDoc(doc(db, 'shared_calendars', 'baileys_auth_backup'))
+    console.log('[Baileys Cloud Persistence]: Sesión de WhatsApp eliminada de Firestore.')
+  } catch (e) {}
+}
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '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'
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_AUDIO_ENDPOINT = 'https://api.groq.com/openai/v1/audio/transcriptions'
@@ -1140,6 +1247,11 @@ export async function startBaileysConnection() {
       fs.mkdirSync(AUTH_DIR, { recursive: true })
     }
 
+    // Si Render reinició el contenedor y la carpeta local está vacía, restaurar desde Firestore
+    if (!fs.existsSync(path.join(AUTH_DIR, 'creds.json'))) {
+      await restoreAuthFromFirestore()
+    }
+
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
 
     sock = makeWASocket({
@@ -1202,11 +1314,17 @@ export async function startBaileysConnection() {
         }
         broadcastStatusUpdate(currentStatus)
 
+        // Respaldar sesión en Firestore inmediatamente tras conectar con éxito
+        backupAuthToFirestore()
+
         console.log(`[Baileys]: Conexión abierta con éxito. Usuario: ${currentStatus.phone}`)
       }
     })
 
-    sock.ev.on('creds.update', saveCreds)
+    sock.ev.on('creds.update', async () => {
+      await saveCreds()
+      backupAuthToFirestore()
+    })
 
     // Escucha de mensajes entrantes (Texto y Notas de Voz)
     const processedMsgIds = new Set()
@@ -1589,6 +1707,8 @@ export async function disconnectBaileys() {
   try {
     fs.rmSync(AUTH_DIR, { recursive: true, force: true })
   } catch (e) {}
+
+  await clearAuthFromFirestore().catch(() => {})
 
   sock = null
   currentStatus = {
@@ -2065,13 +2185,18 @@ if (process.argv[1] && process.argv[1].endsWith('whatsapp-bridge.js')) {
     res.end('Not Found')
   })
 
-  server.listen(PORT, HOST, () => {
+  server.listen(PORT, HOST, async () => {
     console.log(`[WhatsApp Baileys Bridge] Servidor escuchando en http://${HOST}:${PORT}`)
 
-    // Auto-restaurar sesión persistente de WhatsApp si ya estaba vinculado previamente
+    // Auto-restaurar sesión persistente de WhatsApp (local o desde Firestore si Render reinició)
     const credsPath = path.join(AUTH_DIR, 'creds.json')
+    if (!fs.existsSync(credsPath)) {
+      console.log('[Baileys Cloud Persistence]: No hay credenciales locales. Buscando respaldo en Firestore...')
+      await restoreAuthFromFirestore()
+    }
+
     if (fs.existsSync(credsPath)) {
-      console.log('[Baileys]: Sesión previa detectada en .whatsapp_auth. Restaurando conexión automáticamente...')
+      console.log('[Baileys]: Sesión previa detectada. Restaurando conexión automáticamente...')
       startBaileysConnection().catch((err) => {
         console.warn('[Baileys Auto-Connect Warn]:', err.message)
       })
