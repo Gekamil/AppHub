@@ -167,7 +167,7 @@ export default function AccountModal({
       refreshState()
       triggerAuthCelebration(newUser.displayName, newUser.email, 'register')
       setStatusMessage({
-        text: `¡Cuenta creada con éxito! Ya estás conectado como ${newUser.displayName}.`,
+        text: `¡Cuenta creada con éxito! Te hemos enviado un correo de bienvenida a ${newUser.email} con el enlace a nuestra web de descarga.`,
         type: 'success',
       })
       setRegName('')
@@ -232,7 +232,9 @@ export default function AccountModal({
                 : `¡Hola de nuevo, ${authCelebration.name}!`}
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
-              Sesión sincronizada con éxito. Tus calendarios y tareas están conectados en la nube.
+              {authCelebration.action === 'register'
+                ? `Te hemos enviado un correo de agradecimiento a ${authCelebration.email} con el enlace a nuestra web de descargas.`
+                : 'Sesión sincronizada con éxito. Tus calendarios y tareas están conectados en la nube.'}
             </p>
             <div className="mt-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold border border-emerald-200/60 dark:border-emerald-800/60">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>

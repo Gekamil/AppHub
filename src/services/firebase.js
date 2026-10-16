@@ -124,13 +124,53 @@ export const loginUser = async (email, password) => {
   return found
 }
 
-// Registrar nueva cuenta de usuario
+// Enviar correo de bienvenida con enlace a la web de descarga
+export const sendWelcomeEmail = async (user) => {
+  if (!user || !user.email) return null
+  const downloadUrl = 'https://apphub-download.vercel.app' // URL de la página web oficial de descargas
+
+  const emailPayload = {
+    id: 'mail-' + Date.now(),
+    to: user.email,
+    name: user.displayName || user.email.split('@')[0],
+    subject: '¡Bienvenido a AppHub! Enlace de descarga oficial',
+    timestamp: new Date().toISOString(),
+    downloadUrl,
+    content: `Hola ${user.displayName || 'Usuario'},\n\n¡Gracias por crear tu cuenta en AppHub!\n\nPuedes descargar la aplicación oficial para todos tus dispositivos (Android, iOS y PC) desde nuestra web:\n${downloadUrl}\n\n¡Que disfrutes al máximo de tu nuevo espacio de productividad!\n\nEl equipo de AppHub`,
+  }
+
+  // Guardar en el historial de correos enviados para depuración e historial
+  try {
+    const raw = localStorage.getItem('apphub_welcome_emails') || '[]'
+    const list = JSON.parse(raw)
+    list.unshift(emailPayload)
+    localStorage.setItem('apphub_welcome_emails', JSON.stringify(list))
+  } catch (e) {}
+
+  // Notificar al sistema mediante evento
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('apphub_welcome_email_sent', { detail: emailPayload }))
+  }
+
+  // Notificar al servidor en segundo plano si existe endpoint
+  try {
+    fetch('/api/send-welcome-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(emailPayload),
+    }).catch(() => {})
+  } catch (e) {}
+
+  return emailPayload
+}
+
+// Registrar nueva cuenta de usuario (Estrictamente una sola cuenta por correo)
 export const registerUser = async (email, password, displayName = '') => {
   const accounts = getAllAccounts()
   const trimmedEmail = email.trim().toLowerCase()
 
   if (accounts.some((a) => a.email.toLowerCase() === trimmedEmail)) {
-    throw new Error('Ya existe una cuenta con este correo electrónico')
+    throw new Error('Ya existe una cuenta registrada con este correo electrónico. Solo se permite una cuenta por correo.')
   }
 
   const newUser = {
@@ -160,6 +200,14 @@ export const registerUser = async (email, password, displayName = '') => {
   saveAllAccounts(accounts)
   localStorage.setItem('studenthub_is_authenticated', 'true')
   setActiveUser(newUser)
+
+  // Enviar correo de bienvenida con enlace a la web de descarga
+  try {
+    await sendWelcomeEmail(newUser)
+  } catch (err) {
+    console.warn('Error emitiendo correo de bienvenida:', err)
+  }
+
   return newUser
 }
 

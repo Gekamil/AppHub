@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useNavigate } from 'react-router-dom'
 import { useCreateBlockNote, BlockNoteViewRaw as BlockNoteView } from '@blocknote/react'
 import '@blocknote/core/fonts/inter.css'
 import '@blocknote/react/style.css'
 import Modal from '../components/Modal'
 
 export default function NotebooksPage() {
+  const navigate = useNavigate()
   const outletCtx = useOutletContext() || {}
 
   const [favorites, setFavorites] = useState([
@@ -221,30 +222,61 @@ export default function NotebooksPage() {
   })
 
   return (
-    <div className="flex flex-col w-full">
-      {/* Banner de Próximamente (MVP - Fase de lanzamiento) */}
-      <div className="w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto mb-4 p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            <span className="material-symbols-outlined text-[20px]">construction</span>
+    <div className="relative w-full min-h-[calc(100vh-140px)] rounded-3xl overflow-hidden">
+      {/* CAPA DE CRISTAL ESMERILADO (FROSTED GLASS) OPACO QUE TAPA TODO EL CONTENIDO */}
+      <div className="absolute inset-0 z-30 backdrop-blur-2xl bg-white/75 dark:bg-[#0b0f19]/85 flex flex-col items-center justify-center p-6 text-center select-none">
+        <div className="max-w-md w-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-3xl p-6 sm:p-8 rounded-3xl border border-white/60 dark:border-slate-800 shadow-2xl flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-inner">
+            <span className="material-symbols-outlined text-[32px]">lock</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 dark:text-white text-sm">
-                Módulo de Notas en Desarrollo (Próximamente)
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white">
-                Beta Preview
-              </span>
+          <div className="flex flex-col gap-1.5">
+            <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mx-auto">
+              <span className="material-symbols-outlined text-[14px]">construction</span>
+              <span>Próximamente</span>
             </div>
-            <p className="text-slate-600 dark:text-slate-300 mt-0.5 text-[11px] leading-relaxed">
-              Estamos perfeccionando la sincronización en la nube y el editor de bloques. Si deseas una experiencia simplificada de solo Calendario y Tareas, puedes ocultar esta pestaña en <strong>Configuración &gt; Pestañas Visibles</strong>.
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+              Notas & Cuadernos
+            </h2>
+            <p className="text-xs sm:text-sm text-secondary leading-relaxed">
+              Este módulo se encuentra protegido y en optimización para la próxima versión. Si deseas una vista más despejada, puedes ocultar esta pestaña desde <strong>Ajustes &gt; Pestañas Visibles</strong>.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate('/calendar')}
+            className="mt-2 px-5 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+            <span>Ir al Calendario</span>
+          </button>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-space-lg w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto items-start">
+      {/* Contenido subyacente difuminado e inactivo que se vislumbra sutilmente a través del cristal */}
+      <div className="filter blur-md pointer-events-none select-none opacity-25 flex flex-col w-full">
+        {/* Banner de Próximamente (MVP - Fase de lanzamiento) */}
+        <div className="w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto mb-4 p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <span className="material-symbols-outlined text-[20px]">construction</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-900 dark:text-white text-sm">
+                  Módulo de Notas en Desarrollo (Próximamente)
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white">
+                  Beta Preview
+                </span>
+              </div>
+              <p className="text-slate-600 dark:text-slate-300 mt-0.5 text-[11px] leading-relaxed">
+                Estamos perfeccionando la sincronización en la nube y el editor de bloques. Si deseas una experiencia simplificada de solo Calendario y Tareas, puedes ocultar esta pestaña en <strong>Configuración &gt; Pestañas Visibles</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-space-lg w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto items-start">
         {/* LEFT PANEL: Notebooks Tree & Directory (Linear/Notion inspired utility) */}
         <aside className="w-full lg:w-[280px] shrink-0 bg-surface-pure rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
           {/* Panel Header */}
@@ -515,6 +547,7 @@ export default function NotebooksPage() {
             </div>
           </div>
         </section>
+      </div>
       </div>
 
       {/* Modal para Crear Carpeta con Selector de Iconos */}

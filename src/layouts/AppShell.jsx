@@ -15,65 +15,9 @@ import {
   syncBaileysTasks,
   subscribeToBaileysLiveUpdates,
 } from '../services/baileysBridge'
+import { getVisibleNavTabs } from '../services/navSettings'
 
-const DEFAULT_TASKS = [
-  {
-    id: 1,
-    title: 'Review AI exam notes & Neural Architecture slides',
-    description: 'Chapters 4 to 7: Focus on backprop proofs, gradient clipping & transformer attention matrices.',
-    date: '2026-10-12',
-    time: '09:30',
-    effort: 'High',
-    context: 'University',
-    est: '90m',
-    completed: false,
-    color: 'bg-primary-container',
-    calendarId: 'cal-uni',
-    icon: 'school',
-  },
-  {
-    id: 2,
-    title: 'Finish React project layout & Tailwind token alignment',
-    description: 'Refactor button states and clean redundant nested flex wraps in navigation panel.',
-    date: '2026-10-12',
-    time: '12:00',
-    effort: 'Medium',
-    context: 'Projects',
-    est: '45m',
-    completed: false,
-    color: 'bg-secondary-fixed-dim',
-    calendarId: 'cal-default',
-    icon: 'terminal',
-  },
-  {
-    id: 3,
-    title: 'Gym - Upper Body session (Volume focus)',
-    description: 'Barbell bench press, incline DB presses, cable rows, face-pulls. Basic Malagueta gym center.',
-    date: '2026-10-14',
-    time: '16:30',
-    effort: 'Medium',
-    context: 'Health & Gym',
-    est: '60m',
-    completed: false,
-    color: 'bg-tertiary',
-    calendarId: 'cal-default',
-    icon: 'fitness_center',
-  },
-  {
-    id: 4,
-    title: 'Dinner reservations with Lucía',
-    description: 'Osteria Angelic near Plaza de la Merced. Confirmation #8491.',
-    date: '2026-10-16',
-    time: '20:00',
-    effort: 'Low',
-    context: 'Personal',
-    est: '60m',
-    completed: false,
-    color: 'bg-tag-personal-text',
-    calendarId: 'cal-default',
-    icon: 'restaurant',
-  },
-]
+const DEFAULT_TASKS = []
 
 const APP_TABS = ['/calendar', '/', '/notebooks', '/ai-assistant', '/my-hub']
 
@@ -89,6 +33,30 @@ export default function AppShell() {
     return localStorage.getItem('app_ai_assistant_mode') || 'floating'
   })
 
+  const [visibleTabs, setVisibleTabs] = useState(() => getVisibleNavTabs())
+
+  useEffect(() => {
+    const handleTabsChange = (e) => {
+      if (e.detail) setVisibleTabs(e.detail)
+    }
+    window.addEventListener('app_visible_tabs_changed', handleTabsChange)
+    return () => window.removeEventListener('app_visible_tabs_changed', handleTabsChange)
+  }, [])
+
+  // Si el usuario accede a una pestaña desactivada en ajustes, redirigir automáticamente a /calendar
+  useEffect(() => {
+    const curPath = location.pathname
+    const norm = (curPath === '/auto-organizer' || curPath === '') ? '/' : curPath
+
+    if (norm.startsWith('/notebooks') && visibleTabs['/notebooks'] === false) {
+      navigate('/calendar', { replace: true })
+    } else if (norm.startsWith('/my-hub') && visibleTabs['/my-hub'] === false) {
+      navigate('/calendar', { replace: true })
+    } else if (norm.startsWith('/ai-assistant') && (visibleTabs['/ai-assistant'] === false || aiAssistantMode === 'floating')) {
+      navigate('/calendar', { replace: true })
+    }
+  }, [location.pathname, visibleTabs, aiAssistantMode, navigate])
+
   useEffect(() => {
     localStorage.setItem('app_nav_position', navPosition)
   }, [navPosition])
@@ -100,6 +68,7 @@ export default function AppShell() {
   // Soporte Global de Navegación por Gestos:
   // 1. Móvil / Tablet: Deslizar con 2 dedos horizontalmente entre páginas (solo si no está en modo lateral)
   // 2. Ordenador (Trackpad / Touchpad): Deslizar con 2 dedos horizontalmente (solo si no está en modo lateral)
+  // FILTRADO ESTRICTO: Solo permite navegar entre pestañas que estén actualmente activadas en visibleTabs
   const touchStateRef = useRef({ active: false, startX: 0, startY: 0, maxFingers: 1 })
   const lastWheelTimeRef = useRef(0)
 
@@ -107,9 +76,17 @@ export default function AppShell() {
     // Si la navegación está en modo barra lateral, deshabilitar gestos de deslizamiento con 2 dedos
     if (navPosition === 'sidebar') return
 
-    const currentTabs = aiAssistantMode === 'floating'
-      ? ['/calendar', '/', '/notebooks', '/my-hub']
-      : ['/calendar', '/', '/notebooks', '/ai-assistant', '/my-hub']
+    const candidateTabs = [
+      { id: '/calendar', path: '/calendar' },
+      { id: '/', path: '/' },
+      { id: '/notebooks', path: '/notebooks' },
+      ...(aiAssistantMode === 'tab' ? [{ id: '/ai-assistant', path: '/ai-assistant' }] : []),
+      { id: '/my-hub', path: '/my-hub' },
+    ]
+
+    const currentTabs = candidateTabs
+      .filter((tab) => visibleTabs[tab.id] !== false)
+      .map((tab) => tab.path)
 
     const getTabIndex = (path) => {
       const normalized = (path === '/auto-organizer' || path === '') ? '/' : path
@@ -201,7 +178,7 @@ export default function AppShell() {
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('wheel', handleWheel)
     }
-  }, [location.pathname, navigate, navPosition, aiAssistantMode])
+  }, [location.pathname, navigate, navPosition, aiAssistantMode, visibleTabs])
 
   const [globalTasks, setGlobalTasks] = useState(() => {
     const user = getCurrentUser()
