@@ -154,15 +154,21 @@ export function setAppTheme(themeId) {
         rootEl.classList.remove('animate-theme-switch')
       }, 450)
     }
+    window.dispatchEvent(new CustomEvent('app_theme_style_changed', { detail: themeId }))
     window.dispatchEvent(new CustomEvent('app_theme_changed', { detail: themeId }))
   } catch (e) {}
   return themeId
 }
 
-// Inicializar atributo al cargar
+// Inicializar atributo al cargar preservando dark mode
 if (typeof document !== 'undefined') {
   try {
     const cur = getAppTheme()
     document.documentElement.setAttribute('data-theme-style', cur)
+    // Garantizar que la clase dark no se pierda al cargar
+    const isDark = localStorage.getItem('app_theme') === 'dark' || localStorage.getItem('app_dark_mode') === 'true'
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+    }
   } catch (e) {}
 }

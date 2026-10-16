@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import ProfilePopover from './ProfilePopover'
 import { getCurrentUser, isGuestUser } from '../services/firebase'
 import AIBotIcon from './AIBotIcon'
+import { getVisibleNavTabs } from '../services/navSettings'
 
 const DEFAULT_NAVIGATION = [
   { name: 'Calendario', to: '/calendar', icon: 'calendar_today' },
@@ -36,6 +37,15 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
   const [isLongPressing, setIsLongPressing] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileSnippetRef = useRef(null)
+  const [visibleTabs, setVisibleTabs] = useState(() => getVisibleNavTabs())
+
+  useEffect(() => {
+    const handleTabsChange = (e) => {
+      if (e.detail) setVisibleTabs(e.detail)
+    }
+    window.addEventListener('app_visible_tabs_changed', handleTabsChange)
+    return () => window.removeEventListener('app_visible_tabs_changed', handleTabsChange)
+  }, [])
 
   const longPressTimerRef = useRef(null)
   const hasMovedRef = useRef(false)
@@ -186,7 +196,7 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
             onTouchMove={handleTouchMove}
             onPointerUp={handlePointerUp}
           >
-            {navItems.map((item, index) => {
+            {navItems.filter((item) => visibleTabs[item.to] !== false).map((item, index) => {
               const isBeingDragged = draggingIdx === index
               const isTargetSlot = dragOverIdx === index && draggingIdx !== index
 

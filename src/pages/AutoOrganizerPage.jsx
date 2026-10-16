@@ -328,10 +328,18 @@ export default function AutoOrganizerPage() {
 
   useEffect(() => {
     const handleThemeChange = (e) => {
-      setAppThemeState(e.detail || getAppTheme())
+      if (e.detail && ['clasica', 'aura', 'executive', 'brutalista'].includes(e.detail)) {
+        setAppThemeState(e.detail)
+      } else if (!e.detail) {
+        setAppThemeState(getAppTheme())
+      }
     }
+    window.addEventListener('app_theme_style_changed', handleThemeChange)
     window.addEventListener('app_theme_changed', handleThemeChange)
-    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+    return () => {
+      window.removeEventListener('app_theme_style_changed', handleThemeChange)
+      window.removeEventListener('app_theme_changed', handleThemeChange)
+    }
   }, [])
 
   const themeTokens = useMemo(() => getAppThemeTokens(appTheme), [appTheme])

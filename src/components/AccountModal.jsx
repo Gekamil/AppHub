@@ -10,27 +10,18 @@ import {
   deleteAccount,
   logoutUser,
 } from '../services/firebase'
-import { APP_THEMES, getAppTheme, setAppTheme } from '../services/appTheme'
 
 export default function AccountModal({
   isOpen,
   onClose,
   initialTab = 'profile',
 }) {
-  const [activeTab, setActiveTab] = useState(initialTab)
+  // Mapear tabs antiguos o unificados: 'accounts' o 'theme' van a 'profile'
+  const normalizedInitialTab = (initialTab === 'accounts' || initialTab === 'theme') ? 'profile' : initialTab
+  const [activeTab, setActiveTab] = useState(normalizedInitialTab)
   const [user, setUser] = useState(getCurrentUser())
   const [allAccounts, setAllAccounts] = useState(getAllAccounts())
   const [editName, setEditName] = useState(user.displayName || '')
-
-  const [currentTheme, setCurrentTheme] = useState(() => getAppTheme())
-
-  useEffect(() => {
-    const handleThemeChange = (e) => {
-      setCurrentTheme(e.detail || getAppTheme())
-    }
-    window.addEventListener('app_theme_changed', handleThemeChange)
-    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
-  }, [])
 
   // Estados de formularios
   const [loginEmail, setLoginEmail] = useState('')
@@ -42,6 +33,14 @@ export default function AccountModal({
 
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Animación de inicio de sesión / cambio de cuenta
+  const [authCelebration, setAuthCelebration] = useState({
+    visible: false,
+    name: '',
+    email: '',
+    action: 'login', // 'login' | 'switch' | 'register'
+  })
 
   const isGuest = isGuestUser(user)
 
@@ -55,8 +54,10 @@ export default function AccountModal({
   useEffect(() => {
     if (isOpen) {
       refreshState()
-      setActiveTab(initialTab)
+      const nTab = (initialTab === 'accounts' || initialTab === 'theme') ? 'profile' : initialTab
+      setActiveTab(nTab)
       setStatusMessage({ text: '', type: '' })
+      setAuthCelebration({ visible: false, name: '', email: '', action: 'login' })
     }
   }, [isOpen, initialTab])
 
@@ -85,7 +86,19 @@ export default function AccountModal({
     return name.slice(0, 2).toUpperCase()
   }
 
-  // Guardar cambios en el perfil (sin expulsar al usuario)
+  const triggerAuthCelebration = (displayName, email, action = 'login') => {
+    setAuthCelebration({
+      visible: true,
+      name: displayName || email || 'Usuario',
+      email: email || '',
+      action,
+    })
+    setTimeout(() => {
+      setAuthCelebration((prev) => ({ ...prev, visible: false }))
+    }, 2200)
+  }
+
+  // Guardar cambios en el perfil
   const handleSaveProfile = async (e) => {
     e.preventDefault()
     if (!editName.trim()) return
@@ -101,11 +114,12 @@ export default function AccountModal({
     }
   }
 
-  // Cambiar de cuenta (sin expulsar al usuario de la ventana)
+  // Cambiar de cuenta (con animación clara y sin expulsar al usuario)
   const handleSwitchAccount = (uid) => {
     setStatusMessage({ text: '', type: '' })
     const target = switchAccount(uid)
     refreshState()
+    triggerAuthCelebration(target.displayName, target.email, 'switch')
     setStatusMessage({
       text: `Sesión cambiada a ${target.displayName || target.email}.`,
       type: 'success',
@@ -121,7 +135,7 @@ export default function AccountModal({
     }
   }
 
-  // Iniciar sesión
+  // Iniciar sesión con animación celebratoria
   const handleLogin = async (e) => {
     e.preventDefault()
     setStatusMessage({ text: '', type: '' })
@@ -129,11 +143,13 @@ export default function AccountModal({
     try {
       const loggedUser = await loginUser(loginEmail, loginPassword)
       refreshState()
+      triggerAuthCelebration(loggedUser.displayName, loggedUser.email, 'login')
       setStatusMessage({
         text: `¡Bienvenido de nuevo, ${loggedUser.displayName}! Sesión iniciada con éxito.`,
         type: 'success',
       })
       setLoginPassword('')
+      setActiveTab('profile')
     } catch (err) {
       setStatusMessage({ text: err.message || 'Error al iniciar sesión', type: 'error' })
     } finally {
@@ -141,7 +157,7 @@ export default function AccountModal({
     }
   }
 
-  // Registrar nueva cuenta
+  // Registrar nueva cuenta con animación celebratoria
   const handleRegister = async (e) => {
     e.preventDefault()
     setStatusMessage({ text: '', type: '' })
@@ -149,6 +165,7 @@ export default function AccountModal({
     try {
       const newUser = await registerUser(regEmail, regPassword, regName)
       refreshState()
+      triggerAuthCelebration(newUser.displayName, newUser.email, 'register')
       setStatusMessage({
         text: `¡Cuenta creada con éxito! Ya estás conectado como ${newUser.displayName}.`,
         type: 'success',
@@ -156,6 +173,7 @@ export default function AccountModal({
       setRegName('')
       setRegEmail('')
       setRegPassword('')
+      setActiveTab('profile')
     } catch (err) {
       setStatusMessage({ text: err.message || 'Error al registrar la cuenta', type: 'error' })
     } finally {
@@ -176,12 +194,11 @@ export default function AccountModal({
 
   if (!isOpen) return null
 
+  // Pestañas unificadas sin la redundancia de 'Fuente' y con 'Cuentas' integrado en Perfil
   const tabs = [
-    { id: 'profile', label: 'Perfil' },
-    { id: 'theme', label: 'Fuente' },
-    { id: 'accounts', label: `Cuentas (${allAccounts.length})` },
+    { id: 'profile', label: `Perfil & Cuentas (${allAccounts.length})` },
     { id: 'login', label: 'Entrar' },
-    { id: 'register', label: 'Nueva' },
+    { id: 'register', label: 'Nueva Cuenta' },
   ]
 
   const activeIndex = tabs.findIndex((t) => t.id === activeTab)
@@ -197,8 +214,33 @@ export default function AccountModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-[#161b26] w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
+        className="relative bg-white dark:bg-[#161b26] w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto"
       >
+        {/* ANIMACIÓN DE CELEBRACIÓN DE INICIO DE SESIÓN / CAMBIO DE CUENTA */}
+        {authCelebration.visible && (
+          <div className="absolute inset-0 bg-white/95 dark:bg-[#161b26]/95 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center animate-in zoom-in-90 fade-in duration-200 rounded-3xl">
+            <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center mb-3 animate-bounce shadow-sm">
+              <span className="material-symbols-outlined text-[36px]">
+                {authCelebration.action === 'register' ? 'how_to_reg' : 'verified_user'}
+              </span>
+            </div>
+            <h4 className="text-base font-bold text-slate-900 dark:text-white">
+              {authCelebration.action === 'switch'
+                ? `Cambiado a ${authCelebration.name}`
+                : authCelebration.action === 'register'
+                ? `¡Bienvenido a bordo, ${authCelebration.name}!`
+                : `¡Hola de nuevo, ${authCelebration.name}!`}
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+              Sesión sincronizada con éxito. Tus calendarios y tareas están conectados en la nube.
+            </p>
+            <div className="mt-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold border border-emerald-200/60 dark:border-emerald-800/60">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Cuenta Activa</span>
+            </div>
+          </div>
+        )}
+
         {/* Cabecera del modal */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -206,10 +248,6 @@ export default function AccountModal({
               <span className="material-symbols-outlined text-[20px]">
                 {activeTab === 'profile'
                   ? 'person'
-                  : activeTab === 'theme'
-                  ? 'palette'
-                  : activeTab === 'accounts'
-                  ? 'switch_account'
                   : activeTab === 'login'
                   ? 'login'
                   : 'person_add'}
@@ -218,11 +256,7 @@ export default function AccountModal({
             <div className="min-w-0">
               <h3 className="font-bold text-slate-900 dark:text-white text-base truncate">
                 {activeTab === 'profile'
-                  ? 'Ajustes de Perfil'
-                  : activeTab === 'theme'
-                  ? 'Selección de Fuente & Estilo'
-                  : activeTab === 'accounts'
-                  ? 'Cuentas en este equipo'
+                  ? 'Perfil & Cuentas'
                   : activeTab === 'login'
                   ? 'Iniciar Sesión'
                   : 'Crear Nueva Cuenta'}
@@ -249,7 +283,7 @@ export default function AccountModal({
             style={{
               width: `calc((100% - 8px) / ${tabs.length})`,
               left: '4px',
-              transform: `translateX(${activeIndex * 100}%)`,
+              transform: `translateX(${Math.max(0, activeIndex) * 100}%)`,
             }}
           />
           {tabs.map((tab) => (
@@ -260,7 +294,7 @@ export default function AccountModal({
                 setActiveTab(tab.id)
                 setStatusMessage({ text: '', type: '' })
               }}
-              className={`relative z-10 flex-1 py-1.5 text-xs font-semibold text-center rounded-xl transition-colors cursor-pointer ${
+              className={`relative z-10 flex-1 py-1.5 text-xs font-semibold text-center rounded-xl transition-colors cursor-pointer truncate px-1 ${
                 activeTab === tab.id
                   ? 'text-primary font-bold'
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -296,12 +330,12 @@ export default function AccountModal({
           </div>
         )}
 
-        {/* PESTAÑA 1: PERFIL */}
+        {/* PESTAÑA UNIFICADA: PERFIL Y GESTIÓN DE CUENTAS */}
         {activeTab === 'profile' && (
           <div className="flex flex-col gap-4 text-xs">
-            {/* Tarjeta de estado de usuario */}
+            {/* 1. Tarjeta de estado de usuario activo */}
             <div
-              className={`p-3.5 rounded-2xl border flex items-center gap-3.5 ${
+              className={`p-3.5 rounded-2xl border flex items-center gap-3.5 transition-all ${
                 isGuest
                   ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800'
                   : 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/40'
@@ -395,11 +429,6 @@ export default function AccountModal({
                   />
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/60 flex items-center gap-2 text-emerald-800 dark:text-emerald-300 text-[11px]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                  <span>Base de datos sincronizada permanentemente en la nube y dispositivo.</span>
-                </div>
-
                 <div className="flex items-center gap-2 pt-1">
                   <button
                     type="submit"
@@ -420,223 +449,102 @@ export default function AccountModal({
                 </div>
               </form>
             )}
-            {/* Selector rápido de Fuente y Estilo Visual */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">format_paint</span>
-                </div>
-                <div className="min-w-0">
-                  <span className="font-bold text-slate-900 dark:text-white block text-xs truncate">
-                    Diseño: {APP_THEMES.find((t) => t.id === currentTheme)?.name || 'Clásica'}
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
-                    Fuente: {APP_THEMES.find((t) => t.id === currentTheme)?.fontName || 'Inter'}
+
+            {/* 2. Sección Unificada: Cuentas Guardadas en este equipo */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-primary">switch_account</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                    Cuentas en este dispositivo ({allAccounts.length})
                   </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('register')}
+                  className="text-[11px] text-primary hover:underline font-semibold cursor-pointer flex items-center gap-0.5"
+                >
+                  <span className="material-symbols-outlined text-[14px]">add</span>
+                  <span>Añadir otra</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setActiveTab('theme')}
-                className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:text-primary font-semibold text-[11px] shrink-0 cursor-pointer shadow-2xs"
-              >
-                Cambiar fuente
-              </button>
-            </div>
-          </div>
-        )}
 
-        {/* PESTAÑA: FUENTE Y ESTILO VISUAL */}
-        {activeTab === 'theme' && (
-          <div className="flex flex-col gap-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-500 font-medium">
-                Elige el diseño global y la tipografía de la app:
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">
-                4 Diseños
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2.5">
-              {APP_THEMES.map((theme) => {
-                const isSelected = currentTheme === theme.id
-                return (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => {
-                      setAppTheme(theme.id)
-                      setCurrentTheme(theme.id)
-                      setStatusMessage({
-                        text: `Estilo cambiado a ${theme.name}. Interfaz y fuente actualizadas.`,
-                        type: 'success',
-                      })
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
-                      isSelected
-                        ? 'border-primary ring-2 ring-primary/30 bg-primary/5 dark:bg-primary/10'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/60'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
-                            isSelected
-                              ? 'border-primary bg-primary'
-                              : 'border-slate-300 dark:border-slate-600'
-                          }`}
-                        >
-                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white"></span>}
-                        </span>
-                        <span className="font-bold text-slate-900 dark:text-white text-xs">
-                          {theme.name}
-                        </span>
-                      </div>
-                      <span className={theme.previewBadge}>{theme.tag}</span>
-                    </div>
-
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed pl-5">
-                      {theme.description}
-                    </p>
-
-                    <div className="pl-5 flex items-center gap-2 pt-0.5 text-[10px] text-slate-400">
-                      <span className="font-medium text-slate-600 dark:text-slate-300">Fuente:</span>
-                      <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-mono text-[10px] text-slate-800 dark:text-slate-200">
-                        {theme.fontName}
-                      </code>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* PESTAÑA 2: CUENTAS GUARDADAS EN ESTE EQUIPO */}
-        {activeTab === 'accounts' && (
-          <div className="flex flex-col gap-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-500 font-medium">
-                Cuentas registradas en este navegador ({allAccounts.length}):
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveTab('register')}
-                className="text-[11px] text-primary hover:underline font-semibold cursor-pointer flex items-center gap-0.5"
-              >
-                <span className="material-symbols-outlined text-[14px]">add</span>
-                <span>Nueva cuenta</span>
-              </button>
-            </div>
-
-            {allAccounts.length === 0 ? (
-              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex flex-col items-center justify-center text-center gap-2.5 my-1">
-                <div className="w-10 h-10 rounded-2xl bg-slate-200/70 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[22px]">no_accounts</span>
-                </div>
-                <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                  No hay cuentas guardadas en este equipo
-                </span>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-                  Inicia sesión con tu cuenta existente o crea una nueva para sincronizar tus tareas en la nube y WhatsApp.
-                </p>
-                <div className="flex items-center gap-2 mt-1">
+              {allAccounts.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between text-center gap-2">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    No hay cuentas guardadas aún.
+                  </span>
                   <button
                     type="button"
                     onClick={() => setActiveTab('login')}
-                    className="px-3 py-1.5 rounded-xl bg-primary text-white font-semibold shadow-xs hover:opacity-95 transition-opacity cursor-pointer text-xs flex items-center gap-1"
+                    className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[15px]">login</span>
-                    <span>Iniciar Sesión</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('register')}
-                    className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-300 transition-colors cursor-pointer text-xs flex items-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">person_add</span>
-                    <span>Crear Cuenta</span>
+                    Iniciar sesión
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-0.5">
-                {allAccounts.map((acc) => {
-                  const isCurrent = !isGuest && acc.uid === user.uid
-                  return (
-                    <div
-                      key={acc.uid}
-                      className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
-                        isCurrent
-                          ? 'bg-primary/5 border-primary shadow-xs'
-                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center text-xs shrink-0">
-                          {getInitials(acc.displayName)}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate font-semibold text-slate-900 dark:text-white text-xs">
-                            {acc.displayName}
+              ) : (
+                <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-0.5">
+                  {allAccounts.map((acc) => {
+                    const isCurrent = !isGuest && acc.uid === user.uid
+                    return (
+                      <div
+                        key={acc.uid}
+                        className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
+                          isCurrent
+                            ? 'bg-primary/5 border-primary shadow-xs'
+                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center text-xs shrink-0">
+                            {getInitials(acc.displayName)}
                           </div>
-                          <div className="truncate text-[10px] text-slate-400">{acc.email}</div>
+                          <div className="min-w-0">
+                            <div className="truncate font-semibold text-slate-900 dark:text-white text-xs">
+                              {acc.displayName}
+                            </div>
+                            <div className="truncate text-[10px] text-slate-400">{acc.email}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isCurrent ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              Activa
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleSwitchAccount(acc.uid)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-800 dark:text-slate-200 text-[11px] font-semibold transition-colors cursor-pointer"
+                            >
+                              Usar cuenta
+                            </button>
+                          )}
+
+                          {/* Botón borrar solo si hay más de 1 cuenta */}
+                          {allAccounts.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAccount(acc.uid, acc.displayName)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                              title="Eliminar de este equipo"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">delete</span>
+                            </button>
+                          )}
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {isCurrent ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/60">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Activa
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleSwitchAccount(acc.uid)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-800 dark:text-slate-200 text-[11px] font-semibold transition-colors cursor-pointer"
-                          >
-                            Usar cuenta
-                          </button>
-                        )}
-
-                        {/* Botón borrar solo si hay más de 1 cuenta */}
-                        {allAccounts.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteAccount(acc.uid, acc.displayName)}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                            title="Eliminar de este equipo"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">delete</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Opción de volver a modo invitado si tiene una cuenta iniciada */}
-            {!isGuest && (
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">¿Usar sin ninguna cuenta activa?</span>
-                <button
-                  type="button"
-                  onClick={handleLogoutFromModal}
-                  className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 cursor-pointer underline"
-                >
-                  Cambiar a Modo Invitado
-                </button>
-              </div>
-            )}
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* PESTAÑA 3: INICIAR SESIÓN */}
+        {/* PESTAÑA: INICIAR SESIÓN */}
         {activeTab === 'login' && (
           <form onSubmit={handleLogin} className="flex flex-col gap-3 text-xs">
             <div>
@@ -648,10 +556,11 @@ export default function AccountModal({
                 required
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="tu.correo@ejemplo.com"
+                placeholder="tu@email.com"
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-xs"
               />
             </div>
+
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                 Contraseña
@@ -666,44 +575,44 @@ export default function AccountModal({
               />
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-              <span>¿No tienes cuenta todavía?</span>
-              <button
-                type="button"
-                onClick={() => setActiveTab('register')}
-                className="text-primary font-semibold hover:underline cursor-pointer"
-              >
-                Crear una cuenta gratis
-              </button>
-            </div>
-
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-1 py-2.5 px-4 rounded-xl bg-primary text-white font-semibold shadow-xs hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-primary text-white font-semibold shadow-xs hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">login</span>
               <span>{isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}</span>
             </button>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('register')}
+                className="text-[11px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
+              >
+                ¿No tienes cuenta? <strong className="underline">Crear cuenta gratis</strong>
+              </button>
+            </div>
           </form>
         )}
 
-        {/* PESTAÑA 4: CREAR NUEVA CUENTA */}
+        {/* PESTAÑA: CREAR NUEVA CUENTA */}
         {activeTab === 'register' && (
           <form onSubmit={handleRegister} className="flex flex-col gap-3 text-xs">
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                Nombre y Apellidos
+                Tu nombre
               </label>
               <input
                 type="text"
                 required
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
-                placeholder="Tu nombre y apellidos"
+                placeholder="Ej. Jorge García"
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-xs"
               />
             </div>
+
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                 Correo electrónico
@@ -713,18 +622,19 @@ export default function AccountModal({
                 required
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
-                placeholder="tu.correo@ejemplo.com"
+                placeholder="tu@email.com"
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-xs"
               />
             </div>
+
             <div>
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                Contraseña
+                Contraseña (mínimo 6 caracteres)
               </label>
               <input
                 type="password"
                 required
-                minLength={4}
+                minLength={6}
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
                 placeholder="••••••••"
@@ -732,38 +642,26 @@ export default function AccountModal({
               />
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-              <span>¿Ya tienes una cuenta registrada?</span>
-              <button
-                type="button"
-                onClick={() => setActiveTab('login')}
-                className="text-primary font-semibold hover:underline cursor-pointer"
-              >
-                Inicia sesión aquí
-              </button>
-            </div>
-
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-1 py-2.5 px-4 rounded-xl bg-primary text-white font-semibold shadow-xs hover:opacity-95 transition-opacity cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-primary text-white font-semibold shadow-xs hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">person_add</span>
-              <span>{isSubmitting ? 'Creando cuenta...' : 'Crear y Guardar Cuenta'}</span>
+              <span>{isSubmitting ? 'Creando cuenta...' : 'Crear Cuenta'}</span>
             </button>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('login')}
+                className="text-[11px] text-slate-500 hover:text-primary transition-colors cursor-pointer"
+              >
+                ¿Ya tienes cuenta? <strong className="underline">Inicia sesión</strong>
+              </button>
+            </div>
           </form>
         )}
-
-        {/* Pie del modal con botón cerrar */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="py-2 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer text-xs"
-          >
-            Cerrar
-          </button>
-        </div>
       </div>
     </div>
   )

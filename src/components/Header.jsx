@@ -5,6 +5,7 @@ import AccountModal from './AccountModal'
 import AIBotIcon from './AIBotIcon'
 import { getCurrentUser, isGuestUser } from '../services/firebase'
 import { APP_THEMES, getAppTheme, setAppTheme } from '../services/appTheme'
+import { getVisibleNavTabs, setVisibleNavTab, NAV_TAB_DEFINITIONS } from '../services/navSettings'
 
 const mobileNavItems = [
   { name: 'Calendario', shortName: 'Agenda', to: '/calendar', icon: 'calendar_today' },
@@ -34,13 +35,28 @@ export default function Header({
 
   const [currentAppTheme, setCurrentAppTheme] = useState(() => getAppTheme())
   const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false)
+  const [visibleTabs, setVisibleTabs] = useState(() => getVisibleNavTabs())
 
   useEffect(() => {
-    const handleThemeChange = (e) => {
-      if (e.detail) setCurrentAppTheme(e.detail)
+    const handleTabsChange = (e) => {
+      if (e.detail) setVisibleTabs(e.detail)
     }
-    window.addEventListener('app_theme_changed', handleThemeChange)
-    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+    window.addEventListener('app_visible_tabs_changed', handleTabsChange)
+    return () => window.removeEventListener('app_visible_tabs_changed', handleTabsChange)
+  }, [])
+
+  useEffect(() => {
+    const handleThemeStyleChange = (e) => {
+      if (e.detail && ['clasica', 'aura', 'executive', 'brutalista'].includes(e.detail)) {
+        setCurrentAppTheme(e.detail)
+      }
+    }
+    window.addEventListener('app_theme_style_changed', handleThemeStyleChange)
+    window.addEventListener('app_theme_changed', handleThemeStyleChange)
+    return () => {
+      window.removeEventListener('app_theme_style_changed', handleThemeStyleChange)
+      window.removeEventListener('app_theme_changed', handleThemeStyleChange)
+    }
   }, [])
 
   const activeThemeObj = APP_THEMES.find((t) => t.id === currentAppTheme) || APP_THEMES[0]
@@ -73,9 +89,10 @@ export default function Header({
     return () => window.removeEventListener('studenthub_open_account_modal', handleOpenAccountModal)
   }, [])
 
-  const currentNavItems = aiAssistantMode === 'floating'
-    ? mobileNavItems.filter((item) => item.to !== '/ai-assistant')
-    : mobileNavItems
+  const currentNavItems = mobileNavItems.filter((item) => {
+    if (item.to === '/ai-assistant' && aiAssistantMode === 'floating') return false
+    return visibleTabs[item.to] !== false
+  })
 
   // Pastilla deslizante animada para escritorio y móvil
   const navContainerRef = useRef(null)
@@ -147,12 +164,19 @@ export default function Header({
 
   useEffect(() => {
     const handleThemeSync = (e) => {
-      const nextTheme = e.detail || localStorage.getItem('app_theme') || (document.documentElement.classList.contains('dark') ? 'dark' : 'light')
-      setTheme(nextTheme)
+      // SOLO procesar si el valor recibido es estrictamente 'dark' o 'light'
+      if (e.detail === 'dark' || e.detail === 'light') {
+        setTheme(e.detail)
+      } else if (!e.detail) {
+        const nextTheme = localStorage.getItem('app_theme') || (document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+        setTheme(nextTheme === 'dark' ? 'dark' : 'light')
+      }
     }
+    window.addEventListener('app_dark_mode_changed', handleThemeSync)
     window.addEventListener('app_theme_changed', handleThemeSync)
     window.addEventListener('storage', handleThemeSync)
     return () => {
+      window.removeEventListener('app_dark_mode_changed', handleThemeSync)
       window.removeEventListener('app_theme_changed', handleThemeSync)
       window.removeEventListener('storage', handleThemeSync)
     }
@@ -161,19 +185,21 @@ export default function Header({
   useEffect(() => {
     if (isSettingsOpen) {
       const currentTheme = localStorage.getItem('app_theme') || (document.documentElement.classList.contains('dark') ? 'dark' : 'light')
-      setTheme(currentTheme)
+      setTheme(currentTheme === 'dark' ? 'dark' : 'light')
     }
   }, [isSettingsOpen])
 
   const handleSelectTheme = (nextTheme) => {
-    setTheme(nextTheme)
-    if (nextTheme === 'dark') {
+    const valid = nextTheme === 'dark' ? 'dark' : 'light'
+    setTheme(valid)
+    if (valid === 'dark') {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
     }
-    localStorage.setItem('app_theme', nextTheme)
-    window.dispatchEvent(new CustomEvent('app_theme_changed', { detail: nextTheme }))
+    localStorage.setItem('app_theme', valid)
+    window.dispatchEvent(new CustomEvent('app_dark_mode_changed', { detail: valid }))
+    window.dispatchEvent(new CustomEvent('app_theme_changed', { detail: valid }))
   }
 
   useEffect(() => {
@@ -520,6 +546,66 @@ export default function Header({
                     <span className="material-symbols-outlined text-[18px]">dark_mode</span>
                     <span>{language === 'es' ? 'Oscuro' : 'Dark'}</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Personalizar Pestañas Visibles (Poder quitar elementos de arriba/lateral) */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">
+                    {language === 'es' ? 'Pestañas Visibles' : 'Visible Navigation Tabs'}
+                  </label>
+                  <span className="text-[10px] text-slate-400">
+                    {language === 'es' ? 'Muestra u oculta módulos' : 'Toggle modules'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1.5 bg-surface-subtle p-2 rounded-xl border border-outline-variant/30">
+                  {NAV_TAB_DEFINITIONS.map((def) => {
+                    const isVisible = visibleTabs[def.id] !== false
+                    return (
+                      <div
+                        key={def.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-surface-pure hover:bg-surface-muted/80 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="material-symbols-outlined text-[17px] text-primary shrink-0">
+                            {def.icon}
+                          </span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-semibold text-on-surface truncate">
+                              {def.label}
+                            </span>
+                            <span className="text-[10px] text-secondary line-clamp-1">
+                              {def.desc}
+                            </span>
+                          </div>
+                        </div>
+
+                        {def.canToggle ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = setVisibleNavTab(def.id, !isVisible)
+                              setVisibleTabs(updated)
+                            }}
+                            className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer shrink-0 ml-2 ${
+                              isVisible ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs transition-transform ${
+                                isVisible ? 'left-5.5' : 'left-0.5'
+                              }`}
+                            />
+                          </button>
+                        ) : (
+                          <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-300 shrink-0 ml-2">
+                            Troncal
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 

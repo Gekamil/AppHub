@@ -222,6 +222,28 @@ export default function NotebooksPage() {
 
   return (
     <div className="flex flex-col w-full">
+      {/* Banner de Próximamente (MVP - Fase de lanzamiento) */}
+      <div className="w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto mb-4 p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <span className="material-symbols-outlined text-[20px]">construction</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 dark:text-white text-sm">
+                Módulo de Notas en Desarrollo (Próximamente)
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white">
+                Beta Preview
+              </span>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300 mt-0.5 text-[11px] leading-relaxed">
+              Estamos perfeccionando la sincronización en la nube y el editor de bloques. Si deseas una experiencia simplificada de solo Calendario y Tareas, puedes ocultar esta pestaña en <strong>Configuración &gt; Pestañas Visibles</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-space-lg w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto items-start">
         {/* LEFT PANEL: Notebooks Tree & Directory (Linear/Notion inspired utility) */}
         <aside className="w-full lg:w-[280px] shrink-0 bg-surface-pure rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">

@@ -252,22 +252,22 @@ header, aside, main, nav, footer, .theme-transition {
    4. Neo-Brutalista Industrial: Esquinas a 0px, marcos de 2px, Syne 800 + Space Mono, sombras duras sin solapamientos
    ========================================================================== */
 
-/* Animación Lateral de Transición de Diseño */
-@keyframes themeLateralSlide {
+/* Animación Suave de Transición de Diseño (Transición Fluida sin Saltos Bruscos) */
+@keyframes themeBloomTransition {
   0% {
-    opacity: 0.5;
-    transform: translateX(28px) scale(0.995);
+    opacity: 0.78;
     filter: blur(1.5px);
+    transform: scale(0.998);
   }
   100% {
     opacity: 1;
-    transform: translateX(0px) scale(1);
     filter: blur(0px);
+    transform: scale(1);
   }
 }
 
 .animate-theme-switch {
-  animation: themeLateralSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  animation: themeBloomTransition 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 
 /* ==========================================================================
@@ -339,6 +339,29 @@ html.dark[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-3
 html.dark[data-theme-style="brutalista"] div[class*="shadow-"][class*="rounded-2xl"],
 html.dark[data-theme-style="brutalista"] .shadow-xl {
   box-shadow: 4px 4px 0px 0px #ffffff !important;
+}
+
+html.dark[data-theme-style="brutalista"] .bg-white,
+html.dark[data-theme-style="brutalista"] .bg-surface-pure,
+html.dark[data-theme-style="brutalista"] .bg-surface-subtle {
+  background-color: #0d1117 !important;
+  color: #f0f6fc !important;
+}
+
+html.dark[data-theme-style="brutalista"] .bg-surface-muted,
+html.dark[data-theme-style="brutalista"] .bg-slate-50,
+html.dark[data-theme-style="brutalista"] .bg-slate-100 {
+  background-color: #161b22 !important;
+  color: #c9d1d9 !important;
+}
+
+html.dark[data-theme-style="brutalista"] .grid-cols-7 > div.bg-white {
+  background-color: #0d1117 !important;
+  color: #f0f6fc !important;
+}
+
+html.dark[data-theme-style="brutalista"] .grid-cols-7 > div.bg-white:hover {
+  background-color: #1f242c !important;
 }
 
 /* Desactivar sombras en badges, pills, spans y botones internos para evitar empalmes */
@@ -473,6 +496,34 @@ html[data-theme-style="aura"] .grid-cols-7 > div.bg-white:hover {
 
 html[data-theme-style="aura"] .grid-cols-7 > div.bg-slate-50\/70 {
   background-color: #fff1f5 !important;
+}
+
+html.dark[data-theme-style="aura"] .grid-cols-7 {
+  background-color: rgba(236, 72, 153, 0.25) !important;
+}
+
+html.dark[data-theme-style="aura"] .grid-cols-7 > div.bg-white,
+html.dark[data-theme-style="aura"] .grid-cols-7 > div.bg-slate-50\/70 {
+  background-color: #1a0b17 !important;
+  color: #fce7f3 !important;
+}
+
+html.dark[data-theme-style="aura"] .grid-cols-7 > div.bg-white:hover {
+  background-color: #2b1123 !important;
+}
+
+html.dark[data-theme-style="aura"] .bg-surface-subtle {
+  background-color: transparent !important;
+}
+
+html.dark[data-theme-style="aura"] .bg-surface-muted,
+html.dark[data-theme-style="aura"] .bg-slate-50,
+html.dark[data-theme-style="aura"] .bg-slate-50\/90,
+html.dark[data-theme-style="aura"] .bg-slate-50\/70,
+html.dark[data-theme-style="aura"] .bg-slate-100 {
+  background-color: rgba(45, 18, 37, 0.8) !important;
+  border-color: rgba(236, 72, 153, 0.3) !important;
+  color: #fce7f3 !important;
 }
 
 /* Transformar todos los textos, acentos y estados azules a rojo/rosa en Blossom */
@@ -652,6 +703,20 @@ html[data-theme-style="executive"] .grid-cols-7 > div.bg-slate-50\/70 {
   background-color: #f8fafc !important;
 }
 
+html.dark[data-theme-style="executive"] .grid-cols-7 {
+  background-color: #1e293b !important;
+}
+
+html.dark[data-theme-style="executive"] .grid-cols-7 > div.bg-white,
+html.dark[data-theme-style="executive"] .grid-cols-7 > div.bg-slate-50\/70 {
+  background-color: #0f141f !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark[data-theme-style="executive"] .grid-cols-7 > div.bg-white:hover {
+  background-color: #182030 !important;
+}
+
 /* Cabecera de días del calendario en gris neutro profesional (L, M, X, J, V, S, D) */
 html[data-theme-style="executive"] .grid-cols-7.bg-slate-100\/90,
 html[data-theme-style="executive"] .grid-cols-7.border-b {
@@ -684,6 +749,20 @@ html[data-theme-style="executive"] .bg-slate-50\/90,
 html[data-theme-style="executive"] .bg-slate-50\/70 {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
+}
+
+html.dark[data-theme-style="executive"] .bg-surface-subtle {
+  background-color: #0b0f17 !important;
+}
+
+html.dark[data-theme-style="executive"] .bg-surface-muted,
+html.dark[data-theme-style="executive"] .bg-slate-50,
+html.dark[data-theme-style="executive"] .bg-slate-50\/90,
+html.dark[data-theme-style="executive"] .bg-slate-50\/70,
+html.dark[data-theme-style="executive"] .bg-slate-100 {
+  background-color: #121824 !important;
+  border-color: #1e293b !important;
+  color: #cbd5e1 !important;
 }
 
 /* Botones ejecutivos sobrios con radio de curvatura profesional de 8px */

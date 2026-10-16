@@ -211,10 +211,18 @@ export default function MyHubPage() {
 
   useEffect(() => {
     const handleThemeChange = (e) => {
-      setAppThemeState(e.detail || getAppTheme())
+      if (e.detail && ['clasica', 'aura', 'executive', 'brutalista'].includes(e.detail)) {
+        setAppThemeState(e.detail)
+      } else if (!e.detail) {
+        setAppThemeState(getAppTheme())
+      }
     }
+    window.addEventListener('app_theme_style_changed', handleThemeChange)
     window.addEventListener('app_theme_changed', handleThemeChange)
-    return () => window.removeEventListener('app_theme_changed', handleThemeChange)
+    return () => {
+      window.removeEventListener('app_theme_style_changed', handleThemeChange)
+      window.removeEventListener('app_theme_changed', handleThemeChange)
+    }
   }, [])
 
   const themeTokens = useMemo(() => getAppThemeTokens(appTheme), [appTheme])
@@ -353,6 +361,28 @@ export default function MyHubPage() {
 
   return (
     <div className="flex flex-col w-full">
+      {/* Banner de Próximamente (MVP - Fase de lanzamiento) */}
+      <div className="w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto mb-4 p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <span className="material-symbols-outlined text-[20px]">construction</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 dark:text-white text-sm">
+                Módulo My Hub en Optimización (Próximamente)
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white">
+                Beta Preview
+              </span>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300 mt-0.5 text-[11px] leading-relaxed">
+              Estamos integrando previsualizaciones enriquecidas y enlaces cruzados con tu calendario. Puedes ocultar o activar esta pestaña en <strong>Configuración &gt; Pestañas Visibles</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Hub Top Utility & Summary Banner */}
       <div className="w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto flex flex-col gap-space-lg">
         {/* Header Section */}

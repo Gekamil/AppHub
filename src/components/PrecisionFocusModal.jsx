@@ -36,12 +36,17 @@ export default function PrecisionFocusModal({
 
   useEffect(() => {
     const handleThemeSync = (e) => {
-      const nextTheme = e?.detail || localStorage.getItem('app_theme') || (document.documentElement.classList.contains('dark') ? 'dark' : 'light')
-      setIsDark(nextTheme === 'dark')
+      if (e?.detail === 'dark' || e?.detail === 'light') {
+        setIsDark(e.detail === 'dark')
+      } else if (!e?.detail) {
+        setIsDark(localStorage.getItem('app_theme') === 'dark' || document.documentElement.classList.contains('dark'))
+      }
     }
+    window.addEventListener('app_dark_mode_changed', handleThemeSync)
     window.addEventListener('app_theme_changed', handleThemeSync)
     window.addEventListener('storage', handleThemeSync)
     return () => {
+      window.removeEventListener('app_dark_mode_changed', handleThemeSync)
       window.removeEventListener('app_theme_changed', handleThemeSync)
       window.removeEventListener('storage', handleThemeSync)
     }
