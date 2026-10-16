@@ -4,7 +4,6 @@ export default function InstallAppModal({ isOpen, onClose }) {
   const [platform, setPlatform] = useState('android') // 'android' | 'ios' | 'windows'
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [isInstallable, setIsInstallable] = useState(false)
-  const [downloadNotice, setDownloadNotice] = useState(null)
 
   useEffect(() => {
     // Detectar plataforma del usuario
@@ -17,7 +16,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
       setPlatform('windows')
     }
 
-    // Capturar evento de instalación secundaria PWA
+    // Capturar evento de instalacion secundaria PWA si esta disponible en el navegador
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
@@ -42,42 +41,6 @@ export default function InstallAppModal({ isOpen, onClose }) {
     }
   }
 
-  const triggerDownload = async (fileUrl, fileName) => {
-    setDownloadNotice(`Preparando descarga de ${fileName}...`)
-    try {
-      const res = await fetch(fileUrl, { method: 'HEAD' })
-      const contentType = res.headers.get('content-type') || ''
-      // Si el archivo existe físicamente y es un binario real (no el HTML fallback de la SPA)
-      if (res.ok && !contentType.includes('text/html')) {
-        const link = document.createElement('a')
-        link.href = fileUrl
-        link.download = fileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        setDownloadNotice(`Descarga de ${fileName} iniciada correctamente.`)
-        setTimeout(() => setDownloadNotice(null), 4000)
-        return
-      }
-    } catch {
-      // Ignorar fallo de fetch HEAD
-    }
-
-    // Fallback garantizado a la release oficial de GitHub
-    const releaseUrl = `https://github.com/Gekamil/AppHub/releases/latest/download/${fileName}`
-    const link = document.createElement('a')
-    link.href = releaseUrl
-    link.download = fileName
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    setDownloadNotice(`Descarga de ${fileName} iniciada desde el servidor oficial.`)
-    setTimeout(() => setDownloadNotice(null), 4000)
-  }
-
-  const GITHUB_REPO_URL = 'https://github.com/Gekamil/AppHub'
-
   return (
     <div
       onClick={onClose}
@@ -96,7 +59,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
             <div>
               <h3 className="font-bold text-on-surface text-base">Instalar AppHub</h3>
               <p className="text-[11px] text-secondary">
-                Aplicación nativa para Android, iPhone / iPad y PC
+                Aplicacion oficial preparada para instalar en tu dispositivo
               </p>
             </div>
           </div>
@@ -150,20 +113,12 @@ export default function InstallAppModal({ isOpen, onClose }) {
             </button>
           </div>
 
-          {/* Notificación de estado de descarga si aplica */}
-          {downloadNotice && (
-            <div className="px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-300 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px]">info</span>
-              <span>{downloadNotice}</span>
-            </div>
-          )}
-
-          {/* CONTENIDO SEGÚN PLATAFORMA */}
+          {/* CONTENIDO SEGUN PLATAFORMA */}
 
           {/* 1. ANDROID */}
           {platform === 'android' && (
             <div className="flex flex-col gap-4 animate-in fade-in duration-150">
-              {/* Opción Prioritaria: Paquete Nativo APK */}
+              {/* Opcion Prioritaria: Descarga directa APK */}
               <div className="p-4 rounded-2xl bg-surface-subtle border border-primary/30 flex flex-col gap-3 shadow-xs">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
@@ -171,60 +126,55 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-on-surface">Instalación Nativa (.APK)</h4>
+                      <h4 className="text-xs font-bold text-on-surface">Instalador Directo APK</h4>
                       <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                        Prioritaria
+                        Listo para instalar
                       </span>
                     </div>
                     <p className="text-[11px] text-secondary mt-0.5">
-                      Instalación oficial y directa en cualquier teléfono o tablet Android sin pasar por Google Play Store.
+                      Descarga directa del archivo de instalacion para cualquier telefono o tablet Android.
                     </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    triggerDownload(
-                      '/download/AppHub.apk',
-                      'AppHub.apk'
-                    )
-                  }
-                  className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer"
+                <a
+                  href="/download/AppHub.apk"
+                  download="AppHub.apk"
+                  className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer no-underline text-center"
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>
-                  <span>Descargar AppHub para Android (.APK)</span>
-                </button>
+                  <span>Descargar e Instalar APK (AppHub.apk)</span>
+                </a>
 
                 <div className="bg-surface-pure p-3 rounded-xl border border-outline-variant/20 flex flex-col gap-1.5 text-[11px] text-secondary">
                   <span className="font-semibold text-on-surface text-[10px] uppercase tracking-wider">
-                    Instrucciones de instalación:
+                    Pasos sencillos:
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-primary">1.</span>
-                    <span>Descarga el archivo APK y pulsa en abrir.</span>
+                    <span>Pulsa el boton para descargar AppHub.apk en tu movil.</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-primary">2.</span>
-                    <span>Si te lo solicita, activa "Permitir desde esta fuente".</span>
+                    <span>Abre la notificacion de descarga y pulsa en <strong>Instalar</strong>.</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-primary">3.</span>
-                    <span>Pulsa en Instalar y la app aparecerá en tu menú de aplicaciones.</span>
+                    <span>La aplicacion quedara instalada directamente con su propio icono.</span>
                   </div>
                 </div>
               </div>
 
-              {/* Opción Secundaria: PWA Ligera */}
-              <div className="p-3 rounded-2xl bg-surface-pure border border-outline-variant/30 flex items-center justify-between gap-3 text-xs opacity-80 hover:opacity-100 transition-opacity">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-slate-400 text-[18px]">web</span>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-on-surface truncate">Alternativa: Acceso Web Ligero</span>
-                    <span className="text-[10px] text-secondary">Sin instalar archivo APK</span>
+              {/* Opcion Secundaria: PWA Ligera */}
+              {isInstallable && (
+                <div className="p-3 rounded-2xl bg-surface-pure border border-outline-variant/30 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="material-symbols-outlined text-slate-400 text-[18px]">web</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-semibold text-on-surface truncate">Alternativa: Acceso Web</span>
+                      <span className="text-[10px] text-secondary">Anadir acceso rapido en navegador</span>
+                    </div>
                   </div>
-                </div>
-                {isInstallable && (
                   <button
                     type="button"
                     onClick={handleNativeInstall}
@@ -232,70 +182,59 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   >
                     Instalar PWA
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* 2. IPHONE (iOS) */}
           {platform === 'ios' && (
             <div className="flex flex-col gap-4 animate-in fade-in duration-150">
-              {/* Opción Prioritaria: Paquete Nativo IPA Sideloading */}
+              {/* Opcion A: Instalacion Web Directa (Recomendada y 100% Gratis) */}
               <div className="p-4 rounded-2xl bg-surface-subtle border border-primary/30 flex flex-col gap-3 shadow-xs">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[20px]">ios</span>
+                    <span className="material-symbols-outlined text-[20px]">phone_iphone</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-on-surface">App Nativa iOS (.IPA)</h4>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                      <h4 className="text-xs font-bold text-on-surface">Instalacion Inmediata en iPhone</h4>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                         100% Gratis
                       </span>
                     </div>
                     <p className="text-[11px] text-secondary mt-0.5">
-                      Instalación nativa directa en tu iPhone o iPad mediante Sideloading, sin App Store y sin pagar suscripciones de desarrollador Apple.
+                      Instalacion directa en pantalla completa como aplicacion nativa sin pagar suscripciones a Apple.
                     </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    triggerDownload(
-                      '/download/AppHub.ipa',
-                      'AppHub.ipa'
-                    )
-                  }
-                  className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">download</span>
-                  <span>Descargar Paquete AppHub (.IPA)</span>
-                </button>
-
                 <div className="bg-surface-pure p-3.5 rounded-xl border border-outline-variant/20 flex flex-col gap-2 text-[11px] text-secondary">
-                  <div className="flex items-center gap-1.5 text-on-surface font-semibold text-xs">
-                    <span className="material-symbols-outlined text-primary text-[16px]">install_desktop</span>
-                    <span>Instalación mediante AltStore / SideStore / Scarlet:</span>
-                  </div>
+                  <span className="font-semibold text-on-surface text-[10px] uppercase tracking-wider">
+                    Pasos en Safari (iPhone / iPad):
+                  </span>
                   <div className="flex items-start gap-2">
                     <span className="font-bold text-primary shrink-0">1.</span>
-                    <span>Descarga el archivo <strong>AppHub.ipa</strong> en tu dispositivo.</span>
+                    <span>Pulsa el boton <strong>Compartir</strong> en Safari (icono de cuadrado con flecha hacia arriba).</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="font-bold text-primary shrink-0">2.</span>
-                    <span>Abre tu app de sideloading (AltStore, SideStore o Scarlet) y pulsa en añadir aplicación (+).</span>
+                    <span>Desplaza hacia abajo y selecciona <strong>"Anadir a pantalla de inicio"</strong>.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="font-bold text-primary shrink-0">3.</span>
-                    <span>Selecciona el archivo descargado. La app se firmará y quedará instalada como aplicación nativa en tu iPhone.</span>
+                    <span>Pulsa <strong>Anadir</strong>. La app se abrira en pantalla completa como una aplicacion nativa sin bordes ni barra de navegacion.</span>
                   </div>
                 </div>
-              </div>
 
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px] shrink-0">bolt</span>
-                <span>Las actualizaciones de backend, tareas y calendario se sincronizan en vivo sin necesidad de reinstalar.</span>
+                <a
+                  href="/download/AppHub.ipa"
+                  download="AppHub.ipa"
+                  className="w-full py-2.5 px-4 rounded-xl bg-surface-pure hover:bg-surface-muted border border-outline-variant/40 text-on-surface font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer no-underline text-center mt-1"
+                >
+                  <span className="material-symbols-outlined text-[17px]">download</span>
+                  <span>Descargar Archivo .IPA (Para AltStore / SideStore)</span>
+                </a>
               </div>
             </div>
           )}
@@ -303,7 +242,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
           {/* 3. WINDOWS / PC */}
           {platform === 'windows' && (
             <div className="flex flex-col gap-4 animate-in fade-in duration-150">
-              {/* Opción Prioritaria: Ejecutable de Escritorio (.EXE) */}
+              {/* Opcion Prioritaria: Ejecutable de Escritorio (.EXE) */}
               <div className="p-4 rounded-2xl bg-surface-subtle border border-primary/30 flex flex-col gap-3 shadow-xs">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
@@ -311,54 +250,49 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-on-surface">Instalador de Escritorio (.EXE)</h4>
+                      <h4 className="text-xs font-bold text-on-surface">Instalador para Windows (.EXE)</h4>
                       <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
-                        Prioritaria
+                        Listo para instalar
                       </span>
                     </div>
                     <p className="text-[11px] text-secondary mt-0.5">
-                      Aplicación oficial para Windows 10 y 11 con rendimiento nativo, bandeja del sistema y arranque rápido.
+                      Instalador directo oficial para Windows 10 y 11. Solo descargar y ejecutar para instalar.
                     </p>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    triggerDownload(
-                      '/download/AppHub-Setup.exe',
-                      'AppHub-Setup.exe'
-                    )
-                  }
-                  className="w-full py-2.5 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer"
+                <a
+                  href="/download/AppHub-Setup.exe"
+                  download="AppHub-Setup.exe"
+                  className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer no-underline text-center"
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>
-                  <span>Descargar AppHub para Windows (.exe)</span>
-                </button>
+                  <span>Descargar Instalador de Windows (AppHub-Setup.exe)</span>
+                </a>
 
                 <div className="bg-surface-pure p-3 rounded-xl border border-outline-variant/20 flex flex-col gap-1.5 text-[11px] text-secondary">
                   <span className="font-semibold text-on-surface text-[10px] uppercase tracking-wider">
-                    Nota de ejecución:
+                    Instalacion en 1 paso:
                   </span>
                   <div className="flex items-start gap-1.5">
-                    <span className="material-symbols-outlined text-amber-500 text-[15px] shrink-0 mt-0.5">verified_user</span>
+                    <span className="material-symbols-outlined text-primary text-[15px] shrink-0 mt-0.5">check_circle</span>
                     <span>
-                      Al ser una versión de distribución directa, si Windows SmartScreen muestra un aviso preventivo, pulsa en <strong>Más información</strong> y luego en <strong>Ejecutar de todas formas</strong>.
+                      Al terminar la descarga, pulsa dos veces sobre <strong>AppHub-Setup.exe</strong> para instalar y abrir AppHub en tu ordenador.
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Opción Secundaria: App Web de Escritorio */}
-              <div className="p-3 rounded-2xl bg-surface-pure border border-outline-variant/30 flex items-center justify-between gap-3 text-xs opacity-80 hover:opacity-100 transition-opacity">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="material-symbols-outlined text-slate-400 text-[18px]">web</span>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-on-surface truncate">Alternativa: App Web de Escritorio</span>
-                    <span className="text-[10px] text-secondary">Ejecutar en ventana sin instalador</span>
+              {/* Opcion Secundaria: PWA */}
+              {isInstallable && (
+                <div className="p-3 rounded-2xl bg-surface-pure border border-outline-variant/30 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="material-symbols-outlined text-slate-400 text-[18px]">web</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-semibold text-on-surface truncate">Alternativa: App Web</span>
+                      <span className="text-[10px] text-secondary">Instalar directo en el navegador</span>
+                    </div>
                   </div>
-                </div>
-                {isInstallable && (
                   <button
                     type="button"
                     onClick={handleNativeInstall}
@@ -366,30 +300,19 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   >
                     Instalar PWA
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Pie con estado y enlace al repositorio */}
+        {/* Pie de modal sin enlaces externos */}
         <div className="px-6 py-3.5 border-t border-surface-muted bg-surface-subtle/30 flex items-center justify-between text-[11px] text-secondary">
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-secondary hover:text-on-surface transition-colors"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Versión oficial GitHub Releases</span>
-          </a>
-          <button
-            type="button"
-            onClick={onClose}
-            className="font-semibold text-primary hover:underline cursor-pointer"
-          >
-            Cerrar
-          </button>
+          <div className="flex items-center gap-1.5 text-on-surface font-medium">
+            <span className="material-symbols-outlined text-[15px] text-emerald-500">verified</span>
+            <span>Instalador oficial verificado y listo</span>
+          </div>
+          <span className="font-mono text-[10px] text-secondary">v2.4.1</span>
         </div>
       </div>
     </div>
