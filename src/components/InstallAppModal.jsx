@@ -53,8 +53,8 @@ export default function InstallAppModal({ isOpen, onClose }) {
         {/* Cabecera */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-muted bg-surface-subtle/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[20px]">install_mobile</span>
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs p-1">
+              <img src="/logo.png" alt="AppHub Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h3 className="font-bold text-on-surface text-base">Instalar AppHub</h3>

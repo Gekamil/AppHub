@@ -164,10 +164,14 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
         <div className="flex flex-col">
           {/* Brand / Logo */}
           <div className="h-14 px-space-lg flex items-center justify-between border-b border-surface-muted/50">
-            <div className="flex items-center gap-space-sm">
-              <span className="material-symbols-outlined text-[24px] text-primary">adjust</span>
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/logo.png"
+                alt="AppHub Logo"
+                className="w-8 h-8 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0"
+              />
               <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">
-                StudentHub
+                AppHub
               </span>
             </div>
             {/* Botón cerrar para móvil */}

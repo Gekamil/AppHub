@@ -226,9 +226,13 @@ export default function Header({
                 <span className="material-symbols-outlined text-[20px]">menu</span>
               </button>
             )}
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[20px] text-primary">adjust</span>
-              <span className="font-headline-sm text-sm font-bold text-on-surface tracking-tight">StudentHub</span>
+            <div className="flex items-center gap-2">
+              <img
+                src="/logo.png"
+                alt="AppHub Logo"
+                className="w-7 h-7 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0"
+              />
+              <span className="font-headline-sm text-sm font-bold text-on-surface tracking-tight">AppHub</span>
             </div>
           </div>
 

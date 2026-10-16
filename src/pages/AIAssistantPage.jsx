@@ -137,7 +137,7 @@ export default function AIAssistantPage() {
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           <div className="flex items-center justify-center gap-3 text-secondary font-code-sm text-xs py-2">
             <div className="h-[1px] w-12 bg-slate-200 dark:bg-slate-800"></div>
-            <span>Sesión conectada en tiempo real • StudentHub</span>
+            <span>Sesión conectada en tiempo real • AppHub</span>
             <div className="h-[1px] w-12 bg-slate-200 dark:bg-slate-800"></div>
           </div>
 

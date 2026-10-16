@@ -2427,7 +2427,7 @@ export default function AutoOrganizerPage() {
                     Inicio de sesión requerido para WhatsApp Bot
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Para acceder a la función de WhatsApp y conectar tu calendario con la Inteligencia Artificial 24/7, necesitas haber iniciado sesión en una cuenta de StudentHub. De este modo tus notas de voz, comandos con IA y eventos se sincronizan de manera segura con tu perfil.
+                    Para acceder a la función de WhatsApp y conectar tu calendario con la Inteligencia Artificial 24/7, necesitas haber iniciado sesión en una cuenta de AppHub. De este modo tus notas de voz, comandos con IA y eventos se sincronizan de manera segura con tu perfil.
                   </p>
                 </div>
 
