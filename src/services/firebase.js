@@ -212,10 +212,121 @@ export const updateUserProfileData = async (data) => {
   return updated
 }
 
-// Cerrar sesion (pasa a modo invitado sin sesion)
+// Cerrar sesion (pasa a modo invitado sin sesion y limpia datos temporales)
 export const logoutUser = async () => {
   localStorage.setItem('studenthub_is_authenticated', 'false')
+  // Al cerrar sesión, limpiar cualquier rastro de tareas en app_global_tasks para que el invitado nunca las vea
+  localStorage.removeItem('app_global_tasks')
   return setActiveUser(GUEST_USER)
+}
+
+// Obtener tareas del usuario actual garantizando aislamiento estricto y privacidad
+export const getUserTasks = (user = getCurrentUser()) => {
+  try {
+    if (isGuestUser(user)) {
+      // Un usuario sin cuenta iniciada NUNCA accede a tareas de otros usuarios
+      const rawGuest = localStorage.getItem('studenthub_guest_tasks')
+      if (rawGuest !== null) {
+        const parsed = JSON.parse(rawGuest)
+        if (Array.isArray(parsed)) return parsed
+      }
+      return [] // Vacío por defecto para invitados (sin eventos ajenos)
+    }
+    // Usuario registrado: cargar sus tareas privadas
+    const accounts = getAllAccounts()
+    const found = accounts.find((a) => a.uid === user.uid)
+    if (found && Array.isArray(found.tasks)) {
+      return found.tasks
+    }
+    const rawLocal = localStorage.getItem(`studenthub_tasks_${user.uid}`)
+    if (rawLocal !== null) {
+      const parsed = JSON.parse(rawLocal)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch (e) {
+    console.warn('Error leyendo tareas de usuario:', e)
+  }
+  return []
+}
+
+// Guardar tareas garantizando aislamiento de usuario y privacidad absoluta
+export const saveUserTasks = (tasks, user = getCurrentUser()) => {
+  try {
+    if (isGuestUser(user)) {
+      // Invitado: guardar únicamente en memoria local de invitado (no en cuentas ni en la nube)
+      localStorage.setItem('studenthub_guest_tasks', JSON.stringify(tasks))
+      return
+    }
+    // Usuario autenticado: persistir en su propia partición
+    localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(tasks))
+    const accounts = getAllAccounts()
+    const idx = accounts.findIndex((a) => a.uid === user.uid)
+    if (idx >= 0) {
+      accounts[idx].tasks = tasks
+      saveAllAccounts(accounts)
+    }
+  } catch (e) {
+    console.warn('Error guardando tareas de usuario:', e)
+  }
+}
+
+// Obtener calendarios del usuario actual (Aislado por cuenta)
+export const getUserCalendars = (user = getCurrentUser()) => {
+  const DEFAULT_GUEST_CALENDARS = [
+    {
+      id: 'cal-default',
+      name: 'Personal & General',
+      color: '#3b82f6',
+      dot: 'bg-blue-500',
+      sharedFrom: [],
+      isDefault: true,
+      syncUrl: '',
+    },
+  ]
+
+  try {
+    if (isGuestUser(user)) {
+      const rawGuest = localStorage.getItem('studenthub_guest_calendars')
+      if (rawGuest !== null) {
+        const parsed = JSON.parse(rawGuest)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+      return DEFAULT_GUEST_CALENDARS
+    }
+
+    const accounts = getAllAccounts()
+    const found = accounts.find((a) => a.uid === user.uid)
+    if (found && Array.isArray(found.calendars) && found.calendars.length > 0) {
+      return found.calendars
+    }
+    const rawLocal = localStorage.getItem(`studenthub_calendars_${user.uid}`)
+    if (rawLocal !== null) {
+      const parsed = JSON.parse(rawLocal)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (e) {
+    console.warn('Error leyendo calendarios de usuario:', e)
+  }
+  return DEFAULT_GUEST_CALENDARS
+}
+
+// Guardar calendarios de forma aislada por usuario
+export const saveUserCalendars = (calendars, user = getCurrentUser()) => {
+  try {
+    if (isGuestUser(user)) {
+      localStorage.setItem('studenthub_guest_calendars', JSON.stringify(calendars))
+      return
+    }
+    localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(calendars))
+    const accounts = getAllAccounts()
+    const idx = accounts.findIndex((a) => a.uid === user.uid)
+    if (idx >= 0) {
+      accounts[idx].calendars = calendars
+      saveAllAccounts(accounts)
+    }
+  } catch (e) {
+    console.warn('Error guardando calendarios de usuario:', e)
+  }
 }
 
 // Sincronizar tareas del usuario activo

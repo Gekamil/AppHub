@@ -3,7 +3,13 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import FloatingAICopilot from '../components/FloatingAICopilot'
-import { syncTasksToCloud } from '../services/firebase'
+import {
+  getCurrentUser,
+  isGuestUser,
+  getUserTasks,
+  saveUserTasks,
+  syncTasksToCloud,
+} from '../services/firebase'
 import {
   getBaileysRecentTasks,
   syncBaileysTasks,
@@ -198,29 +204,35 @@ export default function AppShell() {
   }, [location.pathname, navigate, navPosition, aiAssistantMode])
 
   const [globalTasks, setGlobalTasks] = useState(() => {
-    try {
-      const stored = localStorage.getItem('app_global_tasks')
-      if (stored !== null) {
-        const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed)) return parsed
-      }
-    } catch (e) {}
-    try {
-      localStorage.setItem('app_global_tasks', JSON.stringify(DEFAULT_TASKS))
-    } catch (e) {}
-    return DEFAULT_TASKS
+    const user = getCurrentUser()
+    return getUserTasks(user)
   })
+
+  // Escuchar cambios de autenticación (login, logout, cambio de usuario)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const user = getCurrentUser()
+      setGlobalTasks(getUserTasks(user))
+    }
+    window.addEventListener('studenthub_auth_changed', handleAuthChange)
+    return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
+  }, [])
 
   // Control para evitar rebotes de sincronización remota
   const isRemoteSyncRef = useRef(false)
   const lastPushedTasksJsonRef = useRef('')
 
-  // Sincronizar tareas persistentemente con localStorage, cuenta de usuario y servidor en la nube
+  // Sincronizar tareas persistentemente con el espacio privado de la cuenta activa
   useEffect(() => {
-    try {
-      localStorage.setItem('app_global_tasks', JSON.stringify(globalTasks))
-      syncTasksToCloud(globalTasks)
-    } catch (e) {}
+    const curUser = getCurrentUser()
+    saveUserTasks(globalTasks, curUser)
+
+    // Si el usuario está en modo invitado (sin sesión iniciada), NO sincronizar hacia la nube ni Baileys
+    if (isGuestUser(curUser)) {
+      return
+    }
+
+    syncTasksToCloud(globalTasks)
 
     // Si la actualización procedió de una sincronización remota (SSE o poll), no rebotar hacia el servidor
     if (isRemoteSyncRef.current) {
@@ -246,10 +258,8 @@ export default function AppShell() {
       if (e.detail && Array.isArray(e.detail)) {
         setGlobalTasks(e.detail)
       } else {
-        try {
-          const stored = localStorage.getItem('app_global_tasks')
-          if (stored !== null) setGlobalTasks(JSON.parse(stored))
-        } catch (err) {}
+        const curUser = getCurrentUser()
+        setGlobalTasks(getUserTasks(curUser))
       }
     }
     window.addEventListener('global_tasks_updated', handleStorageUpdate)
@@ -337,33 +347,56 @@ export default function AppShell() {
 
   // Sincronización en tiempo real ultra rápida (<50ms) mediante Server-Sent Events (SSE)
   // con respaldo periódico por sondeo (8s) ante suspensiones en móviles
+  // RESTRICCIÓN ESTRICTA DE PRIVACIDAD: Un usuario sin sesión NUNCA recibe eventos de otros usuarios ni del servidor
   useEffect(() => {
     let isCancelled = false
+    let unsubscribe = () => {}
 
-    // 1. Suscripción en tiempo real vía Server-Sent Events
-    const unsubscribe = subscribeToBaileysLiveUpdates((remoteTasks, deletedIds) => {
-      if (!isCancelled) {
-        mergeRemoteTasks(remoteTasks, deletedIds)
-      }
-    })
+    const setupSync = () => {
+      const curUser = getCurrentUser()
+      if (isGuestUser(curUser)) return // Invitado sin sesión: no recibir eventos remotos
 
-    // 2. Carga inicial inmediata y sondeo de respaldo
-    const fallbackSync = async () => {
-      try {
-        const syncedTasks = await getBaileysRecentTasks()
-        if (!isCancelled && Array.isArray(syncedTasks) && syncedTasks.length > 0) {
-          mergeRemoteTasks(syncedTasks)
+      unsubscribe = subscribeToBaileysLiveUpdates((remoteTasks, deletedIds) => {
+        if (!isCancelled && !isGuestUser(getCurrentUser())) {
+          mergeRemoteTasks(remoteTasks, deletedIds)
         }
-      } catch (err) {}
+      })
+
+      const fallbackSync = async () => {
+        if (isGuestUser(getCurrentUser())) return
+        try {
+          const syncedTasks = await getBaileysRecentTasks()
+          if (!isCancelled && Array.isArray(syncedTasks) && syncedTasks.length > 0 && !isGuestUser(getCurrentUser())) {
+            mergeRemoteTasks(syncedTasks)
+          }
+        } catch (err) {}
+      }
+
+      fallbackSync()
     }
 
-    fallbackSync()
-    const interval = setInterval(fallbackSync, 8000)
+    setupSync()
+    const interval = setInterval(() => {
+      if (!isCancelled && !isGuestUser(getCurrentUser())) {
+        getBaileysRecentTasks().then((syncedTasks) => {
+          if (!isCancelled && Array.isArray(syncedTasks) && syncedTasks.length > 0 && !isGuestUser(getCurrentUser())) {
+            mergeRemoteTasks(syncedTasks)
+          }
+        }).catch(() => {})
+      }
+    }, 8000)
+
+    const handleAuth = () => {
+      unsubscribe()
+      setupSync()
+    }
+    window.addEventListener('studenthub_auth_changed', handleAuth)
 
     return () => {
       isCancelled = true
       unsubscribe()
       clearInterval(interval)
+      window.removeEventListener('studenthub_auth_changed', handleAuth)
     }
   }, [mergeRemoteTasks])
 

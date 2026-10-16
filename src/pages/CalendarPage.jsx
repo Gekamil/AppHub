@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
-import { syncTasksToCloud, syncCalendarsToCloud, loadUserDataFromCloud } from '../services/firebase'
+import {
+  syncTasksToCloud,
+  syncCalendarsToCloud,
+  loadUserDataFromCloud,
+  getCurrentUser,
+  isGuestUser,
+  getUserCalendars,
+  saveUserCalendars,
+} from '../services/firebase'
 import {
   getSharedRoles,
   addSharedRole,
@@ -560,75 +568,84 @@ export default function CalendarPage() {
     setLocalTasks(updater)
   }
 
-  // Vistas y fechas dinámicas (Año 2026)
+  // Vistas y fechas dinámicas
   const [calendarView, setCalendarView] = useState('month') // 'month' | 'week' | 'day'
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 12)) // 12 Octubre 2026
-  const [miniDate, setMiniDate] = useState(new Date(2026, 9, 12))
+  const [currentDate, setCurrentDate] = useState(() => new Date())
+  const [miniDate, setMiniDate] = useState(() => new Date())
   const [selectedFilter, setSelectedFilter] = useState('All')
   const [isMobileWidgetsOpen, setIsMobileWidgetsOpen] = useState(false)
 
-  // Sistema de Múltiples Calendarios con Persistencia y Sincronización Cloud
+  // Estados para reordenar calendarios por arrastre (drag-and-drop y táctil)
+  const [draggedCalIdx, setDraggedCalIdx] = useState(null)
+  const [dragOverCalIdx, setDragOverCalIdx] = useState(null)
+  const calTouchDragRef = useRef(null)
+
+  // Sistema de Múltiples Calendarios con Persistencia y Aislamiento por Cuenta
   const [calendars, setCalendars] = useState(() => {
-    try {
-      const saved = localStorage.getItem('studenthub_calendars')
-      if (saved) return JSON.parse(saved)
-    } catch (e) {
-      console.warn('Error leyendo calendarios locales:', e)
-    }
-    return [
-      {
-        id: 'cal-default',
-        name: 'Personal & General',
-        color: '#3b82f6',
-        dot: 'bg-blue-500',
-        sharedFrom: [],
-        isDefault: true,
-        syncUrl: '',
-      },
-      {
-        id: 'cal-uni',
-        name: 'Universidad',
-        color: '#8b5cf6',
-        dot: 'bg-purple-500',
-        sharedFrom: [],
-        syncUrl: '',
-      },
-      {
-        id: 'cal-all',
-        name: 'Todo (Vista Unificada)',
-        color: '#10b981',
-        dot: 'bg-emerald-500',
-        sharedFrom: ['cal-default', 'cal-uni'],
-        syncUrl: '',
-      },
-    ]
+    return getUserCalendars(getCurrentUser())
   })
 
-  // Sincronizar calendarios localmente y en Firestore
+  // Escuchar cambios de sesión (login, logout, cambio de cuenta) para actualizar calendarios privados
   useEffect(() => {
-    try {
-      localStorage.setItem('studenthub_calendars', JSON.stringify(calendars))
-      syncCalendarsToCloud(calendars)
-    } catch (e) {
-      console.warn('Error guardando calendarios:', e)
+    const handleAuthChange = () => {
+      const curUser = getCurrentUser()
+      setCalendars(getUserCalendars(curUser))
     }
+    window.addEventListener('studenthub_auth_changed', handleAuthChange)
+    return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
+  }, [])
+
+  // Sincronizar calendarios de forma aislada para la cuenta activa
+  useEffect(() => {
+    saveUserCalendars(calendars, getCurrentUser())
   }, [calendars])
 
-  // Cargar datos remotos de calendarios al iniciar si existen en la nube
+  // Cargar datos remotos de calendarios al iniciar si el usuario está registrado
   useEffect(() => {
+    const curUser = getCurrentUser()
+    if (isGuestUser(curUser)) return // Un invitado sin cuenta NUNCA descarga datos de otros
     loadUserDataFromCloud().then((cloudData) => {
-      if (cloudData) {
-        if (cloudData.calendars && cloudData.calendars.length > 0) {
-          setCalendars(cloudData.calendars)
-        }
-        // Solo restaurar tareas de la nube si no hay nada en memoria local
-        const localStored = localStorage.getItem('app_global_tasks')
-        if (localStored === null && cloudData.tasks && cloudData.tasks.length > 0) {
-          setGlobalTasks(cloudData.tasks)
-        }
+      if (cloudData && cloudData.calendars && cloudData.calendars.length > 0) {
+        setCalendars(cloudData.calendars)
       }
     }).catch(() => {})
   }, [])
+
+  const handleReorderCalendars = (fromIdx, toIdx) => {
+    if (fromIdx === null || toIdx === null || fromIdx === toIdx) return
+    setCalendars((prev) => {
+      const updated = [...prev]
+      const [moved] = updated.splice(fromIdx, 1)
+      updated.splice(toIdx, 0, moved)
+      return updated
+    })
+  }
+
+  const handleTouchStartCal = (idx, e) => {
+    calTouchDragRef.current = { startIdx: idx, startY: e.touches[0].clientY }
+    setDraggedCalIdx(idx)
+  }
+
+  const handleTouchMoveCal = (e) => {
+    if (!calTouchDragRef.current) return
+    const currentY = e.touches[0].clientY
+    const deltaY = currentY - calTouchDragRef.current.startY
+    const itemHeight = 36
+    const steps = Math.round(deltaY / itemHeight)
+    const targetIdx = Math.max(0, Math.min(calendars.length - 1, calTouchDragRef.current.startIdx + steps))
+    if (targetIdx !== dragOverCalIdx) {
+      setDragOverCalIdx(targetIdx)
+    }
+  }
+
+  const handleTouchEndCal = () => {
+    if (calTouchDragRef.current && dragOverCalIdx !== null && dragOverCalIdx !== calTouchDragRef.current.startIdx) {
+      handleReorderCalendars(calTouchDragRef.current.startIdx, dragOverCalIdx)
+    }
+    calTouchDragRef.current = null
+    setDraggedCalIdx(null)
+    setDragOverCalIdx(null)
+  }
   const [activeCalendarId, setActiveCalendarId] = useState('cal-default')
   const [calendarMode, setCalendarMode] = useState('single') // 'single' | 'cascade'
   const [isCalDropdownOpen, setIsCalDropdownOpen] = useState(false)
@@ -727,7 +744,7 @@ export default function CalendarPage() {
   // Formulario Evento fluido con soporte de duración y hora de finalización
   const [eventForm, setEventForm] = useState({
     title: '',
-    date: '2026-10-12',
+    date: formatYMD(new Date()),
     time: '10:00',
     duration: 60,
     endTime: '11:00',
@@ -802,7 +819,7 @@ export default function CalendarPage() {
 
   // Handlers para eventos
   const handleOpenEventModal = (params = {}) => {
-    const targetDate = params.date || formatYMD(currentDate) || '2026-10-12'
+    const targetDate = params.date || formatYMD(currentDate) || formatYMD(new Date())
     const targetTime = params.time || '10:00'
     const isAllDay = !!params.isAllDay
     const calId = params.calendarId || activeCalendarId
@@ -1629,7 +1646,7 @@ export default function CalendarPage() {
       {/* Month Grid Cells Continuas (Matriz continua sin cajas redondeadas flotantes) */}
       <div className="grid grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80">
         {getMonthDays(currentDate).map((cell) => {
-          const isToday = cell.ymd === TODAY_YMD || cell.ymd === '2026-10-12'
+          const isToday = cell.ymd === TODAY_YMD
           const isSelected = cell.ymd === formatYMD(currentDate)
           const cellTasks = tasksToDisplay.filter((t) => t.date === cell.ymd)
 
@@ -1773,7 +1790,7 @@ export default function CalendarPage() {
         /* Vista Agenda Semanal Continua de 7 Columnas sin desbordamiento de horas vacías */
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80 min-h-[360px]">
           {getWeekDays(currentDate).map((day) => {
-            const isToday = day.ymd === TODAY_YMD || day.ymd === '2026-10-12'
+            const isToday = day.ymd === TODAY_YMD
             const dayTasks = tasksToDisplay.filter((t) => t.date === day.ymd)
 
             return (
@@ -1888,7 +1905,7 @@ export default function CalendarPage() {
                 <span>GMT+2</span>
               </div>
               {getWeekDays(currentDate).map((day, idx) => {
-                const isToday = day.ymd === TODAY_YMD || day.ymd === '2026-10-12'
+                const isToday = day.ymd === TODAY_YMD
                 const isLast = idx === 6
                 return (
                   <div
@@ -1969,7 +1986,7 @@ export default function CalendarPage() {
               </div>
 
               {getWeekDays(currentDate).map((day, idx) => {
-                const isToday = day.ymd === TODAY_YMD || day.ymd === '2026-10-12'
+                const isToday = day.ymd === TODAY_YMD
                 const dayTasks = tasksToDisplay.filter((task) => task.date === day.ymd && task.time && !task.isAllDay)
                 const isLast = idx === 6
 
@@ -2054,11 +2071,11 @@ export default function CalendarPage() {
       <div className="flex flex-col w-full">
         {/* Cabecera de Día y Selector de Día de la Semana estilo Apple */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-space-md border-b border-surface-muted/30 bg-surface-pure gap-2 sm:gap-3">
-          <div className="hidden sm:flex items-center justify-between sm:justify-start gap-2">
-            <span className="font-headline-sm sm:font-headline-md text-base sm:text-headline-md font-bold text-on-surface truncate">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <span className="font-headline-sm sm:font-headline-md text-sm sm:text-headline-md font-bold text-on-surface truncate">
               {getPeriodTitle()}
             </span>
-            {(formatYMD(currentDate) === TODAY_YMD || formatYMD(currentDate) === '2026-10-12') && (
+            {formatYMD(currentDate) === TODAY_YMD && (
               <span className="px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-label-sm font-semibold text-xs shrink-0">
                 Hoy
               </span>
@@ -2422,7 +2439,7 @@ export default function CalendarPage() {
 
         {getMonthDays(miniDate).map((cell) => {
           const isSelected = cell.ymd === formatYMD(currentDate)
-          const isToday = cell.ymd === TODAY_YMD || cell.ymd === '2026-10-12'
+          const isToday = cell.ymd === TODAY_YMD
           const hasEvents = currentCalendarTasks.some((t) => t.date === cell.ymd)
 
           return (
@@ -2500,7 +2517,7 @@ export default function CalendarPage() {
       clockMode={clockMode}
       setClockMode={setClockMode}
       activeCalendar={activeCalendar}
-      todayTasks={currentCalendarTasks.filter((t) => t.date === '2026-10-12')}
+      todayTasks={currentCalendarTasks.filter((t) => t.date === TODAY_YMD)}
       setSelectedDetailTask={setSelectedDetailTask}
       getCatScheme={getCatScheme}
     />
@@ -2766,36 +2783,77 @@ export default function CalendarPage() {
               </button>
 
               {isCalDropdownOpen && (
-                <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-64 max-w-[calc(100vw-32px)] bg-surface-pure rounded-2xl shadow-xl border border-outline-variant/30 p-2 z-30 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-2 py-1 text-[10px] font-bold text-secondary uppercase tracking-wider">
-                    Calendarios
+                <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 max-w-[calc(100vw-32px)] bg-surface-pure rounded-2xl shadow-xl border border-outline-variant/30 p-2.5 z-30 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-2 py-1 text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center justify-between">
+                    <span>Calendarios</span>
+                    <span className="text-[9px] font-normal opacity-70">Arrastra para ordenar</span>
                   </div>
                   <div className="flex flex-col gap-1 mt-1">
-                    {calendars.map((cal) => {
+                    {calendars.map((cal, idx) => {
                       const isSelected = activeCalendarId === cal.id
+                      const isDragging = draggedCalIdx === idx
+                      const isOver = dragOverCalIdx === idx && draggedCalIdx !== idx
                       return (
                         <div
                           key={cal.id}
-                          className={`p-1.5 rounded-xl flex items-center justify-between text-left transition-colors group/item ${
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', String(idx))
+                            setDraggedCalIdx(idx)
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault()
+                            if (dragOverCalIdx !== idx) setDragOverCalIdx(idx)
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverCalIdx === idx) setDragOverCalIdx(null)
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            const from = draggedCalIdx ?? parseInt(e.dataTransfer.getData('text/plain'), 10)
+                            handleReorderCalendars(from, idx)
+                            setDraggedCalIdx(null)
+                            setDragOverCalIdx(null)
+                          }}
+                          onDragEnd={() => {
+                            setDraggedCalIdx(null)
+                            setDragOverCalIdx(null)
+                          }}
+                          className={`p-1.5 rounded-xl flex items-center justify-between text-left transition-all group/item ${
+                            isDragging ? 'opacity-40 scale-95 border border-dashed border-primary' : ''
+                          } ${
+                            isOver ? 'border-t-2 border-primary bg-primary/10' : ''
+                          } ${
                             isSelected ? 'bg-primary-fixed/20 text-primary font-bold' : 'hover:bg-surface-muted text-on-surface'
                           }`}
                         >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveCalendarId(cal.id)
-                              setIsCalDropdownOpen(false)
-                            }}
-                            className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer py-0.5"
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cal.color }}></span>
-                            <span className="text-body-sm truncate">{cal.name}</span>
-                            {cal.syncUrl && (
-                              <span className="material-symbols-outlined text-[13px] text-secondary shrink-0" title="Enlazado a TeamUp/Google">
-                                sync
-                              </span>
-                            )}
-                          </button>
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <span
+                              onTouchStart={(e) => handleTouchStartCal(idx, e)}
+                              onTouchMove={handleTouchMoveCal}
+                              onTouchEnd={handleTouchEndCal}
+                              className="material-symbols-outlined text-[16px] text-secondary cursor-grab active:cursor-grabbing hover:text-on-surface shrink-0 select-none p-0.5 touch-none"
+                              title="Arrastrar para ordenar calendario"
+                            >
+                              drag_indicator
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveCalendarId(cal.id)
+                                setIsCalDropdownOpen(false)
+                              }}
+                              className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer py-0.5"
+                            >
+                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cal.color }}></span>
+                              <span className="text-body-sm truncate">{cal.name}</span>
+                              {cal.syncUrl && (
+                                <span className="material-symbols-outlined text-[13px] text-secondary shrink-0" title="Enlazado a TeamUp/Google">
+                                  sync
+                                </span>
+                              )}
+                            </button>
+                          </div>
                           <div className="flex items-center gap-1 shrink-0 ml-1">
                             {isSelected && (
                               <span className="material-symbols-outlined text-[15px] text-primary">check</span>
