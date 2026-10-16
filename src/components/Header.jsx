@@ -379,7 +379,11 @@ export default function Header({
           <div className="md:hidden pb-2 pt-1 px-1">
             <div
               ref={mobileNavContainerRef}
-              className={`grid ${currentNavItems.length === 4 ? 'grid-cols-4' : 'grid-cols-5'} w-full bg-surface-muted/70 p-1 rounded-2xl border border-outline-variant/30 relative`}
+              className="w-full bg-surface-muted/70 p-1 rounded-2xl border border-outline-variant/30 relative"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${Math.max(currentNavItems.length, 1)}, minmax(0, 1fr))`,
+              }}
             >
               {/* Pastilla Deslizante Móvil Proporcional */}
               {(() => {
@@ -388,14 +392,15 @@ export default function Header({
                   item.to === '/' ? currentPath === '/' || currentPath === '/auto-organizer' : currentPath.startsWith(item.to)
                 )
                 const validIdx = activeIdx >= 0 ? activeIdx : 0
-                const count = currentNavItems.length
+                const count = Math.max(currentNavItems.length, 1)
 
                 return (
                   <div
                     className="absolute top-1 bottom-1 bg-primary rounded-xl shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                     style={{
+                      left: '4px',
                       width: `calc((100% - 8px) / ${count})`,
-                      transform: `translateX(calc(${validIdx * 100}% + ${validIdx * 2}px))`,
+                      transform: `translateX(${validIdx * 100}%)`,
                     }}
                   />
                 )
