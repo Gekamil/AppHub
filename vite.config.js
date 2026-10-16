@@ -160,9 +160,15 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: true,
+    watch: {
+      ignored: ['**/release/**', '**/dist-electron/**', '**/android/**', '**/ios/**'],
+    },
   },
   preview: {
     host: true,
     allowedHosts: true,
+    watch: {
+      ignored: ['**/release/**', '**/dist-electron/**', '**/android/**', '**/ios/**'],
+    },
   }
 })

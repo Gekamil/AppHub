@@ -18,17 +18,20 @@
   "build": {
     "appId": "com.apphub.workspace",
     "productName": "AppHub",
+    "asar": true,
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "!node_modules/**/*"
     ],
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ]
     }
   },
@@ -38,6 +41,7 @@
     "@capacitor/android": "^8.5.3",
     "@capacitor/cli": "^8.5.3",
     "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
