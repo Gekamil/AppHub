@@ -3,6 +3,9 @@
 // sincronización mediante el servidor local/bridge (SSE + HTTP)
 // y sincronización en la nube con Firebase Firestore.
 
+import { db, firebaseConfig } from './firebaseConfig'
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
+
 const BROADCAST_CHANNEL_NAME = 'studenthub_shared_calendars_channel'
 const SHARED_STORE_PREFIX = 'studenthub_shared_calendar_'
 const FIREBASE_CONFIG_KEY = 'studenthub_custom_firebase_config'
@@ -188,13 +191,13 @@ export function subscribeToSharedCalendar(shareCode, onUpdate) {
   }
 }
 
-// Configuración opcional de Firebase Firestore para conexión en la nube entre diferentes dispositivos
+// Configuración de Firebase Firestore para conexión en la nube entre diferentes dispositivos
 export function getStoredFirebaseConfig() {
   try {
     const raw = localStorage.getItem(FIREBASE_CONFIG_KEY)
     if (raw) return JSON.parse(raw)
   } catch (e) {}
-  return null
+  return firebaseConfig
 }
 
 export function saveStoredFirebaseConfig(config) {
@@ -207,69 +210,56 @@ export function saveStoredFirebaseConfig(config) {
   } catch (e) {}
 }
 
-let firestoreDb = null
-
-async function getFirestoreInstance() {
-  if (firestoreDb) return firestoreDb
+async function publishToFirestore(code, calendar, events) {
   try {
-    const config = getStoredFirebaseConfig()
-    if (!config || !config.apiKey || !config.projectId) return null
-
-    const { initializeApp, getApps } = await import('firebase/app')
-    const { getFirestore } = await import('firebase/firestore')
-
-    let app
-    const apps = getApps()
-    if (apps.length > 0) {
-      app = apps[0]
-    } else {
-      app = initializeApp(config)
-    }
-    firestoreDb = getFirestore(app)
-    return firestoreDb
+    if (!db) return
+    const docRef = doc(db, 'shared_calendars', code)
+    await setDoc(docRef, {
+      shareCode: code,
+      calendar,
+      events,
+      updatedAt: Date.now(),
+    })
   } catch (e) {
-    console.warn('No se pudo inicializar Firestore:', e)
-    return null
+    console.warn('Error al sincronizar con Firestore:', e)
   }
 }
 
-async function publishToFirestore(code, calendar, events) {
-  const db = await getFirestoreInstance()
-  if (!db) return
-  const { doc, setDoc } = await import('firebase/firestore')
-  await setDoc(doc(db, 'shared_calendars', code), {
-    shareCode: code,
-    calendar,
-    events,
-    updatedAt: Date.now(),
-  })
-}
-
 async function fetchFromFirestore(code) {
-  const db = await getFirestoreInstance()
-  if (!db) return null
-  const { doc, getDoc } = await import('firebase/firestore')
-  const snap = await getDoc(doc(db, 'shared_calendars', code))
-  if (snap.exists()) {
-    return snap.data()
+  try {
+    if (!db) return null
+    const docRef = doc(db, 'shared_calendars', code)
+    const snap = await getDoc(docRef)
+    if (snap.exists()) {
+      return snap.data()
+    }
+  } catch (e) {
+    console.warn('Error al leer de Firestore:', e)
   }
   return null
 }
 
 function subscribeToFirestore(code, onUpdate) {
-  let unsub = () => {}
-  getFirestoreInstance().then(async (db) => {
-    if (!db) return
-    const { doc, onSnapshot } = await import('firebase/firestore')
-    unsub = onSnapshot(doc(db, 'shared_calendars', code), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data()
-        if (data && data.calendar) {
-          onUpdate(data.calendar, data.events || [])
+  try {
+    if (!db) return () => {}
+    const docRef = doc(db, 'shared_calendars', code)
+    const unsub = onSnapshot(
+      docRef,
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data()
+          if (data && data.calendar) {
+            onUpdate(data.calendar, data.events || [])
+          }
         }
+      },
+      (error) => {
+        console.warn('Firestore onSnapshot error:', error)
       }
-    })
-  }).catch(() => {})
-
-  return () => unsub()
+    )
+    return unsub
+  } catch (e) {
+    console.warn('Error al suscribirse a Firestore:', e)
+    return () => {}
+  }
 }
