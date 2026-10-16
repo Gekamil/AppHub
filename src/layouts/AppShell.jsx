@@ -78,19 +78,19 @@ export default function AppShell() {
 
     const candidateTabs = [
       { id: '/calendar', path: '/calendar' },
-      { id: '/', path: '/' },
+      { id: '/app', path: '/app' },
       { id: '/notebooks', path: '/notebooks' },
       ...(aiAssistantMode === 'tab' ? [{ id: '/ai-assistant', path: '/ai-assistant' }] : []),
       { id: '/my-hub', path: '/my-hub' },
     ]
 
     const currentTabs = candidateTabs
-      .filter((tab) => visibleTabs[tab.id] !== false)
+      .filter((tab) => visibleTabs[tab.id] !== false && (tab.id !== '/app' || visibleTabs['/'] !== false))
       .map((tab) => tab.path)
 
     const getTabIndex = (path) => {
-      const normalized = (path === '/auto-organizer' || path === '') ? '/' : path
-      const idx = currentTabs.findIndex((t) => t === normalized || (t !== '/' && normalized.startsWith(t)))
+      const normalized = (path === '/auto-organizer' || path === '/' || path === '') ? '/app' : path
+      const idx = currentTabs.findIndex((t) => t === normalized || (t !== '/app' && normalized.startsWith(t)))
       return idx >= 0 ? idx : 0
     }
 

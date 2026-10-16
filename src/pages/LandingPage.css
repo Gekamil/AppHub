@@ -1,0 +1,80 @@
+/* Estilos y Animaciones de la Landing Page Interactiva de AppHub */
+
+.landing-root {
+  color-scheme: dark;
+}
+
+/* Scroll & Reveal Animations */
+.reveal-elem {
+  opacity: 0;
+  transform: translateY(28px) scale(0.97);
+  filter: blur(6px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), 
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), 
+              filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
+.reveal-elem.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0px);
+}
+
+/* Staggered Initial Hero Entrance */
+.hero-enter {
+  opacity: 0;
+  transform: translateY(32px) scale(0.96);
+  filter: blur(8px);
+  animation: heroFadeUp 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes heroFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+.hero-delay-1 { animation-delay: 0.1s; }
+.hero-delay-2 { animation-delay: 0.25s; }
+.hero-delay-3 { animation-delay: 0.4s; }
+.hero-delay-4 { animation-delay: 0.55s; }
+.hero-delay-5 { animation-delay: 0.7s; }
+
+/* Animated Dynamic Gradient for Title */
+.live-gradient-text {
+  background: linear-gradient(135deg, #dbb8ff 0%, #00eefc 35%, #00e293 70%, #dbb8ff 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: liveGradientFlow 6s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 25px rgba(219, 184, 255, 0.45));
+}
+
+@keyframes liveGradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Gentle Floating Card Idle Effect */
+@keyframes softFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-7px); }
+}
+
+.float-card-1 { animation: softFloat 5.2s ease-in-out infinite; }
+.float-card-2 { animation: softFloat 5.8s ease-in-out infinite 0.7s; }
+.float-card-3 { animation: softFloat 5.4s ease-in-out infinite 1.4s; }
+
+/* 3D Mockup Perspective */
+.mockup-3d-wrap {
+  perspective: 1200px;
+}
+
+.mockup-3d-card {
+  transform-style: preserve-3d;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease;
+}

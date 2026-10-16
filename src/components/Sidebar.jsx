@@ -7,7 +7,7 @@ import { getVisibleNavTabs } from '../services/navSettings'
 
 const DEFAULT_NAVIGATION = [
   { name: 'Calendario', to: '/calendar', icon: 'calendar_today' },
-  { name: 'Auto-Organizer', to: '/', icon: 'checklist' },
+  { name: 'Auto-Organizer', to: '/app', icon: 'checklist' },
   { name: 'Notebooks', to: '/notebooks', icon: 'menu_book' },
   { name: 'AI Assistant', to: '/ai-assistant', icon: 'smart_toy' },
   { name: 'My Hub (Links & Projects)', to: '/my-hub', icon: 'hub' },
@@ -18,7 +18,7 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
     try {
       const saved = localStorage.getItem('sidebar_nav_order')
       if (saved) {
-        const order = JSON.parse(saved)
+        const order = JSON.parse(saved).map((p) => (p === '/' ? '/app' : p))
         const sorted = [...DEFAULT_NAVIGATION].sort((a, b) => {
           const idxA = order.indexOf(a.to)
           const idxB = order.indexOf(b.to)
@@ -228,7 +228,7 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
                 >
                   <NavLink
                     to={item.to}
-                    end={item.to === '/'}
+                    end={item.to === '/app' || item.to === '/'}
                     onClick={(e) => {
                       if (isLongPressing) {
                         e.preventDefault()

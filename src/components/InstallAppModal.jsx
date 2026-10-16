@@ -63,8 +63,17 @@ export default function InstallAppModal({ isOpen, onClose }) {
       // Ignorar fallo de fetch HEAD
     }
 
-    setDownloadNotice(`El archivo ${fileName} se está compilando en el servidor. En breve estará disponible para descarga directa.`)
-    setTimeout(() => setDownloadNotice(null), 5000)
+    // Fallback garantizado a la release oficial de GitHub
+    const releaseUrl = `https://github.com/Gekamil/AppHub/releases/latest/download/${fileName}`
+    const link = document.createElement('a')
+    link.href = releaseUrl
+    link.download = fileName
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setDownloadNotice(`Descarga de ${fileName} iniciada desde el servidor oficial.`)
+    setTimeout(() => setDownloadNotice(null), 4000)
   }
 
   const GITHUB_REPO_URL = 'https://github.com/Gekamil/AppHub'

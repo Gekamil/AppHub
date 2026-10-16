@@ -10,7 +10,7 @@ import { getVisibleNavTabs, setVisibleNavTab, NAV_TAB_DEFINITIONS } from '../ser
 
 const mobileNavItems = [
   { name: 'Calendario', shortName: 'Agenda', to: '/calendar', icon: 'calendar_today' },
-  { name: 'Tareas', shortName: 'Tareas', to: '/', icon: 'checklist' },
+  { name: 'Tareas', shortName: 'Tareas', to: '/app', icon: 'checklist' },
   { name: 'Notas', shortName: 'Notas', to: '/notebooks', icon: 'menu_book' },
   { name: 'Asistente IA', shortName: 'IA', to: '/ai-assistant', icon: 'smart_toy' },
   { name: 'My Hub', shortName: 'Hub', to: '/my-hub', icon: 'hub' },
@@ -132,8 +132,8 @@ export default function Header({
     const currentPath = location.pathname
     return (
       currentNavItems.find((item) =>
-        item.to === '/'
-          ? currentPath === '/' || currentPath === '/auto-organizer'
+        item.to === '/app' || item.to === '/'
+          ? currentPath === '/app' || currentPath === '/' || currentPath === '/auto-organizer'
           : currentPath.startsWith(item.to)
       ) || currentNavItems[0]
     )
@@ -249,14 +249,18 @@ export default function Header({
                 <span className="material-symbols-outlined text-[20px]">menu</span>
               </button>
             )}
-            <div className="flex items-center gap-2">
+            <NavLink
+              to={isStandaloneApp ? '/app' : '/'}
+              className="flex items-center gap-2 group cursor-pointer"
+              title={isStandaloneApp ? 'AppHub Tareas' : 'Ir a la pagina principal de AppHub'}
+            >
               <img
                 src="/logo.png"
                 alt="AppHub Logo"
-                className="w-7 h-7 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0"
+                className="w-7 h-7 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0 group-hover:scale-105 transition-transform"
               />
               <span className="font-headline-sm text-sm font-bold text-on-surface tracking-tight">AppHub</span>
-            </div>
+            </NavLink>
           </div>
 
           {/* Navegación Central en Escritorio (Fila Única con Pastilla Deslizante Fluida) */}
@@ -277,13 +281,13 @@ export default function Header({
               />
 
               {currentNavItems.map((item) => {
-                const isActive = (item.to === '/' && (location.pathname === '/' || location.pathname === '/auto-organizer')) || (item.to !== '/' && location.pathname.startsWith(item.to))
+                const isActive = ((item.to === '/app' || item.to === '/') && (location.pathname === '/app' || location.pathname === '/' || location.pathname === '/auto-organizer')) || (item.to !== '/app' && item.to !== '/' && location.pathname.startsWith(item.to))
                 return (
                   <NavLink
                     key={item.to}
                     ref={(el) => { itemRefs.current[item.to] = el }}
                     to={item.to}
-                    end={item.to === '/'}
+                    end={item.to === '/app' || item.to === '/'}
                     onClick={() => {
                       const el = itemRefs.current[item.to]
                       if (el) {
@@ -389,7 +393,9 @@ export default function Header({
               {(() => {
                 const currentPath = location.pathname
                 const activeIdx = currentNavItems.findIndex((item) =>
-                  item.to === '/' ? currentPath === '/' || currentPath === '/auto-organizer' : currentPath.startsWith(item.to)
+                  (item.to === '/app' || item.to === '/')
+                    ? currentPath === '/app' || currentPath === '/' || currentPath === '/auto-organizer'
+                    : currentPath.startsWith(item.to)
                 )
                 const validIdx = activeIdx >= 0 ? activeIdx : 0
                 const count = Math.max(currentNavItems.length, 1)
@@ -401,19 +407,20 @@ export default function Header({
                       left: '4px',
                       width: `calc((100% - 8px) / ${count})`,
                       transform: `translateX(${validIdx * 100}%)`,
+                      opacity: activeIdx >= 0 ? 1 : 0,
                     }}
                   />
                 )
               })()}
 
               {currentNavItems.map((item) => {
-                const isActive = (item.to === '/' && (location.pathname === '/' || location.pathname === '/auto-organizer')) || (item.to !== '/' && location.pathname.startsWith(item.to))
+                const isActive = ((item.to === '/app' || item.to === '/') && (location.pathname === '/app' || location.pathname === '/' || location.pathname === '/auto-organizer')) || (item.to !== '/app' && item.to !== '/' && location.pathname.startsWith(item.to))
                 return (
                   <NavLink
                     key={item.to}
                     ref={(el) => { mobileItemRefs.current[item.to] = el }}
                     to={item.to}
-                    end={item.to === '/'}
+                    end={item.to === '/app' || item.to === '/'}
                     className={`relative z-10 py-1 px-0.5 rounded-xl flex flex-col items-center justify-center transition-colors duration-200 cursor-pointer ${
                       isActive
                         ? 'text-white font-bold'

@@ -1,11 +1,12 @@
-// Servicio de Configuración de Visibilidad de Pestañas de Navegación
-// Permite al usuario activar/desactivar pestañas (Notas, My Hub, Asistente IA, etc.)
+// Servicio de Configuracion de Visibilidad de Pestanas de Navegacion
+// Permite al usuario activar/desactivar pestanas (Notas, My Hub, Asistente IA, etc.)
 // tanto en la barra superior como en la barra lateral.
 
 const STORAGE_KEY = 'app_visible_nav_tabs'
 
 export const DEFAULT_VISIBLE_TABS = {
   '/calendar': true,
+  '/app': true,
   '/': true,
   '/notebooks': true,
   '/ai-assistant': true,
@@ -16,14 +17,14 @@ export const NAV_TAB_DEFINITIONS = [
   {
     id: '/calendar',
     label: 'Calendario & Agenda',
-    desc: 'Planificación temporal, vistas por día/semana/mes e iCal',
+    desc: 'Planificacion temporal, vistas por dia/semana/mes e iCal',
     icon: 'calendar_today',
     canToggle: false, // El calendario es troncal
   },
   {
-    id: '/',
+    id: '/app',
     label: 'Organizador de Tareas',
-    desc: 'Priorización cognitiva inteligente y timeline de ejecución',
+    desc: 'Priorizacion cognitiva inteligente y timeline de ejecucion',
     icon: 'checklist',
     canToggle: false, // Las tareas son troncales
   },
@@ -36,7 +37,7 @@ export const NAV_TAB_DEFINITIONS = [
   },
   {
     id: '/ai-assistant',
-    label: 'Asistente IA (Pestaña)',
+    label: 'Asistente IA (Pestana)',
     desc: 'Chat conversacional a pantalla completa con el agente de IA',
     icon: 'smart_toy',
     canToggle: true,
@@ -44,7 +45,7 @@ export const NAV_TAB_DEFINITIONS = [
   {
     id: '/my-hub',
     label: 'My Hub (Recursos & Links)',
-    desc: 'Directorio de enlaces rápidos, archivos y marcadores',
+    desc: 'Directorio de enlaces rapidos, archivos y marcadores',
     icon: 'hub',
     canToggle: true,
   },
@@ -55,11 +56,15 @@ export function getVisibleNavTabs() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
+      if (parsed['/'] !== undefined && parsed['/app'] === undefined) {
+        parsed['/app'] = parsed['/']
+      }
       return {
         ...DEFAULT_VISIBLE_TABS,
         ...parsed,
         // Garantizar que Calendario y Tareas siempre permanezcan activos
         '/calendar': true,
+        '/app': true,
         '/': true,
       }
     }
@@ -69,7 +74,7 @@ export function getVisibleNavTabs() {
 
 export function setVisibleNavTab(tabId, isVisible) {
   try {
-    if (tabId === '/calendar' || tabId === '/') return getVisibleNavTabs()
+    if (tabId === '/calendar' || tabId === '/app' || tabId === '/') return getVisibleNavTabs()
     const current = getVisibleNavTabs()
     const updated = {
       ...current,
