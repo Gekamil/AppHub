@@ -32,4 +32,7 @@ release/
 *.apk
 *.exe
 *.ipa
+!public/download/StudentHub-Setup.exe
+!public/download/StudentHub.apk
+!public/download/StudentHub.ipa
 

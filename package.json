@@ -28,6 +28,13 @@
       "!dist/download/**/*",
       "!node_modules/**/*"
     ],
+    "compression": "maximum",
+    "electronLanguages": [
+      "es",
+      "en-US",
+      "en"
+    ],
+    "afterPack": "scripts/prune-pack.cjs",
     "npmRebuild": false,
     "nodeGypRebuild": false,
     "win": {

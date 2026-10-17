@@ -133,10 +133,10 @@ export const sendWelcomeEmail = async (user) => {
     id: 'mail-' + Date.now(),
     to: user.email,
     name: user.displayName || user.email.split('@')[0],
-    subject: '¡Bienvenido a AppHub! Enlace de descarga oficial',
+    subject: '¡Bienvenido a StudentHub! Enlace de descarga oficial',
     timestamp: new Date().toISOString(),
     downloadUrl,
-    content: `Hola ${user.displayName || 'Usuario'},\n\n¡Gracias por crear tu cuenta en AppHub!\n\nPuedes descargar la aplicación oficial para todos tus dispositivos (Android, iOS y PC) desde nuestra web:\n${downloadUrl}\n\n¡Que disfrutes al máximo de tu nuevo espacio de productividad!\n\nEl equipo de AppHub`,
+    content: `Hola ${user.displayName || 'Usuario'},\n\n¡Gracias por crear tu cuenta en StudentHub!\n\nPuedes descargar la aplicación oficial para todos tus dispositivos (Android, iOS y PC) desde nuestra web:\n${downloadUrl}\n\n¡Que disfrutes al máximo de tu nuevo espacio de productividad!\n\nEl equipo de StudentHub`,
   }
 
   // Guardar en el historial de correos enviados para depuración e historial
