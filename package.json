@@ -30,10 +30,28 @@
     "npmRebuild": false,
     "nodeGypRebuild": false,
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis"
       ]
-    }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AppHub",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Gekamil",
+        "repo": "AppHub"
+      }
+    ]
   },
   "dependencies": {
     "@blocknote/core": "^0.55.0",
@@ -45,6 +63,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "electron-updater": "^6.8.9",
     "firebase": "^13.0.0",
     "pino": "^10.4.0",
     "qrcode": "^1.5.4",

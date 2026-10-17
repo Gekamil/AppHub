@@ -75,7 +75,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AppHub-Windows-EXE
-          path: release/*.exe
+          path: |
+            release/*.exe
+            release/latest.yml
+            release/*.blockmap
           if-no-files-found: warn
 
   publish-release:
@@ -105,6 +108,8 @@ jobs:
           mkdir -p dist-release
           find release-assets/ -name "*.apk" -exec cp {} dist-release/AppHub.apk \; 2>/dev/null || true
           find release-assets/ -name "*.exe" -exec cp {} dist-release/AppHub-Setup.exe \; 2>/dev/null || true
+          find release-assets/ -name "latest.yml" -exec cp {} dist-release/latest.yml \; 2>/dev/null || true
+          find release-assets/ -name "*.blockmap" -exec cp {} dist-release/ \; 2>/dev/null || true
 
       - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2

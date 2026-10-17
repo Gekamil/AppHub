@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import { createBrowserRouter, createHashRouter, RouterProvider, Navigate } from 'react-router-dom'
 import AppShell from './layouts/AppShell'
 import AutoOrganizerPage from './pages/AutoOrganizerPage'
 import NotebooksPage from './pages/NotebooksPage'
@@ -6,13 +6,20 @@ import CalendarPage from './pages/CalendarPage'
 import AIAssistantPage from './pages/AIAssistantPage'
 import MyHubPage from './pages/MyHubPage'
 import LandingPage from './pages/LandingPage'
+import UpdateNotification from './components/UpdateNotification'
+
+const isElectronApp =
+  typeof window !== 'undefined' &&
+  (!!window.electronAPI?.isElectron ||
+    /Electron/i.test(navigator.userAgent || '') ||
+    window.location.protocol === 'file:')
 
 function isStandaloneMode() {
   if (typeof window === 'undefined') return false
   const isCap = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
   const isElec = !!(window.electronAPI?.isElectron || /Electron/i.test(navigator.userAgent || ''))
   const isPwa = window.matchMedia?.('(display-mode: standalone)')?.matches || navigator.standalone === true
-  return isCap || isElec || isPwa
+  return isCap || isElec || isPwa || window.location.protocol === 'file:'
 }
 
 function RootDispatcher() {
@@ -50,7 +57,9 @@ function RootErrorBoundary() {
   )
 }
 
-const router = createBrowserRouter([
+const createRouter = isElectronApp ? createHashRouter : createBrowserRouter
+
+const router = createRouter([
   {
     path: '/',
     element: <RootDispatcher />,
@@ -76,5 +85,10 @@ const router = createBrowserRouter([
 ])
 
 export default function App() {
-  return <RouterProvider router={router} />
+  return (
+    <>
+      <RouterProvider router={router} />
+      <UpdateNotification />
+    </>
+  )
 }
