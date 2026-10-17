@@ -12,8 +12,9 @@
     "start": "node server/whatsapp-bridge.js",
     "cap:sync": "vite build && cap sync",
     "cap:open": "cap open android",
-    "electron:start": "electron .",
-    "electron:build": "vite build && electron-builder"
+    "build:electron": "node scripts/bundle-electron.cjs",
+    "electron:start": "npm run build:electron && electron .",
+    "electron:build": "vite build && npm run build:electron && electron-builder"
   },
   "build": {
     "appId": "com.studenthub.workspace",
@@ -25,6 +26,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "!electron/main.src.cjs",
       "!dist/download/**/*",
       "!node_modules/**/*"
     ],
@@ -86,6 +88,7 @@
     "@types/react-dom": "^19.2.7",
     "electron": "^44.8.0",
     "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
     "oxlint": "^1.81.0"
   }
 }
