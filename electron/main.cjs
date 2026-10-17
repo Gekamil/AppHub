@@ -65,7 +65,7 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    title: 'AppHub',
+    title: 'StudentHub',
     icon: iconPath,
     autoHideMenuBar: true,
     backgroundColor: '#0b0f19',

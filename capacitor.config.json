@@ -1,6 +1,6 @@
 {
-  "appId": "com.apphub.workspace",
-  "appName": "AppHub",
+  "appId": "com.studenthub.workspace",
+  "appName": "StudentHub",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

@@ -252,14 +252,14 @@ export default function Header({
             <NavLink
               to={isStandaloneApp ? '/app' : '/'}
               className="flex items-center gap-2 group cursor-pointer"
-              title={isStandaloneApp ? 'AppHub Tareas' : 'Ir a la pagina principal de AppHub'}
+              title={isStandaloneApp ? 'StudentHub Tareas' : 'Ir a la pagina principal de StudentHub'}
             >
               <img
                 src="/logo.png"
-                alt="AppHub Logo"
+                alt="StudentHub Logo"
                 className="w-7 h-7 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0 group-hover:scale-105 transition-transform"
               />
-              <span className="font-headline-sm text-sm font-bold text-on-surface tracking-tight">AppHub</span>
+              <span className="font-headline-sm text-sm font-bold text-on-surface tracking-tight">StudentHub</span>
             </NavLink>
           </div>
 
@@ -319,7 +319,7 @@ export default function Header({
                 type="button"
                 onClick={() => setIsInstallModalOpen(true)}
                 className="h-8 px-2.5 rounded-xl flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs"
-                title="Descargar o instalar AppHub en tu móvil (Android / iOS) o PC"
+                title="Descargar o instalar StudentHub en tu móvil (Android / iOS) o PC"
               >
                 <span className="material-symbols-outlined text-[17px]">install_mobile</span>
                 <span className="hidden sm:inline font-bold">Instalar App</span>

@@ -145,12 +145,12 @@ export default function LandingPage() {
             <div className="w-10 h-10 rounded-xl bg-[#2a2a2c] border border-white/[0.08] flex items-center justify-center p-1.5 shadow-inner group-hover:border-[#dbb8ff]/50 group-hover:shadow-[0_0_15px_rgba(219,184,255,0.3)] transition-all">
               <img
                 src="/logo.png"
-                alt="AppHub Logo"
+                alt="StudentHub Logo"
                 className="w-full h-full object-contain filter invert group-hover:scale-105 transition-transform"
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-[17px] font-semibold tracking-tight text-[#e5e1e4]">AppHub</span>
+              <span className="text-[17px] font-semibold tracking-tight text-[#e5e1e4]">StudentHub</span>
               <span className="text-[10px] uppercase tracking-wider text-[#988d9f]">Suite Academica</span>
             </div>
           </Link>
@@ -216,8 +216,8 @@ export default function LandingPage() {
             {/* Card: Windows (.EXE) */}
             <div className="float-card-1">
               <a
-                href="/download/AppHub-Setup.exe"
-                download="AppHub-Setup.exe"
+                href="/download/StudentHub-Setup.exe"
+                download="StudentHub-Setup.exe"
                 className="group relative p-6 rounded-2xl bg-[#1c1b1d]/85 border border-white/[0.08] backdrop-blur-xl shadow-xl hover:border-[#dbb8ff]/60 hover:shadow-[0_12px_45px_-5px_rgba(121,40,202,0.5)] hover:-translate-y-2 transition-all duration-300 text-left flex flex-col justify-between h-full block cursor-pointer"
               >
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#dbb8ff]/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -288,8 +288,8 @@ export default function LandingPage() {
             {/* Card: Android (.APK) */}
             <div className="float-card-3">
               <a
-                href="/download/AppHub.apk"
-                download="AppHub.apk"
+                href="/download/StudentHub.apk"
+                download="StudentHub.apk"
                 className="group relative p-6 rounded-2xl bg-[#1c1b1d]/85 border border-white/[0.08] backdrop-blur-xl shadow-xl hover:border-[#00e293]/60 hover:shadow-[0_12px_45px_-5px_rgba(0,226,147,0.35)] hover:-translate-y-2 transition-all duration-300 text-left flex flex-col justify-between h-full block cursor-pointer"
               >
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-[#00e293]/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -404,7 +404,7 @@ export default function LandingPage() {
                   <div className="w-3 h-3 rounded-full bg-[#39393b]" />
                   <div className="w-3 h-3 rounded-full bg-[#00e293]/80" />
                   <span className="ml-2 text-[#cec2d6] text-[11px] hidden sm:inline">
-                    AppHub — Workspace v2.4.1
+                    StudentHub — Workspace v2.4.1
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -423,7 +423,7 @@ export default function LandingPage() {
                   <div className="w-full h-full relative transition-all duration-500 ease-out flex items-center justify-center">
                     <img
                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuBn6pGApB8ekfSQDgvnjsehJU57qwIrgJ3Y-pq0FRXqrBXl5mj9iDfMcLvr3biWbw88g9EdDyETdSjN9Noj-sg1ENNy0eN9S5qLDYe33U1flLPQS5g-1GqcemSQPKEFwkv_wO4_xnIymoka1vVkaiXBQhS9AgjXYQft7IQqv_liDRE2bzmD8P-W63ydZLd35S9S5KFeDbdfr4N2x4Zj75qc6knypKn9ijz9XjZemrBKhJgp7a1DbPimjRSoD_c1xGtUUIo"
-                      alt="AppHub Organizador Semanal"
+                      alt="StudentHub Organizador Semanal"
                       className="w-full h-auto object-cover rounded-lg shadow-2xl transition-transform duration-700 ease-out hover:scale-[1.01]"
                     />
                   </div>
@@ -431,7 +431,7 @@ export default function LandingPage() {
                   <div className="w-full h-full relative transition-all duration-500 ease-out flex items-center justify-center">
                     <img
                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNWBIBjjP7M_XO4I-QJMYdz5TMd-Sk_JvO4W7eMHGXGWdtDTIchhU13wjm_IOMchSabCS1eSCJoYoADmaOe6hZMPcOeQoQtDK-B728md7v_cvukBfct68hpblsBO5ZMOlmNa5z7LqfCSokG3xrQN6NQde032COi58d1IvNZuHjO4MVGbSmzlJRG10mbQnaxpdM9NkORxdPWYl1UCOIOM71f00IlArE0ysJAEEBw4SIMYo8CsXig5c-su0MZ2VRojKQmsM"
-                      alt="AppHub Calendario Mensual"
+                      alt="StudentHub Calendario Mensual"
                       className="w-full h-auto object-cover rounded-lg shadow-2xl transition-transform duration-700 ease-out hover:scale-[1.01]"
                     />
                   </div>
@@ -587,7 +587,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl text-[#e5e1e4] font-semibold">WhatsApp Bot &amp; Modo Focus</h3>
                 <p className="text-sm text-[#988d9f] mt-2 leading-relaxed">
-                  ¿Vas de camino a clase? Envia una nota de voz o mensaje a tu bot de WhatsApp y AppHub lo
+                  ¿Vas de camino a clase? Envia una nota de voz o mensaje a tu bot de WhatsApp y StudentHub lo
                   transcribira e insertara como evento o tarea al instante.
                 </p>
               </div>
@@ -661,8 +661,8 @@ export default function LandingPage() {
             {/* Botones de Descarga */}
             <div className="flex flex-wrap items-center justify-center gap-4 w-full max-w-2xl mb-10">
               <a
-                href="/download/AppHub-Setup.exe"
-                download="AppHub-Setup.exe"
+                href="/download/StudentHub-Setup.exe"
+                download="StudentHub-Setup.exe"
                 className="flex-1 min-w-[200px] flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl bg-[#7928ca] hover:bg-[#8e3ee8] text-white text-sm font-semibold transition-all duration-300 shadow-[0_0_25px_-5px_rgba(121,40,202,0.7)] hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">download</span>
@@ -679,8 +679,8 @@ export default function LandingPage() {
               </button>
 
               <a
-                href="/download/AppHub.apk"
-                download="AppHub.apk"
+                href="/download/StudentHub.apk"
+                download="StudentHub.apk"
                 className="flex-1 min-w-[200px] flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl bg-[#2a2a2c] hover:bg-[#353437] border border-white/[0.08] text-[#e5e1e4] text-sm font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">android</span>
@@ -718,11 +718,11 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-lg bg-[#2a2a2c] border border-white/[0.08] flex items-center justify-center p-1 shadow-inner">
               <img
                 src="/logo.png"
-                alt="AppHub Logo"
+                alt="StudentHub Logo"
                 className="w-full h-full object-contain filter invert opacity-90"
               />
             </div>
-            <span className="text-base text-[#e5e1e4] font-semibold tracking-tight">AppHub</span>
+            <span className="text-base text-[#e5e1e4] font-semibold tracking-tight">StudentHub</span>
           </div>
           <div className="flex items-center gap-4 text-xs text-[#988d9f]">
             <button
@@ -737,7 +737,7 @@ export default function LandingPage() {
               Descargas
             </a>
             <span>•</span>
-            <p>© 2025 AppHub. Todos los derechos reservados.</p>
+            <p>© 2025 StudentHub. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
@@ -758,7 +758,7 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-[20px]">phone_iphone</span>
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm">Instalar AppHub en iPhone / iPad</h3>
+                  <h3 className="font-bold text-white text-sm">Instalar StudentHub en iPhone / iPad</h3>
                   <p className="text-[11px] text-[#988d9f]">100% Gratuito y sin suscripciones</p>
                 </div>
               </div>
@@ -781,7 +781,7 @@ export default function LandingPage() {
                   <span className="text-white font-semibold">Web App Nativa (PWA)</span>
                 </div>
                 <p className="text-[#cec2d6] text-[11px] leading-relaxed">
-                  1. Abre AppHub en Safari en tu iPhone.<br />
+                  1. Abre StudentHub en Safari en tu iPhone.<br />
                   2. Pulsa el boton Compartir en Safari (icono de cuadrado con flecha hacia arriba).<br />
                   3. Selecciona <strong>"Anadir a pantalla de inicio"</strong>.<br />
                   4. La app se abrira a pantalla completa como una aplicacion nativa sin bordes de navegador.
@@ -811,13 +811,13 @@ export default function LandingPage() {
                   Para usuarios que prefieran instalar la aplicacion mediante AltStore, SideStore o Sideloadly sin pagar cuenta de Apple Developer.
                 </p>
                 <a
-                  href="/download/AppHub.ipa"
-                  download="AppHub.ipa"
+                  href="/download/StudentHub.ipa"
+                  download="StudentHub.ipa"
                   onClick={() => setIsIosModalOpen(false)}
                   className="mt-1 w-full py-2 rounded-xl bg-[#2a2a2c] hover:bg-[#353437] text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-white/[0.08] active:scale-95 transition-all"
                 >
                   <span className="material-symbols-outlined text-[16px]">download</span>
-                  <span>Descargar AppHub.ipa</span>
+                  <span>Descargar StudentHub.ipa</span>
                 </a>
               </div>
             </div>

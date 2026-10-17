@@ -1,6 +1,6 @@
 {
-  "name": "AppHub - Tu Espacio de Productividad",
-  "short_name": "AppHub",
+  "name": "StudentHub - Tu Espacio de Productividad",
+  "short_name": "StudentHub",
   "description": "Calendario inteligente, priorización de tareas con IA y puente WhatsApp sincronizado.",
   "start_url": "/",
   "display": "standalone",

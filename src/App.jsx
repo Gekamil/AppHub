@@ -38,10 +38,10 @@ function RootErrorBoundary() {
       <div className="max-w-md w-full bg-white dark:bg-[#161b26] rounded-2xl p-6 shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center text-center gap-4">
         <img
           src="/logo.png"
-          alt="AppHub Logo"
+          alt="StudentHub Logo"
           className="w-12 h-12 object-contain bg-white rounded-2xl p-1 shadow-xs border border-slate-200 dark:border-slate-700 shrink-0"
         />
-        <h2 className="text-base font-bold">Recuperando sesion de AppHub</h2>
+        <h2 className="text-base font-bold">Recuperando sesion de StudentHub</h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Se ha restablecido la conexion correctamente. Pulsa para continuar al calendario.
         </p>

@@ -1,5 +1,5 @@
 {
-  "name": "apphub",
+  "name": "studenthub",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,8 +16,8 @@
     "electron:build": "vite build && electron-builder"
   },
   "build": {
-    "appId": "com.apphub.workspace",
-    "productName": "AppHub",
+    "appId": "com.studenthub.workspace",
+    "productName": "StudentHub",
     "asar": true,
     "directories": {
       "output": "release"
@@ -25,6 +25,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "!dist/download/**/*",
       "!node_modules/**/*"
     ],
     "npmRebuild": false,
@@ -40,7 +41,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "AppHub",
+      "shortcutName": "StudentHub",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico"

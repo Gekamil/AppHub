@@ -1,6 +1,48 @@
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
+import fs from 'node:fs'
+import path from 'node:path'
+
+function downloadMiddlewarePlugin() {
+  const handler = (req, res, next) => {
+    const rawUrl = req.url || ''
+    if (rawUrl.startsWith('/download/')) {
+      const fileName = path.basename(rawUrl.split('?')[0])
+      const publicPath = path.resolve(process.cwd(), 'public/download', fileName)
+      const distPath = path.resolve(process.cwd(), 'dist/download', fileName)
+      const targetPath = fs.existsSync(publicPath) ? publicPath : (fs.existsSync(distPath) ? distPath : null)
+
+      if (targetPath) {
+        const stat = fs.statSync(targetPath)
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': stat.size,
+          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        })
+        const stream = fs.createReadStream(targetPath)
+        stream.pipe(res)
+        return
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' })
+        res.end(`File ${fileName} not found on server`)
+        return
+      }
+    }
+    next()
+  }
+
+  return {
+    name: 'download-middleware-plugin',
+    configureServer(server) {
+      server.middlewares.use(handler)
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(handler)
+    },
+  }
+}
 
 function icsProxyPlugin() {
   const handler = async (req, res) => {
@@ -157,7 +199,7 @@ function baileysBridgePlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [react(), tailwindcss(), icsProxyPlugin(), whatsappWebhookPlugin(), baileysBridgePlugin()],
+  plugins: [react(), tailwindcss(), downloadMiddlewarePlugin(), icsProxyPlugin(), whatsappWebhookPlugin(), baileysBridgePlugin()],
   server: {
     host: true,
     allowedHosts: true,

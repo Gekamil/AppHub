@@ -167,11 +167,11 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
             <div className="flex items-center gap-2.5">
               <img
                 src="/logo.png"
-                alt="AppHub Logo"
+                alt="StudentHub Logo"
                 className="w-8 h-8 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0"
               />
               <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">
-                AppHub
+                StudentHub
               </span>
             </div>
             {/* Botón cerrar para móvil */}

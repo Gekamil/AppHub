@@ -54,10 +54,10 @@ export default function InstallAppModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-muted bg-surface-subtle/50">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs p-1">
-              <img src="/logo.png" alt="AppHub Logo" className="w-full h-full object-contain" />
+              <img src="/logo.png" alt="StudentHub Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h3 className="font-bold text-on-surface text-base">Instalar AppHub</h3>
+              <h3 className="font-bold text-on-surface text-base">Instalar StudentHub</h3>
               <p className="text-[11px] text-secondary">
                 Aplicacion oficial preparada para instalar en tu dispositivo
               </p>
@@ -138,12 +138,12 @@ export default function InstallAppModal({ isOpen, onClose }) {
                 </div>
 
                 <a
-                  href="/download/AppHub.apk"
-                  download="AppHub.apk"
+                  href="/download/StudentHub.apk"
+                  download="StudentHub.apk"
                   className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer no-underline text-center"
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>
-                  <span>Descargar e Instalar APK (AppHub.apk)</span>
+                  <span>Descargar e Instalar APK (StudentHub.apk)</span>
                 </a>
 
                 <div className="bg-surface-pure p-3 rounded-xl border border-outline-variant/20 flex flex-col gap-1.5 text-[11px] text-secondary">
@@ -152,7 +152,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-primary">1.</span>
-                    <span>Pulsa el boton para descargar AppHub.apk en tu movil.</span>
+                    <span>Pulsa el boton para descargar StudentHub.apk en tu movil.</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-primary">2.</span>
@@ -228,8 +228,8 @@ export default function InstallAppModal({ isOpen, onClose }) {
                 </div>
 
                 <a
-                  href="/download/AppHub.ipa"
-                  download="AppHub.ipa"
+                  href="/download/StudentHub.ipa"
+                  download="StudentHub.ipa"
                   className="w-full py-2.5 px-4 rounded-xl bg-surface-pure hover:bg-surface-muted border border-outline-variant/40 text-on-surface font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer no-underline text-center mt-1"
                 >
                   <span className="material-symbols-outlined text-[17px]">download</span>
@@ -262,12 +262,12 @@ export default function InstallAppModal({ isOpen, onClose }) {
                 </div>
 
                 <a
-                  href="/download/AppHub-Setup.exe"
-                  download="AppHub-Setup.exe"
+                  href="/download/StudentHub-Setup.exe"
+                  download="StudentHub-Setup.exe"
                   className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all cursor-pointer no-underline text-center"
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>
-                  <span>Descargar Instalador de Windows (AppHub-Setup.exe)</span>
+                  <span>Descargar Instalador de Windows (StudentHub-Setup.exe)</span>
                 </a>
 
                 <div className="bg-surface-pure p-3 rounded-xl border border-outline-variant/20 flex flex-col gap-1.5 text-[11px] text-secondary">
@@ -277,7 +277,7 @@ export default function InstallAppModal({ isOpen, onClose }) {
                   <div className="flex items-start gap-1.5">
                     <span className="material-symbols-outlined text-primary text-[15px] shrink-0 mt-0.5">check_circle</span>
                     <span>
-                      Al terminar la descarga, pulsa dos veces sobre <strong>AppHub-Setup.exe</strong> para instalar y abrir AppHub en tu ordenador.
+                      Al terminar la descarga, pulsa dos veces sobre <strong>StudentHub-Setup.exe</strong> para instalar y abrir StudentHub en tu ordenador.
                     </span>
                   </div>
                 </div>
