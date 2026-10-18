@@ -38,7 +38,7 @@ export async function getBaileysStatus() {
       return await res.json()
     }
   } catch (e) {}
-  return { status: 'disconnected', qrCode: null, pairingCode: null, user: null, phone: null }
+  return null
 }
 
 export async function requestBaileysConnect(phoneNumber = null) {

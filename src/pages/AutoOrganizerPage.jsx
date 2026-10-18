@@ -775,18 +775,82 @@ export default function AutoOrganizerPage() {
       return
     }
 
+    let cleanPhone = null
+    if (phone) {
+      let digits = String(phone).replace(/[^0-9]/g, '')
+      if (digits.length === 9 && (digits.startsWith('6') || digits.startsWith('7'))) {
+        digits = '34' + digits
+      }
+      cleanPhone = '+' + digits
+    }
+
     setIsBaileysActionLoading(true)
     setWhatsAppNotificationMsg(
-      phone
+      cleanPhone
         ? 'Solicitando código de vinculación de 8 dígitos para este móvil...'
         : 'Iniciando sesión y generando código QR seguro...'
     )
+    setBaileysState((prev) => ({
+      ...prev,
+      status: 'connecting',
+      error: null,
+      phone: cleanPhone,
+    }))
+
     try {
-      const res = await requestBaileysConnect(phone)
-      setBaileysState((prev) => ({ ...prev, ...res }))
+      const res = await requestBaileysConnect(cleanPhone)
+      if (res) {
+        setBaileysState((prev) => ({ ...prev, ...res }))
+      }
+
+      // Sondeo rápido agresivo cada 1s hasta 25 intentos para garantizar respuesta inmediata
+      let attempts = 0
+      const pollTimer = setInterval(async () => {
+        attempts++
+        try {
+          const latest = await getBaileysStatus()
+          if (latest) {
+            if (cleanPhone && latest.status === 'pairing_code_ready' && latest.pairingCode) {
+              setBaileysState((prev) => ({ ...prev, ...latest }))
+              setIsBaileysActionLoading(false)
+              setWhatsAppNotificationMsg('Código de vinculación listo.')
+              setTimeout(() => setWhatsAppNotificationMsg(''), 4000)
+              clearInterval(pollTimer)
+              return
+            }
+            if (!cleanPhone && latest.status === 'qr_ready' && latest.qrCode) {
+              setBaileysState((prev) => ({ ...prev, ...latest }))
+              setIsBaileysActionLoading(false)
+              setWhatsAppNotificationMsg('Código QR generado y listo para escanear.')
+              setTimeout(() => setWhatsAppNotificationMsg(''), 4000)
+              clearInterval(pollTimer)
+              return
+            }
+            if (latest.status === 'connected') {
+              setBaileysState((prev) => ({ ...prev, ...latest }))
+              setIsBaileysActionLoading(false)
+              setWhatsAppNotificationMsg('WhatsApp vinculado con éxito.')
+              setTimeout(() => setWhatsAppNotificationMsg(''), 4000)
+              clearInterval(pollTimer)
+              return
+            }
+            if (latest.error) {
+              setBaileysState((prev) => ({ ...prev, ...latest }))
+              setIsBaileysActionLoading(false)
+              setWhatsAppNotificationMsg(latest.error)
+              clearInterval(pollTimer)
+              return
+            }
+          }
+        } catch (pollErr) {}
+
+        if (attempts >= 25) {
+          setIsBaileysActionLoading(false)
+          clearInterval(pollTimer)
+        }
+      }, 1000)
     } catch (e) {
-      setWhatsAppNotificationMsg('Error al conectar con el puente local')
-    } finally {
+      setWhatsAppNotificationMsg('Error al conectar con el servidor')
       setIsBaileysActionLoading(false)
     }
   }
@@ -2419,6 +2483,11 @@ export default function AutoOrganizerPage() {
                           Conectado: <strong className="font-mono text-slate-800 dark:text-slate-200">{baileysState.phone ? baileysState.phone : 'Dispositivo vinculado'}</strong>
                         </span>
                       </>
+                    ) : baileysState.status === 'pairing_code_ready' ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Código de 8 dígitos listo</span>
+                      </>
                     ) : baileysState.status === 'qr_ready' ? (
                       <>
                         <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
@@ -2427,7 +2496,7 @@ export default function AutoOrganizerPage() {
                     ) : baileysState.status === 'connecting' ? (
                       <>
                         <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">Iniciando puente local...</span>
+                        <span className="text-blue-600 dark:text-blue-400 font-medium">Iniciando puente con WhatsApp...</span>
                       </>
                     ) : (
                       <>
@@ -2496,7 +2565,7 @@ export default function AutoOrganizerPage() {
             ) : (
               <>
                 {/* 1. Conectado */}
-                {baileysState.status === 'connected' && (
+                {baileysState.status === 'connected' ? (
                   <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -2511,7 +2580,7 @@ export default function AutoOrganizerPage() {
                     </div>
 
                     <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                      El bot está escuchando mensajes y notas de voz en tiempo real con IA. Puedes preguntarle cualquier duda académica, conversar con él, consultar tu agenda (*"¿qué tengo hoy?"*) o dictarle tareas y exámenes por audio o texto para que se añadan al instante a tu organizador y calendario.
+                      El bot está escuchando mensajes y notas de voz en tiempo real con IA. Puedes preguntarle cualquier duda académica, conversar con él, consultar tu agenda (*&quot;¿qué tengo hoy?&quot;*) o dictarle tareas y exámenes por audio o texto para que se añadan al instante a tu organizador y calendario.
                     </p>
 
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40">
@@ -2534,152 +2603,29 @@ export default function AutoOrganizerPage() {
                       </button>
                     </div>
                   </div>
-                )}
-
-                {/* 2. Código de Vinculación de 8 dígitos listo (Ideal para vincular en el mismo móvil) */}
-                {baileysState.status === 'pairing_code_ready' && baileysState.pairingCode && (
-                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 space-y-4">
-                    <div className="text-center space-y-1">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Código de Vinculación Generado
-                      </span>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        Introduce este código en WhatsApp para vincular este dispositivo sin usar cámara.
-                      </p>
-                    </div>
-
-                    {/* Display del código de 8 dígitos con estilo grande y botón de copiado */}
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="flex items-center gap-2 bg-white dark:bg-[#121620] px-5 py-3 rounded-2xl shadow-sm border-2 border-emerald-500/40">
-                        <span className="font-mono text-2xl sm:text-3xl font-extrabold tracking-widest text-emerald-600 dark:text-emerald-400 select-all">
-                          {baileysState.pairingCode}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleCopyPairingCode}
-                          className="ml-2 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-                          title="Copiar código"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">
-                            {isCopiedPairingCode ? 'check' : 'content_copy'}
-                          </span>
-                        </button>
+                ) : (
+                  /* Área de Vinculación: Tabs Siempre Visibles para elegir entre Código en el mismo móvil o Escanear QR */
+                  <div className="space-y-4">
+                    {/* Alerta de Error si ocurre */}
+                    {baileysState.error && (
+                      <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 flex items-start gap-2 text-rose-700 dark:text-rose-300 text-xs">
+                        <span className="material-symbols-outlined text-[18px] shrink-0 text-rose-500">error</span>
+                        <div className="flex-1 space-y-1">
+                          <span className="font-semibold block">Aviso de conexión:</span>
+                          <span className="text-[11px] leading-relaxed block">{baileysState.error}</span>
+                        </div>
                       </div>
-                      {isCopiedPairingCode && (
-                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          Código copiado al portapapeles
-                        </span>
-                      )}
-                    </div>
+                    )}
 
-                    {/* Botón para abrir WhatsApp directamente en el móvil */}
-                    <a
-                      href="whatsapp://"
-                      className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-xs text-center"
-                    >
-                      <span className="material-symbols-outlined text-[17px]">open_in_new</span>
-                      <span>Abrir WhatsApp Ahora</span>
-                    </a>
+                    {/* Mensaje de Notificación / Progreso */}
+                    {whatsAppNotificationMsg && (
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-2 text-emerald-800 dark:text-emerald-300 text-xs">
+                        <span className="material-symbols-outlined text-[16px] text-emerald-600 shrink-0 animate-pulse">info</span>
+                        <span className="flex-1">{whatsAppNotificationMsg}</span>
+                      </div>
+                    )}
 
-                    {/* Instrucciones paso a paso en el móvil */}
-                    <div className="w-full space-y-2 text-slate-700 dark:text-slate-300 text-xs">
-                      <span className="font-semibold block text-slate-900 dark:text-white">
-                        Cómo ingresarlo en WhatsApp:
-                      </span>
-                      <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-[#121620] p-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
-                        <li>Abre <strong>WhatsApp</strong> en este móvil.</li>
-                        <li>Ve a <strong>Ajustes</strong> (o ⋮ arriba a la derecha) &gt; <strong>Dispositivos vinculados</strong>.</li>
-                        <li>Toca en <strong>Vincular un dispositivo</strong>.</li>
-                        <li>Cuando se active la cámara, pulsa abajo en <strong>&quot;Vincular con el número de teléfono&quot;</strong>.</li>
-                        <li>Pega o escribe el código de 8 dígitos de arriba.</li>
-                      </ol>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleDisconnectBaileys}
-                      className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline cursor-pointer"
-                    >
-                      Cancelar o probar con QR
-                    </button>
-                  </div>
-                )}
-
-                {/* 3. QR Listo para Escaneo */}
-                {baileysState.status === 'qr_ready' && baileysState.qrCode && (
-                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-4">
-                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/70">
-                      <img
-                        src={baileysState.qrCode}
-                        alt="Código QR de WhatsApp"
-                        className="w-52 h-52 sm:w-56 sm:h-56 object-contain"
-                      />
-                    </div>
-
-                    <div className="w-full space-y-2 text-slate-700 dark:text-slate-300 text-xs">
-                      <span className="font-semibold block text-center text-slate-900 dark:text-white">
-                        Pasos para vincular tu teléfono:
-                      </span>
-                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-[#121620] p-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
-                        <li>Abre WhatsApp en tu teléfono móvil.</li>
-                        <li>Ve a <strong>Ajustes / Configuración</strong> y selecciona <strong>Dispositivos vinculados</strong>.</li>
-                        <li>Toca en <strong>Vincular un dispositivo</strong> y apunta con la cámara a este código QR.</li>
-                      </ol>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleDisconnectBaileys}
-                      className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline cursor-pointer"
-                    >
-                      Cancelar o probar con código numérico
-                    </button>
-                  </div>
-                )}
-
-                {/* 4. Conectando / Generando Código o QR */}
-                {baileysState.status === 'connecting' && (
-                  <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-                    <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                      Iniciando puente con el servidor y generando código...
-                    </p>
-                    <span className="text-[11px] text-slate-500 text-center max-w-sm">
-                      Conectando con el servidor en la nube. Si el servidor estaba en reposo, puede tardar entre 10 y 20 segundos en despertar.
-                    </span>
-                    <div className="flex items-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => handleConnectBaileys(pairingMethodTab === 'phone' ? pairingPhoneInput : null)}
-                        className="py-1 px-3 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-medium text-[11px] cursor-pointer transition-colors"
-                      >
-                        Reintentar ahora
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDisconnectBaileys}
-                        className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. Desconectado / Pantalla Inicial de Vinculación */}
-                {baileysState.status === 'disconnected' && (
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-4">
-                    <div className="space-y-1">
-                      <h4 className="font-semibold text-slate-900 dark:text-white text-xs">
-                        Vinculación Directa con WhatsApp Web
-                      </h4>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                        Conecta tu WhatsApp en segundos. Elige si estás usando este mismo móvil o un ordenador:
-                      </p>
-                    </div>
-
-                    {/* Selector de Método: En este Móvil (Código) vs Otro Dispositivo (QR) */}
+                    {/* Selector de Pestañas Siempre Accesible */}
                     <div className="grid grid-cols-2 p-1 bg-slate-200/70 dark:bg-slate-900/80 rounded-xl gap-1">
                       <button
                         type="button"
@@ -2691,7 +2637,7 @@ export default function AutoOrganizerPage() {
                         }`}
                       >
                         <span className="material-symbols-outlined text-[16px]">smartphone</span>
-                        <span>En este móvil</span>
+                        <span className="truncate">En este móvil (Código)</span>
                       </button>
                       <button
                         type="button"
@@ -2703,75 +2649,221 @@ export default function AutoOrganizerPage() {
                         }`}
                       >
                         <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
-                        <span>Desde otro equipo</span>
+                        <span className="truncate">Desde PC (QR)</span>
                       </button>
                     </div>
 
-                    {/* Formulario según pestaña seleccionada */}
-                    {pairingMethodTab === 'phone' ? (
-                      <div className="p-3.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[15px] text-emerald-500">pin</span>
-                            <span>Vincular con Código de 8 Dígitos (Sin cámara)</span>
-                          </label>
-                          <p className="text-[11px] text-slate-500 leading-relaxed">
-                            No necesitas escanear la pantalla con otro móvil. Introduce tu número y recibirás un código para meter en tu WhatsApp.
-                          </p>
-                        </div>
+                    {/* PESTAÑA 1: VINCULAR CON CÓDIGO DE 8 DÍGITOS */}
+                    {pairingMethodTab === 'phone' && (
+                      <div className="space-y-4">
+                        {baileysState.status === 'pairing_code_ready' && baileysState.pairingCode ? (
+                          <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 space-y-4 animate-in fade-in duration-200">
+                            <div className="text-center space-y-1">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Código de Vinculación Listo
+                              </span>
+                              <p className="text-xs text-slate-600 dark:text-slate-400">
+                                Introduce este código en WhatsApp para vincular este dispositivo sin usar cámara.
+                              </p>
+                            </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                            Número de WhatsApp (con prefijo internacional):
-                          </label>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <input
-                              type="tel"
-                              value={pairingPhoneInput}
-                              onChange={(e) => setPairingPhoneInput(e.target.value)}
-                              placeholder="+34 612345678"
-                              className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
+                            {/* Display del código de 8 dígitos */}
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="flex items-center gap-2 bg-white dark:bg-[#121620] px-5 py-3 rounded-2xl shadow-sm border-2 border-emerald-500/40">
+                                <span className="font-mono text-2xl sm:text-3xl font-extrabold tracking-widest text-emerald-600 dark:text-emerald-400 select-all">
+                                  {baileysState.pairingCode}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={handleCopyPairingCode}
+                                  className="ml-2 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                                  title="Copiar código"
+                                >
+                                  <span className="material-symbols-outlined text-[20px]">
+                                    {isCopiedPairingCode ? 'check' : 'content_copy'}
+                                  </span>
+                                </button>
+                              </div>
+                              {isCopiedPairingCode && (
+                                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 animate-in fade-in">
+                                  Código copiado al portapapeles
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Botón para abrir WhatsApp directamente en el móvil */}
+                            <a
+                              href="whatsapp://"
+                              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-xs text-center"
+                            >
+                              <span className="material-symbols-outlined text-[17px]">open_in_new</span>
+                              <span>Abrir WhatsApp Ahora</span>
+                            </a>
+
+                            {/* Instrucciones paso a paso en el móvil */}
+                            <div className="w-full space-y-2 text-slate-700 dark:text-slate-300 text-xs">
+                              <span className="font-semibold block text-slate-900 dark:text-white">
+                                Pasos en tu móvil para vincular:
+                              </span>
+                              <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-[#121620] p-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                                <li>Abre <strong>WhatsApp</strong> en este móvil.</li>
+                                <li>Ve a <strong>Ajustes</strong> (o ⋮ arriba a la derecha) &gt; <strong>Dispositivos vinculados</strong>.</li>
+                                <li>Toca en <strong>Vincular un dispositivo</strong>.</li>
+                                <li>Cuando se active la cámara, pulsa abajo en <strong>&quot;Vincular con el número de teléfono&quot;</strong>.</li>
+                                <li>Escribe o pega el código de 8 dígitos de arriba.</li>
+                              </ol>
+                            </div>
+
                             <button
                               type="button"
-                              onClick={() => handleConnectBaileys(pairingPhoneInput)}
-                              disabled={isBaileysActionLoading || !pairingPhoneInput.trim() || pairingPhoneInput.trim().length < 6}
-                              className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 text-xs whitespace-nowrap"
+                              onClick={() => {
+                                handleDisconnectBaileys()
+                              }}
+                              className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline cursor-pointer"
                             >
-                              <span className="material-symbols-outlined text-[16px]">key</span>
-                              <span>Pedir Código</span>
+                              Pedir otro código o cambiar número
                             </button>
                           </div>
-                          <span className="text-[10px] text-slate-400 block">
-                            Ejemplo en España: <code className="font-mono">+34 612345678</code>
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-3.5 rounded-xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[15px] text-emerald-500">qr_code_scanner</span>
-                            <span>Escanear Código QR</span>
-                          </label>
-                          <p className="text-[11px] text-slate-500 leading-relaxed">
-                            Si estás en tu ordenador portátil o de sobremesa, genera el QR y apúntale con la cámara de tu teléfono en Dispositivos Vinculados.
-                          </p>
-                        </div>
+                        ) : baileysState.status === 'connecting' && isBaileysActionLoading ? (
+                          <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                            <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                              Solicitando código de vinculación a WhatsApp...
+                            </p>
+                            <span className="text-[11px] text-slate-500 text-center max-w-sm">
+                              Generando el código de 8 dígitos. En unos segundos aparecerá aquí para que lo introduzcas en tu app de WhatsApp.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleDisconnectBaileys}
+                              className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline cursor-pointer pt-2"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-2xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-3.5 shadow-2xs">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[16px] text-emerald-500">pin</span>
+                                <span>Vincular en este móvil con Código de 8 Dígitos</span>
+                              </label>
+                              <p className="text-[11px] text-slate-500 leading-relaxed">
+                                Ideal si estás en tu móvil. No necesitas usar otra cámara ni escanear la pantalla: escribe tu número y recibirás un código de 8 dígitos para poner en tu WhatsApp.
+                              </p>
+                            </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleConnectBaileys(null)}
-                          disabled={isBaileysActionLoading}
-                          className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 text-xs"
-                        >
-                          <span className="material-symbols-outlined text-[17px]">qr_code_scanner</span>
-                          <span>Generar Código QR</span>
-                        </button>
+                            <div className="space-y-1.5">
+                              <label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                                Tu número de WhatsApp:
+                              </label>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                  type="tel"
+                                  value={pairingPhoneInput}
+                                  onChange={(e) => setPairingPhoneInput(e.target.value)}
+                                  placeholder="+34 612345678"
+                                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleConnectBaileys(pairingPhoneInput)}
+                                  disabled={isBaileysActionLoading || !pairingPhoneInput.trim() || pairingPhoneInput.trim().length < 6}
+                                  className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 text-xs whitespace-nowrap"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">key</span>
+                                  <span>Obtener Código</span>
+                                </button>
+                              </div>
+                              <span className="text-[10px] text-slate-400 block">
+                                En España incluye +34 o tus 9 dígitos habituales (ej: <code className="font-mono text-emerald-600 dark:text-emerald-400">612345678</code>).
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    <div className="space-y-2">
+                    {/* PESTAÑA 2: ESCANEAR CÓDIGO QR */}
+                    {pairingMethodTab === 'qr' && (
+                      <div className="space-y-4">
+                        {baileysState.status === 'qr_ready' && baileysState.qrCode ? (
+                          <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-4 animate-in fade-in duration-200">
+                            <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200/70">
+                              <img
+                                src={baileysState.qrCode}
+                                alt="Código QR de WhatsApp"
+                                className="w-52 h-52 sm:w-56 sm:h-56 object-contain"
+                              />
+                            </div>
+
+                            <div className="w-full space-y-2 text-slate-700 dark:text-slate-300 text-xs">
+                              <span className="font-semibold block text-center text-slate-900 dark:text-white">
+                                Pasos para escanear con la cámara:
+                              </span>
+                              <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-[#121620] p-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                                <li>Abre WhatsApp en tu teléfono móvil.</li>
+                                <li>Ve a <strong>Ajustes / Configuración</strong> y selecciona <strong>Dispositivos vinculados</strong>.</li>
+                                <li>Toca en <strong>Vincular un dispositivo</strong> y apunta con la cámara a este código QR.</li>
+                              </ol>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleConnectBaileys(null)}
+                              disabled={isBaileysActionLoading}
+                              className="py-1.5 px-3 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">refresh</span>
+                              <span>Regenerar / Actualizar Código QR</span>
+                            </button>
+                          </div>
+                        ) : baileysState.status === 'connecting' && isBaileysActionLoading ? (
+                          <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                            <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
+                              Generando código QR de WhatsApp...
+                            </p>
+                            <span className="text-[11px] text-slate-500 text-center max-w-sm">
+                              Conectando con el servidor seguro y preparando la imagen QR. En unos segundos aparecerá aquí para escanear.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleDisconnectBaileys}
+                              className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline cursor-pointer pt-2"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-2xl bg-white dark:bg-[#121620] border border-slate-200/80 dark:border-slate-800 space-y-3.5 shadow-2xs">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[16px] text-emerald-500">qr_code_scanner</span>
+                                <span>Escanear Código QR con tu móvil</span>
+                              </label>
+                              <p className="text-[11px] text-slate-500 leading-relaxed">
+                                Si tienes StudentHub abierto en tu ordenador o tablet, pulsa el botón para generar el QR y escanearlo con la cámara de tu móvil desde Dispositivos Vinculados.
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleConnectBaileys(null)}
+                              disabled={isBaileysActionLoading}
+                              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 text-xs"
+                            >
+                              <span className="material-symbols-outlined text-[17px]">qr_code_scanner</span>
+                              <span>Generar Código QR</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ¿QUÉ PUEDES HACER DESDE TU WHATSAPP? */}
+                    <div className="space-y-2 pt-1">
                       <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                         <span>¿Qué puedes hacer desde tu WhatsApp?</span>
                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
@@ -2825,6 +2917,7 @@ export default function AutoOrganizerPage() {
                 )}
               </>
             )}
+
 
             {/* AVISO DE PRIVACIDAD EN LETRA PEQUEÑA */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">

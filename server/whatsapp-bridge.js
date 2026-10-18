@@ -1243,7 +1243,10 @@ export async function startBaileysConnection(phoneNumber = null) {
     sock = null
   }
 
-  const cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '') : null
+  let cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '') : null
+  if (cleanPhone && cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('7'))) {
+    cleanPhone = '34' + cleanPhone
+  }
 
   currentStatus = {
     status: 'connecting',
@@ -1251,6 +1254,7 @@ export async function startBaileysConnection(phoneNumber = null) {
     pairingCode: null,
     user: null,
     phone: cleanPhone ? `+${cleanPhone}` : null,
+    error: null,
     lastUpdated: Date.now(),
   }
   broadcastStatusUpdate(currentStatus)
@@ -1260,9 +1264,18 @@ export async function startBaileysConnection(phoneNumber = null) {
       fs.mkdirSync(AUTH_DIR, { recursive: true })
     }
 
-    // Si Render reinició el contenedor y la carpeta local está vacía, restaurar desde Firestore
-    if (!fs.existsSync(path.join(AUTH_DIR, 'creds.json'))) {
-      await restoreAuthFromFirestore()
+    // Si se solicita emparejamiento con código de teléfono, limpiar credenciales previas no conectadas
+    if (cleanPhone) {
+      try {
+        fs.rmSync(AUTH_DIR, { recursive: true, force: true })
+        await clearAuthFromFirestore().catch(() => {})
+        fs.mkdirSync(AUTH_DIR, { recursive: true })
+      } catch (e) {}
+    } else {
+      // Si Render reinició el contenedor y la carpeta local está vacía, restaurar desde Firestore
+      if (!fs.existsSync(path.join(AUTH_DIR, 'creds.json'))) {
+        await restoreAuthFromFirestore()
+      }
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
@@ -1287,6 +1300,7 @@ export async function startBaileysConnection(phoneNumber = null) {
               qrCode: null,
               user: null,
               phone: `+${cleanPhone}`,
+              error: null,
               lastUpdated: Date.now(),
             }
             broadcastStatusUpdate(currentStatus)
@@ -1303,7 +1317,7 @@ export async function startBaileysConnection(phoneNumber = null) {
           }
           broadcastStatusUpdate(currentStatus)
         }
-      }, 2500)
+      }, 1500)
     }
 
     // Actualizaciones de Conexión (QR, Conectado, Desconectado)
