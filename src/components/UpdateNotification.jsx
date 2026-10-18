@@ -66,6 +66,16 @@ export default function UpdateNotification() {
     setShowChangelog(false)
   }
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showChangelog) {
+        handleDismissChangelog()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showChangelog])
+
   const handleApplyUpdate = () => {
     if (typeof window !== 'undefined' && window.electronAPI?.restartAndUpdate) {
       window.electronAPI.restartAndUpdate()

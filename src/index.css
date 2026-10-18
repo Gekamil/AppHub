@@ -163,7 +163,45 @@ header, aside, main, nav, footer, .theme-transition {
   overscroll-behavior: contain;
 }
 
-/* Scrollbars fluidas e invisibles */
+/* Scrollbars modernas, sutiles y esteticas en toda la aplicacion */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.28);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.48);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.38);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dark * {
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
+
+/* Scrollbars completamente invisibles cuando se requiera */
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }

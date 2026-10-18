@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { useCreateBlockNote, BlockNoteViewRaw as BlockNoteView } from '@blocknote/react'
 import '@blocknote/core/fonts/inter.css'
@@ -8,6 +8,24 @@ import Modal from '../components/Modal'
 export default function NotebooksPage() {
   const navigate = useNavigate()
   const outletCtx = useOutletContext() || {}
+
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document === 'undefined') return false
+    return document.documentElement.classList.contains('dark') || localStorage.getItem('app_theme') === 'dark'
+  })
+
+  useEffect(() => {
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains('dark') || localStorage.getItem('app_theme') === 'dark')
+    }
+    const observer = new MutationObserver(checkDark)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    window.addEventListener('app_theme_changed', checkDark)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('app_theme_changed', checkDark)
+    }
+  }, [])
 
   const [favorites, setFavorites] = useState([
     { id: 'fav-1', title: 'Cybersecurity Protocols', icon: 'star', starFilled: true, shortcut: '⌥1' },
@@ -541,9 +559,9 @@ export default function NotebooksPage() {
               </div>
             </div>
 
-            {/* BlockNote Functional Editor */}
+            {/* BlockNote Functional Editor con soporte dinamico claro/oscuro */}
             <div className="mt-2 min-h-[500px]">
-              <BlockNoteView editor={editor} theme="light" />
+              <BlockNoteView editor={editor} theme={isDark ? 'dark' : 'light'} />
             </div>
           </div>
         </section>

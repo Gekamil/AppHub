@@ -208,8 +208,29 @@ export default function MyHubPage() {
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [resources, setResources] = useState(INITIAL_RESOURCES)
+  const [resources, setResources] = useState(() => {
+    try {
+      const saved = localStorage.getItem('studenthub_myhub_resources')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch (err) {
+      console.error('Error loading myhub resources:', err)
+    }
+    return INITIAL_RESOURCES
+  })
+  const [clipperUrl, setClipperUrl] = useState('')
+  const [clipperFeedback, setClipperFeedback] = useState('')
   const [appTheme, setAppThemeState] = useState(() => getAppTheme())
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('studenthub_myhub_resources', JSON.stringify(resources))
+    } catch (err) {
+      console.error('Error saving myhub resources:', err)
+    }
+  }, [resources])
 
   useEffect(() => {
     const handleThemeChange = (e) => {
@@ -325,6 +346,44 @@ export default function MyHubPage() {
 
   const handleDeleteResource = (id) => {
     setResources((prev) => prev.filter((r) => r.id !== id))
+  }
+
+  const handleIngestLink = () => {
+    if (!clipperUrl.trim()) return
+    const rawUrl = clipperUrl.trim()
+    let cleanUrl = rawUrl
+    if (!/^https?:\/\//i.test(cleanUrl)) {
+      cleanUrl = 'https://' + cleanUrl
+    }
+    let domain = cleanUrl
+    try {
+      const u = new URL(cleanUrl)
+      domain = u.hostname.replace(/^www\./i, '')
+    } catch (_) {
+      // ignore
+    }
+
+    const newResource = {
+      id: `resource-${Date.now()}`,
+      category: 'dev',
+      categoryLabel: 'Dev & Design',
+      categoryDotColor: 'bg-primary-container',
+      title: domain || 'Recurso Web',
+      link: cleanUrl,
+      linkDisplay: domain || cleanUrl,
+      description: `Capturado vía Fast Web Clipper (${new Date().toLocaleDateString()}).`,
+      imageUrl: '',
+      tags: [
+        { label: '#Clipped', bg: 'bg-surface-muted', text: 'text-primary' },
+        { label: '#Web', bg: 'bg-surface-muted', text: 'text-secondary' },
+      ],
+      addedTime: 'Just now',
+    }
+
+    setResources((prev) => [newResource, ...prev])
+    setClipperUrl('')
+    setClipperFeedback('Enlace guardado correctamente en tu Hub')
+    setTimeout(() => setClipperFeedback(''), 3000)
   }
 
   const resourceModalFields = [
@@ -677,11 +736,31 @@ export default function MyHubPage() {
               <div className="font-body-sm text-body-sm text-secondary">Send any browser URL via chrome-extension or paste clipboard items here.</div>
             </div>
           </div>
-          <div className="flex items-center gap-space-xs w-full md:w-auto">
-            <input className="bg-surface-muted rounded-lg px-space-md py-1.5 text-on-surface font-code-sm text-code-sm placeholder:text-outline focus:outline-none flex-1 md:w-64" placeholder="Paste URL to auto-scrape..." type="text" />
-            <button className="bg-surface-muted hover:bg-surface-variant text-on-surface font-label-md text-label-md px-space-md py-1.5 rounded-lg transition-colors whitespace-nowrap">
+          <div className="flex flex-col sm:flex-row items-center gap-space-xs w-full md:w-auto">
+            <div className="relative w-full sm:w-auto">
+              <input
+                className="bg-surface-muted rounded-lg px-space-md py-1.5 text-on-surface font-code-sm text-code-sm placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-64"
+                placeholder="https://ejemplo.com..."
+                type="text"
+                value={clipperUrl}
+                onChange={(e) => setClipperUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleIngestLink()
+                }}
+              />
+            </div>
+            <button
+              onClick={handleIngestLink}
+              disabled={!clipperUrl.trim()}
+              className="w-full sm:w-auto bg-primary-container text-on-primary disabled:opacity-50 hover:bg-primary text-on-surface font-label-md text-label-md px-space-md py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+            >
               Ingest Link
             </button>
+            {clipperFeedback && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium animate-in fade-in">
+                {clipperFeedback}
+              </span>
+            )}
           </div>
         </div>
       </div>

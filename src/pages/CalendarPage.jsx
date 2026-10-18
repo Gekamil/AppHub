@@ -845,6 +845,71 @@ export default function CalendarPage() {
     return () => window.removeEventListener('click', handleGlobalClick)
   }, [roleContextMenu])
 
+  // Soporte universal de tecla Escape para cerrar modales, selectores y menus contextuales
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isIconPickerOpen) {
+          setIsIconPickerOpen(false)
+          return
+        }
+        if (isCalSelectDropdownOpen || isCatSelectDropdownOpen || isRecurrenceSelectDropdownOpen) {
+          setIsCalSelectDropdownOpen(false)
+          setIsCatSelectDropdownOpen(false)
+          setIsRecurrenceSelectDropdownOpen(false)
+          return
+        }
+        if (roleContextMenu) {
+          setRoleContextMenu(null)
+          return
+        }
+        if (selectedDetailTask) {
+          setSelectedDetailTask(null)
+          return
+        }
+        if (taskToDelete) {
+          setTaskToDelete(null)
+          return
+        }
+        if (roleToEdit) {
+          setRoleToEdit(null)
+          return
+        }
+        if (isDatePickerOpen) {
+          setIsDatePickerOpen(false)
+          return
+        }
+        if (isEventModalOpen) {
+          setIsEventModalOpen(false)
+          return
+        }
+        if (isCalendarModalOpen) {
+          setIsCalendarModalOpen(false)
+          return
+        }
+        if (isCategoryModalOpen) {
+          setIsCategoryModalOpen(false)
+          return
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [
+    isIconPickerOpen,
+    isCalSelectDropdownOpen,
+    isCatSelectDropdownOpen,
+    isRecurrenceSelectDropdownOpen,
+    roleContextMenu,
+    selectedDetailTask,
+    taskToDelete,
+    roleToEdit,
+    isDatePickerOpen,
+    isEventModalOpen,
+    isCalendarModalOpen,
+    isCategoryModalOpen,
+  ])
+
   const themeTokens = useMemo(() => getAppThemeTokens(appTheme), [appTheme])
 
   // Formulario Evento fluido con soporte de duración y hora de finalización

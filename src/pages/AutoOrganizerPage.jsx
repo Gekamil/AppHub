@@ -468,13 +468,28 @@ export default function AutoOrganizerPage() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isFocusModalOpen) {
-        setIsFocusModalOpen(false)
+      if (e.key === 'Escape') {
+        if (isFocusModalOpen) {
+          setIsFocusModalOpen(false)
+          return
+        }
+        if (isWhatsAppModalOpen) {
+          setIsWhatsAppModalOpen(false)
+          return
+        }
+        if (isTaskModalOpen) {
+          setIsTaskModalOpen(false)
+          return
+        }
+        if (isManageRolesModalOpen) {
+          setIsManageRolesModalOpen(false)
+          return
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isFocusModalOpen])
+  }, [isFocusModalOpen, isWhatsAppModalOpen, isTaskModalOpen, isManageRolesModalOpen])
 
   // Guardar preferencia de modo de modal
   const toggleModalMode = (mode) => {

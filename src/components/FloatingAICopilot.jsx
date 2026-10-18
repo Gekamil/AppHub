@@ -34,6 +34,16 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) 
     }
   }, [messages, isOpen])
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
   // Escuchar logs automáticos (ej. auto-organizador) o mensajes de WhatsApp
   useEffect(() => {
     const handleAddLog = (e) => {

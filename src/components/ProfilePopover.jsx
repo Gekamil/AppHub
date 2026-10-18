@@ -105,11 +105,13 @@ export default function ProfilePopover({
 
   if (!isOpen) return null
 
+  const isElectron = typeof window !== 'undefined' && !!(window.electronAPI?.isElectron || /Electron/i.test(navigator.userAgent || ''))
+
   // Clases de posicionamiento según ubicación
   const positionClasses =
     placement === 'sidebar'
       ? 'fixed left-3 sm:left-4 bottom-20 z-50'
-      : 'fixed right-3 sm:right-6 top-16 z-50'
+      : `fixed right-3 sm:right-6 ${isElectron ? 'md:right-38' : ''} top-16 z-50`
 
   return (
     <div

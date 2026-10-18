@@ -163,8 +163,8 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
       >
         <div className="flex flex-col">
           {/* Brand / Logo */}
-          <div className="h-14 px-space-lg flex items-center justify-between border-b border-surface-muted/50">
-            <div className="flex items-center gap-2.5">
+          <div className="h-14 px-space-lg flex items-center justify-between border-b border-surface-muted/50 app-drag-region">
+            <div className="flex items-center gap-2.5 app-no-drag">
               <img
                 src="/logo.png"
                 alt="StudentHub Logo"
@@ -178,7 +178,7 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
             <button
               type="button"
               onClick={onCloseSidebar}
-              className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-muted transition-colors cursor-pointer"
+              className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-secondary hover:text-on-surface hover:bg-surface-muted transition-colors cursor-pointer app-no-drag"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>

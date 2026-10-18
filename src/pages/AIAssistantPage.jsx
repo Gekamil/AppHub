@@ -106,7 +106,7 @@ export default function AIAssistantPage() {
               Asistente de Productividad IA
             </h1>
             <span className="font-code-sm text-xs text-primary bg-primary/10 px-2.5 py-0.5 rounded-full font-bold">
-              Groq Qwen 3.8
+              Motor Neural Inteligente
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-secondary text-xs font-medium">
@@ -237,7 +237,7 @@ export default function AIAssistantPage() {
           {isTyping && (
             <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl w-fit border border-slate-200 dark:border-slate-700 text-xs text-secondary font-code-sm">
               <span className="w-2 h-2 rounded-full bg-primary animate-ping"></span>
-              <span>Procesando consulta con Groq...</span>
+              <span>Procesando respuesta del Asistente IA...</span>
             </div>
           )}
 

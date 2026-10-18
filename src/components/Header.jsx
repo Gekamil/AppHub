@@ -31,6 +31,8 @@ export default function Header({
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
   const [accountModalTab, setAccountModalTab] = useState('profile')
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const notifRef = useRef(null)
   const [isStandaloneApp, setIsStandaloneApp] = useState(() => {
     if (typeof window === 'undefined') return false
     const isCap = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
@@ -239,6 +241,29 @@ export default function Header({
     localStorage.setItem('app_language', language)
   }, [language])
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isSettingsOpen) setIsSettingsOpen(false)
+        if (isInstallModalOpen) setIsInstallModalOpen(false)
+        if (isProfileOpen) setIsProfileOpen(false)
+        if (isNotificationsOpen) setIsNotificationsOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSettingsOpen, isInstallModalOpen, isProfileOpen, isNotificationsOpen])
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (isNotificationsOpen && notifRef.current && !notifRef.current.contains(e.target)) {
+        setIsNotificationsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [isNotificationsOpen])
+
   return (
     <>
       <header
@@ -333,13 +358,38 @@ export default function Header({
                 <span className="hidden sm:inline font-bold">Instalar App</span>
               </button>
             )}
-            <button
-              onClick={() => alert('Módulo en desarrollo')}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag"
-              title="Notificaciones"
-            >
-              <span className="material-symbols-outlined text-[18px]">notifications</span>
-            </button>
+            <div className="relative app-no-drag">
+              <button
+                type="button"
+                onClick={() => setIsNotificationsOpen((prev) => !prev)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag relative"
+                title="Centro de notificaciones"
+              >
+                <span className="material-symbols-outlined text-[18px]">notifications</span>
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              </button>
+
+              {isNotificationsOpen && (
+                <div
+                  ref={notifRef}
+                  className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#161b26] rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none"
+                >
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <span className="font-bold text-xs text-on-surface">Notificaciones</span>
+                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                      Al día
+                    </span>
+                  </div>
+                  <div className="py-4 flex flex-col items-center justify-center text-center gap-1.5">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                    </div>
+                    <p className="text-xs font-semibold text-on-surface">Todo sincronizado</p>
+                    <p className="text-[11px] text-secondary">No tienes tareas atrasadas ni avisos pendientes.</p>
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag"
