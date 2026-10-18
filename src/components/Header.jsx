@@ -32,7 +32,15 @@ export default function Header({
   const [accountModalTab, setAccountModalTab] = useState('profile')
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
+  const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'es')
+  const [currentAppTheme, setCurrentAppTheme] = useState(() => getAppTheme())
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false)
+  const [visibleTabs, setVisibleTabs] = useState(() => getVisibleNavTabs())
+
   const notifRef = useRef(null)
+  const profileButtonRef = useRef(null)
+
   const [isStandaloneApp, setIsStandaloneApp] = useState(() => {
     if (typeof window === 'undefined') return false
     const isCap = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
@@ -41,7 +49,6 @@ export default function Header({
     return isCap || isElec || isPwa
   })
   const isElectron = typeof window !== 'undefined' && !!(window.electronAPI?.isElectron || /Electron/i.test(navigator.userAgent || ''))
-  const profileButtonRef = useRef(null)
 
   useEffect(() => {
     if (isElectron && window.electronAPI?.setTitleBarTheme) {
@@ -65,12 +72,6 @@ export default function Header({
       return () => mql.removeEventListener('change', checkStandalone)
     }
   }, [])
-  const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
-  const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'es')
-
-  const [currentAppTheme, setCurrentAppTheme] = useState(() => getAppTheme())
-  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false)
-  const [visibleTabs, setVisibleTabs] = useState(() => getVisibleNavTabs())
 
   useEffect(() => {
     const handleTabsChange = (e) => {

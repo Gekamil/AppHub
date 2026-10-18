@@ -198,7 +198,7 @@ function baileysBridgePlugin() {
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [react(), tailwindcss(), downloadMiddlewarePlugin(), icsProxyPlugin(), whatsappWebhookPlugin(), baileysBridgePlugin()],
   server: {
     host: true,

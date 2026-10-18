@@ -2321,6 +2321,9 @@ function serveStatic(req, res) {
 
   const parsedUrl = new URL(req.url, 'http://localhost')
   let pathname = parsedUrl.pathname
+  if (pathname.includes('/assets/')) {
+    pathname = pathname.slice(pathname.indexOf('/assets/'))
+  }
   if (pathname === '/') pathname = '/index.html'
 
   const filePath = path.join(DIST_DIR, pathname)
