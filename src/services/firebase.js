@@ -1,5 +1,8 @@
-// Servicio de Base de Datos y Autenticacion Persistente para StudentHub
-// Sin requerir claves tecnicas ni configuraciones complejas al usuario
+// Servicio de Base de Datos y Autenticacion Persistente en la Nube para StudentHub
+// Sincronizado en tiempo real con Firebase Firestore entre todos los dispositivos (Android, iOS, PC y Web)
+
+import { db } from './firebaseConfig'
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
 
 const ACCOUNTS_DB_KEY = 'studenthub_accounts_database'
 const ACTIVE_USER_KEY = 'studenthub_active_user'
@@ -14,16 +17,21 @@ export const GUEST_USER = {
   location: 'Málaga, ES',
 }
 
-const DEFAULT_ACCOUNTS = []
+// Genera un ID de documento normalizado y seguro para Firestore
+export const getAccountDocId = (email) => {
+  if (!email) return ''
+  const clean = email.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
+  return `account_${clean}`
+}
 
-// Obtener todas las cuentas registradas en la base de datos
+// Obtener todas las cuentas guardadas en la caché local del dispositivo
 export const getAllAccounts = () => {
   try {
     const raw = localStorage.getItem(ACCOUNTS_DB_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) {
-        // Purgar de forma estricta cualquier rastro de cuentas demo o inexistentes
+        // Purgar rastro de cuentas demo o de prueba
         const clean = parsed.filter(
           (acc) =>
             acc &&
@@ -41,17 +49,17 @@ export const getAllAccounts = () => {
       }
     }
   } catch (e) {
-    console.warn('Error leyendo base de datos de cuentas:', e)
+    console.warn('Error leyendo base de datos de cuentas local:', e)
   }
   return []
 }
 
-// Guardar lista de cuentas
+// Guardar lista de cuentas en la caché local
 const saveAllAccounts = (accounts) => {
   try {
     localStorage.setItem(ACCOUNTS_DB_KEY, JSON.stringify(accounts))
   } catch (e) {
-    console.warn('Error guardando en base de datos:', e)
+    console.warn('Error guardando en caché local:', e)
   }
 }
 
@@ -67,7 +75,7 @@ export const isGuestUser = (user) => {
   }
 }
 
-// Obtener usuario actualmente activo (por defecto siempre Invitado a menos que haya login explícito)
+// Obtener usuario actualmente activo (por defecto Invitado a menos que haya login explícito)
 export const getCurrentUser = () => {
   try {
     const isAuth = localStorage.getItem('studenthub_is_authenticated')
@@ -92,32 +100,89 @@ export const getCurrentUser = () => {
   } catch (e) {
     console.warn('Error leyendo usuario activo:', e)
   }
-  // Si no hay sesión válida real, forzar modo invitado
   localStorage.setItem('studenthub_is_authenticated', 'false')
   return GUEST_USER
 }
 
-// Establecer usuario activo
+// Establecer usuario activo y emitir evento
 export const setActiveUser = (user) => {
   localStorage.setItem(ACTIVE_USER_KEY, JSON.stringify(user))
-  // Disparar evento para actualizar componentes
   window.dispatchEvent(new Event('studenthub_auth_changed'))
   return user
 }
 
-// Iniciar sesion con email y contrasena
+// Iniciar sesión con email y contraseña consultando la Nube (Firestore) y la caché local
 export const loginUser = async (email, password) => {
-  const accounts = getAllAccounts()
-  const trimmedEmail = email.trim().toLowerCase()
-  const found = accounts.find((a) => a.email.toLowerCase() === trimmedEmail)
+  const trimmedEmail = (email || '').trim().toLowerCase()
+  if (!trimmedEmail) {
+    throw new Error('Por favor, introduce tu correo electrónico')
+  }
 
+  const docId = getAccountDocId(trimmedEmail)
+  let found = null
+
+  // 1. Consultar en la base de datos en la nube (Firestore) para soporte multidispositivo real
+  try {
+    if (db) {
+      const docRef = doc(db, 'shared_calendars', docId)
+      const snap = await getDoc(docRef)
+      if (snap.exists()) {
+        found = snap.data()
+        console.log('[Cloud Auth]: Cuenta recuperada con éxito desde Firestore Cloud:', trimmedEmail)
+      }
+    }
+  } catch (cloudErr) {
+    console.warn('[Cloud Auth]: Aviso al consultar cuenta en Firestore:', cloudErr.message)
+  }
+
+  // 2. Si no se encontró en la nube o no había conexión, buscar en la caché local del dispositivo
   if (!found) {
-    throw new Error('No existe ninguna cuenta con ese correo electrónico')
+    const localAccounts = getAllAccounts()
+    found = localAccounts.find((a) => a.email && a.email.toLowerCase() === trimmedEmail)
   }
 
-  if (password && found.password && found.password !== password) {
-    throw new Error('Contraseña incorrecta')
+  // 3. Si no existe en ningún lado, indicar error claro
+  if (!found) {
+    throw new Error(
+      'No existe ninguna cuenta registrada con ese correo electrónico. Si la creaste en otro dispositivo, comprueba que el correo esté bien escrito o pulsa en Registrarse para crearla.'
+    )
   }
+
+  // 4. Validar contraseña
+  if (password && found.password && found.password !== password) {
+    throw new Error('Contraseña incorrecta. Por favor, revisa las mayúsculas y minúsculas.')
+  }
+
+  // 5. Guardar/actualizar la cuenta en la caché local del dispositivo
+  const accounts = getAllAccounts()
+  const existingIdx = accounts.findIndex((a) => a.email && a.email.toLowerCase() === trimmedEmail)
+  if (existingIdx >= 0) {
+    accounts[existingIdx] = { ...accounts[existingIdx], ...found }
+  } else {
+    accounts.push(found)
+  }
+  saveAllAccounts(accounts)
+
+  // 6. Sincronizar tareas y calendarios guardados en la nube hacia este dispositivo
+  if (found.tasks && Array.isArray(found.tasks) && found.tasks.length > 0) {
+    try {
+      localStorage.setItem('app_global_tasks', JSON.stringify(found.tasks))
+      localStorage.setItem(`studenthub_tasks_${found.uid}`, JSON.stringify(found.tasks))
+      window.dispatchEvent(new CustomEvent('global_tasks_updated', { detail: found.tasks }))
+    } catch (e) {}
+  }
+  if (found.calendars && Array.isArray(found.calendars) && found.calendars.length > 0) {
+    try {
+      localStorage.setItem(`studenthub_calendars_${found.uid}`, JSON.stringify(found.calendars))
+    } catch (e) {}
+  }
+
+  // 7. Si la cuenta solo existía en local (por ejemplo creada offline), subirla a Firestore para que quede en la nube
+  try {
+    if (db) {
+      setDoc(doc(db, 'shared_calendars', docId), found, { merge: true }).catch(() => {})
+    }
+  } catch (e) {}
 
   localStorage.setItem('studenthub_is_authenticated', 'true')
   setActiveUser(found)
@@ -127,7 +192,7 @@ export const loginUser = async (email, password) => {
 // Enviar correo de bienvenida con enlace a la web de descarga
 export const sendWelcomeEmail = async (user) => {
   if (!user || !user.email) return null
-  const downloadUrl = 'https://apphub-download.vercel.app' // URL de la página web oficial de descargas
+  const downloadUrl = 'https://apphub-download.vercel.app'
 
   const emailPayload = {
     id: 'mail-' + Date.now(),
@@ -139,7 +204,6 @@ export const sendWelcomeEmail = async (user) => {
     content: `Hola ${user.displayName || 'Usuario'},\n\n¡Gracias por crear tu cuenta en StudentHub!\n\nPuedes descargar la aplicación oficial para todos tus dispositivos (Android, iOS y PC) desde nuestra web:\n${downloadUrl}\n\n¡Que disfrutes al máximo de tu nuevo espacio de productividad!\n\nEl equipo de StudentHub`,
   }
 
-  // Guardar en el historial de correos enviados para depuración e historial
   try {
     const raw = localStorage.getItem('apphub_welcome_emails') || '[]'
     const list = JSON.parse(raw)
@@ -147,12 +211,10 @@ export const sendWelcomeEmail = async (user) => {
     localStorage.setItem('apphub_welcome_emails', JSON.stringify(list))
   } catch (e) {}
 
-  // Notificar al sistema mediante evento
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('apphub_welcome_email_sent', { detail: emailPayload }))
   }
 
-  // Notificar al servidor en segundo plano si existe endpoint
   try {
     fetch('/api/send-welcome-email', {
       method: 'POST',
@@ -164,13 +226,35 @@ export const sendWelcomeEmail = async (user) => {
   return emailPayload
 }
 
-// Registrar nueva cuenta de usuario (Estrictamente una sola cuenta por correo)
+// Registrar nueva cuenta de usuario en Firebase Firestore Cloud y caché local
 export const registerUser = async (email, password, displayName = '') => {
-  const accounts = getAllAccounts()
-  const trimmedEmail = email.trim().toLowerCase()
+  const trimmedEmail = (email || '').trim().toLowerCase()
+  if (!trimmedEmail) {
+    throw new Error('Por favor, introduce un correo electrónico válido')
+  }
 
-  if (accounts.some((a) => a.email.toLowerCase() === trimmedEmail)) {
-    throw new Error('Ya existe una cuenta registrada con este correo electrónico. Solo se permite una cuenta por correo.')
+  const docId = getAccountDocId(trimmedEmail)
+
+  // 1. Comprobar si ya existe en la nube Firestore
+  try {
+    if (db) {
+      const snap = await getDoc(doc(db, 'shared_calendars', docId))
+      if (snap.exists()) {
+        throw new Error(
+          'Ya existe una cuenta registrada con este correo electrónico. Por favor, inicia sesión con tu contraseña.'
+        )
+      }
+    }
+  } catch (err) {
+    if (err.message && err.message.includes('Ya existe')) {
+      throw err
+    }
+  }
+
+  // 2. Comprobar si ya existe en la caché local
+  const accounts = getAllAccounts()
+  if (accounts.some((a) => a.email && a.email.toLowerCase() === trimmedEmail)) {
+    throw new Error('Ya existe una cuenta registrada con este correo electrónico. Inicia sesión con tu contraseña.')
   }
 
   const newUser = {
@@ -182,6 +266,7 @@ export const registerUser = async (email, password, displayName = '') => {
     focusStatus: 'Deep Work Block',
     location: 'Málaga, ES',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     calendars: [
       {
         id: 'cal-default',
@@ -196,12 +281,23 @@ export const registerUser = async (email, password, displayName = '') => {
     tasks: [],
   }
 
+  // 3. Guardar en la nube Firestore de forma inmediata
+  try {
+    if (db) {
+      await setDoc(doc(db, 'shared_calendars', docId), newUser)
+      console.log('[Cloud Auth]: Nueva cuenta guardada en Firebase Firestore:', docId)
+    }
+  } catch (cloudErr) {
+    console.warn('[Cloud Auth]: Error al guardar cuenta en Firestore:', cloudErr.message)
+  }
+
+  // 4. Guardar en la caché local de este dispositivo
   accounts.push(newUser)
   saveAllAccounts(accounts)
   localStorage.setItem('studenthub_is_authenticated', 'true')
   setActiveUser(newUser)
 
-  // Enviar correo de bienvenida con enlace a la web de descarga
+  // 5. Enviar correo de bienvenida
   try {
     await sendWelcomeEmail(newUser)
   } catch (err) {
@@ -225,11 +321,26 @@ export const switchAccount = (uid) => {
   return logoutUser()
 }
 
-// Eliminar una cuenta guardada en el dispositivo
+// Eliminar una cuenta guardada en el dispositivo y en la nube
 export const deleteAccount = async (uid) => {
   let accounts = getAllAccounts()
+  const target = accounts.find((a) => a.uid === uid)
   accounts = accounts.filter((a) => a.uid !== uid)
   saveAllAccounts(accounts)
+
+  // Eliminar de Firestore en la nube
+  if (target && target.email) {
+    try {
+      if (db) {
+        const docId = getAccountDocId(target.email)
+        await deleteDoc(doc(db, 'shared_calendars', docId))
+        console.log('[Cloud Auth]: Cuenta eliminada de Firestore Cloud:', docId)
+      }
+    } catch (e) {
+      console.warn('Error eliminando cuenta en Firestore:', e)
+    }
+  }
+
   const current = getCurrentUser()
   if (current.uid === uid) {
     if (accounts.length > 0) {
@@ -243,13 +354,13 @@ export const deleteAccount = async (uid) => {
   }
 }
 
-// Actualizar datos del perfil activo
+// Actualizar datos del perfil activo en local y en la nube
 export const updateUserProfileData = async (data) => {
   const current = getCurrentUser()
   const accounts = getAllAccounts()
   const index = accounts.findIndex((a) => a.uid === current.uid)
 
-  const updated = { ...current, ...data }
+  const updated = { ...current, ...data, updatedAt: new Date().toISOString() }
 
   if (index >= 0) {
     accounts[index] = updated
@@ -257,30 +368,40 @@ export const updateUserProfileData = async (data) => {
   }
 
   setActiveUser(updated)
+
+  // Sincronizar en la nube
+  if (current.email) {
+    try {
+      if (db) {
+        const docId = getAccountDocId(current.email)
+        await setDoc(doc(db, 'shared_calendars', docId), updated, { merge: true })
+      }
+    } catch (e) {
+      console.warn('Error sincronizando perfil en Firestore:', e)
+    }
+  }
+
   return updated
 }
 
-// Cerrar sesion (pasa a modo invitado sin sesion y limpia datos temporales)
+// Cerrar sesión
 export const logoutUser = async () => {
   localStorage.setItem('studenthub_is_authenticated', 'false')
-  // Al cerrar sesión, limpiar cualquier rastro de tareas en app_global_tasks para que el invitado nunca las vea
   localStorage.removeItem('app_global_tasks')
   return setActiveUser(GUEST_USER)
 }
 
-// Obtener tareas del usuario actual garantizando aislamiento estricto y privacidad
+// Obtener tareas del usuario actual
 export const getUserTasks = (user = getCurrentUser()) => {
   try {
     if (isGuestUser(user)) {
-      // Un usuario sin cuenta iniciada NUNCA accede a tareas de otros usuarios
       const rawGuest = localStorage.getItem('studenthub_guest_tasks')
       if (rawGuest !== null) {
         const parsed = JSON.parse(rawGuest)
         if (Array.isArray(parsed)) return parsed
       }
-      return [] // Vacío por defecto para invitados (sin eventos ajenos)
+      return []
     }
-    // Usuario registrado: cargar sus tareas privadas
     const accounts = getAllAccounts()
     const found = accounts.find((a) => a.uid === user.uid)
     if (found && Array.isArray(found.tasks)) {
@@ -297,15 +418,13 @@ export const getUserTasks = (user = getCurrentUser()) => {
   return []
 }
 
-// Guardar tareas garantizando aislamiento de usuario y privacidad absoluta
+// Guardar tareas en la partición del usuario
 export const saveUserTasks = (tasks, user = getCurrentUser()) => {
   try {
     if (isGuestUser(user)) {
-      // Invitado: guardar únicamente en memoria local de invitado (no en cuentas ni en la nube)
       localStorage.setItem('studenthub_guest_tasks', JSON.stringify(tasks))
       return
     }
-    // Usuario autenticado: persistir en su propia partición
     localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(tasks))
     const accounts = getAllAccounts()
     const idx = accounts.findIndex((a) => a.uid === user.uid)
@@ -318,7 +437,7 @@ export const saveUserTasks = (tasks, user = getCurrentUser()) => {
   }
 }
 
-// Obtener calendarios del usuario actual (Aislado por cuenta)
+// Obtener calendarios del usuario actual
 export const getUserCalendars = (user = getCurrentUser()) => {
   const DEFAULT_GUEST_CALENDARS = [
     {
@@ -377,43 +496,89 @@ export const saveUserCalendars = (calendars, user = getCurrentUser()) => {
   }
 }
 
-// Sincronizar tareas del usuario activo
+// Sincronizar tareas del usuario activo con la nube (Firestore Cloud)
 export const syncTasksToCloud = async (tasks) => {
   try {
     const current = getCurrentUser()
-    if (!current || current.uid === 'guest') return
+    if (!current || isGuestUser(current) || !current.email) return
+
+    // 1. Guardar en caché local
     const accounts = getAllAccounts()
     const idx = accounts.findIndex((a) => a.uid === current.uid)
     if (idx >= 0) {
       accounts[idx].tasks = tasks
       saveAllAccounts(accounts)
     }
+
+    // 2. Guardar en Firestore en la nube para sincronización en tiempo real
+    if (db) {
+      const docId = getAccountDocId(current.email)
+      await setDoc(
+        doc(db, 'shared_calendars', docId),
+        { tasks, updatedAt: new Date().toISOString() },
+        { merge: true }
+      )
+    }
   } catch (e) {
-    console.warn('Error sincronizando tareas:', e)
+    console.warn('Error sincronizando tareas en la nube:', e)
   }
 }
 
-// Sincronizar calendarios del usuario activo
+// Sincronizar calendarios del usuario activo con la nube (Firestore Cloud)
 export const syncCalendarsToCloud = async (calendars) => {
   try {
     const current = getCurrentUser()
-    if (!current || current.uid === 'guest') return
+    if (!current || isGuestUser(current) || !current.email) return
+
+    // 1. Guardar en caché local
     const accounts = getAllAccounts()
     const idx = accounts.findIndex((a) => a.uid === current.uid)
     if (idx >= 0) {
       accounts[idx].calendars = calendars
       saveAllAccounts(accounts)
     }
+
+    // 2. Guardar en Firestore en la nube
+    if (db) {
+      const docId = getAccountDocId(current.email)
+      await setDoc(
+        doc(db, 'shared_calendars', docId),
+        { calendars, updatedAt: new Date().toISOString() },
+        { merge: true }
+      )
+    }
   } catch (e) {
-    console.warn('Error sincronizando calendarios:', e)
+    console.warn('Error sincronizando calendarios en la nube:', e)
   }
 }
 
-// Cargar datos remotos/locales del usuario activo
+// Cargar datos remotos del usuario activo desde la nube
 export const loadUserDataFromCloud = async () => {
   try {
     const current = getCurrentUser()
-    if (!current || current.uid === 'guest') return null
+    if (!current || isGuestUser(current) || !current.email) return null
+
+    // 1. Consultar Firestore Cloud
+    if (db) {
+      const docId = getAccountDocId(current.email)
+      const snap = await getDoc(doc(db, 'shared_calendars', docId))
+      if (snap.exists()) {
+        const cloudData = snap.data()
+        if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
+          localStorage.setItem('app_global_tasks', JSON.stringify(cloudData.tasks))
+          localStorage.setItem(`studenthub_tasks_${current.uid}`, JSON.stringify(cloudData.tasks))
+        }
+        if (cloudData.calendars && Array.isArray(cloudData.calendars)) {
+          localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(cloudData.calendars))
+        }
+        return {
+          tasks: cloudData.tasks || null,
+          calendars: cloudData.calendars || null,
+        }
+      }
+    }
+
+    // 2. Fallback local
     const accounts = getAllAccounts()
     const found = accounts.find((a) => a.uid === current.uid)
     if (found) {
@@ -423,7 +588,34 @@ export const loadUserDataFromCloud = async () => {
       }
     }
   } catch (e) {
-    console.warn('Error cargando datos de usuario:', e)
+    console.warn('Error cargando datos de usuario desde la nube:', e)
   }
   return null
+}
+
+// Auto-migración en segundo plano: sube a Firestore cualquier cuenta que estuviera guardada previamente solo en este dispositivo
+export const syncLocalAccountsToCloud = async () => {
+  try {
+    if (!db || typeof window === 'undefined') return
+    const localAccounts = getAllAccounts()
+    for (const acc of localAccounts) {
+      if (acc && acc.email && acc.uid && acc.uid !== 'guest' && acc.uid !== 'user-jorge') {
+        const docId = getAccountDocId(acc.email)
+        const snap = await getDoc(doc(db, 'shared_calendars', docId))
+        if (!snap.exists()) {
+          console.log('[Cloud Auth Migration]: Subiendo cuenta previa a Firestore Cloud:', acc.email)
+          await setDoc(doc(db, 'shared_calendars', docId), acc)
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Cloud Auth Migration Error]:', e.message)
+  }
+}
+
+// Disparar auto-migración tras el arranque
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncLocalAccountsToCloud().catch(() => {})
+  }, 1500)
 }

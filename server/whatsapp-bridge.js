@@ -2209,6 +2209,81 @@ export function handleBaileysApiRoute(req, res) {
     return true
   }
 
+  if (pathname === '/api/auth/register' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => { body += chunk })
+    req.on('end', async () => {
+      try {
+        const user = JSON.parse(body)
+        if (!user || !user.email) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Falta email' }))
+          return
+        }
+        const cleanEmail = user.email.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
+        const docId = `account_${cleanEmail}`
+        const db = await getBridgeFirestore()
+        if (db) {
+          const { doc, setDoc } = await import('firebase/firestore')
+          await setDoc(doc(db, 'shared_calendars', docId), user, { merge: true })
+        }
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true, user }))
+      } catch (e) {
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: e.message }))
+      }
+    })
+    return true
+  }
+
+  if (pathname === '/api/auth/login' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => { body += chunk })
+    req.on('end', async () => {
+      try {
+        const { email, password } = JSON.parse(body)
+        if (!email) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Falta email' }))
+          return
+        }
+        const cleanEmail = email.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
+        const docId = `account_${cleanEmail}`
+        const db = await getBridgeFirestore()
+        if (db) {
+          const { doc, getDoc } = await import('firebase/firestore')
+          const snap = await getDoc(doc(db, 'shared_calendars', docId))
+          if (snap.exists()) {
+            const user = snap.data()
+            if (password && user.password && user.password !== password) {
+              res.statusCode = 401
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ error: 'Contraseña incorrecta' }))
+              return
+            }
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ success: true, user }))
+            return
+          }
+        }
+        res.statusCode = 404
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'No existe ninguna cuenta con ese correo electrónico' }))
+      } catch (e) {
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: e.message }))
+      }
+    })
+    return true
+  }
+
   return false
 }
 
