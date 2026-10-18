@@ -106,18 +106,24 @@ function createWindow() {
     mainWindow.show()
   })
 
-  // En produccion carga dist/index.html con hash router; en desarrollo carga el servidor de Vite
+  // En produccion carga la aplicacion en vivo de Render con fallback local si esta offline; en desarrollo carga Vite
   const isDev = process.env.NODE_ENV === 'development'
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: 'app' })
+    mainWindow.loadURL('https://freestudentapphub.onrender.com/#/app').catch((err) => {
+      console.warn('[Electron] Remote server unreachable, falling back to local files:', err ? err.message : err)
+      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: 'app' })
+    })
     setupAutoUpdater(mainWindow)
   }
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
     console.error(`[Electron Failed Load] ${errorCode}: ${errorDescription} on ${validatedURL}`)
+    if (validatedURL && validatedURL.includes('onrender.com')) {
+      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: 'app' })
+    }
   })
 
   // Abrir enlaces externos en el navegador predeterminado del sistema

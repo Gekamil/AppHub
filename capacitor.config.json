@@ -1,8 +1,9 @@
 {
-  "appId": "com.studenthub.workspace",
+  "appId": "com.apphub.workspace",
   "appName": "StudentHub",
   "webDir": "dist",
   "server": {
+    "url": "https://freestudentapphub.onrender.com",
     "androidScheme": "https",
     "cleartext": true
   },
