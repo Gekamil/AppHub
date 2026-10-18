@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 
-const CURRENT_VERSION = '0.0.0'
+const CURRENT_VERSION = '0.0.1'
 const GITHUB_REPO = 'Gekamil/AppHub'
 
 export async function checkForAppUpdates() {

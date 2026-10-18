@@ -168,7 +168,7 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
               <img
                 src="/logo.png"
                 alt="StudentHub Logo"
-                className="w-8 h-8 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0"
+                className="w-7 h-7 rounded-xl object-contain shrink-0"
               />
               <span className="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">
                 StudentHub

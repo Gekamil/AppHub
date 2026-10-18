@@ -53,8 +53,8 @@ export default function InstallAppModal({ isOpen, onClose }) {
         {/* Cabecera */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-muted bg-surface-subtle/50">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs p-1">
-              <img src="/logo.png" alt="StudentHub Logo" className="w-full h-full object-contain" />
+            <div className="w-8 h-8 rounded-2xl bg-white flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs p-0.5">
+              <img src="/logo.png" alt="StudentHub Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <div>
               <h3 className="font-bold text-on-surface text-base">Instalar StudentHub</h3>

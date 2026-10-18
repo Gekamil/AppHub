@@ -257,7 +257,7 @@ export default function Header({
               <img
                 src="/logo.png"
                 alt="StudentHub Logo"
-                className="w-7 h-7 rounded-lg object-contain bg-white shadow-2xs border border-slate-200/60 dark:border-slate-700/60 p-0.5 shrink-0 group-hover:scale-105 transition-transform"
+                className="w-6 h-6 rounded-xl object-contain shrink-0 group-hover:scale-105 transition-transform"
               />
               <span className="font-headline-sm text-sm font-bold text-on-surface tracking-tight">StudentHub</span>
             </NavLink>

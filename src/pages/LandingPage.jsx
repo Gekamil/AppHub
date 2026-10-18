@@ -142,11 +142,11 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-5 rounded-full bg-[#0e0e10]/85 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_-8px_rgba(0,0,0,0.9)] pointer-events-auto">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-[#2a2a2c] border border-white/[0.08] flex items-center justify-center p-1.5 shadow-inner group-hover:border-[#dbb8ff]/50 group-hover:shadow-[0_0_15px_rgba(219,184,255,0.3)] transition-all">
+            <div className="w-8.5 h-8.5 rounded-2xl bg-[#2a2a2c] border border-white/[0.08] flex items-center justify-center p-1 shadow-inner group-hover:border-[#dbb8ff]/50 group-hover:shadow-[0_0_15px_rgba(219,184,255,0.3)] transition-all">
               <img
                 src="/logo.png"
                 alt="StudentHub Logo"
-                className="w-full h-full object-contain filter invert group-hover:scale-105 transition-transform"
+                className="w-full h-full object-contain filter invert group-hover:scale-105 transition-transform rounded-xl"
               />
             </div>
             <div className="flex flex-col">
@@ -715,11 +715,11 @@ export default function LandingPage() {
       <footer className="w-full bg-[#0a0a0c] border-t border-white/[0.06] py-8">
         <div className="max-w-6xl mx-auto px-4 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#2a2a2c] border border-white/[0.08] flex items-center justify-center p-1 shadow-inner">
+            <div className="w-7 h-7 rounded-xl bg-[#2a2a2c] border border-white/[0.08] flex items-center justify-center p-0.5 shadow-inner">
               <img
                 src="/logo.png"
                 alt="StudentHub Logo"
-                className="w-full h-full object-contain filter invert opacity-90"
+                className="w-full h-full object-contain filter invert opacity-90 rounded-lg"
               />
             </div>
             <span className="text-base text-[#e5e1e4] font-semibold tracking-tight">StudentHub</span>
