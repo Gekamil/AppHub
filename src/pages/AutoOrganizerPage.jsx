@@ -2628,11 +2628,27 @@ export default function AutoOrganizerPage() {
                   <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                     <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                      Iniciando puente local y negociando clave segura...
+                      Iniciando puente con el servidor y generando código...
                     </p>
-                    <span className="text-[11px] text-slate-500">
-                      Esto tarda unos segundos mientras se inicializa el socket en tu equipo.
+                    <span className="text-[11px] text-slate-500 text-center max-w-sm">
+                      Conectando con el servidor en la nube. Si el servidor estaba en reposo, puede tardar entre 10 y 20 segundos en despertar.
                     </span>
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleConnectBaileys(pairingMethodTab === 'phone' ? pairingPhoneInput : null)}
+                        className="py-1 px-3 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-medium text-[11px] cursor-pointer transition-colors"
+                      >
+                        Reintentar ahora
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDisconnectBaileys}
+                        className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
                 )}
 

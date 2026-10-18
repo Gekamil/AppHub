@@ -1,7 +1,37 @@
 import { Capacitor } from '@capacitor/core'
 
-const CURRENT_VERSION = '0.0.1'
+export const CURRENT_VERSION = '0.0.2'
 const GITHUB_REPO = 'Gekamil/AppHub'
+
+export const APP_CHANGELOG = {
+  version: '0.0.2',
+  date: '18 de Octubre, 2026',
+  badge: 'Actualización v0.0.2',
+  title: '¡StudentHub se ha actualizado con éxito!',
+  description: 'Hemos aplicado las siguientes mejoras y correcciones en todos tus dispositivos:',
+  features: [
+    {
+      title: 'WhatsApp sin cámara (Código de 8 dígitos)',
+      description: 'Vincula WhatsApp directamente en este mismo móvil sin tener que escanear la pantalla con otra cámara.',
+      icon: 'pin',
+    },
+    {
+      title: 'Sincronización en la Nube y Fusión de Cuentas',
+      description: 'Tus cuentas, tareas y notas se sincronizan en tiempo real con Firebase Firestore. Se han unificado las cuentas duplicadas sin perder datos.',
+      icon: 'cloud_sync',
+    },
+    {
+      title: 'Conexión Directa al Servidor Cloud',
+      description: 'El bot de WhatsApp y las funciones en tiempo real se conectan al servidor en la nube desde la web y desde las apps instaladas (.apk y .exe).',
+      icon: 'lan',
+    },
+    {
+      title: 'Espaciado Superior Móvil Ajustado',
+      description: 'La barra de navegación ya no tapa el selector de fecha ni los botones superiores en pantallas móviles.',
+      icon: 'aspect_ratio',
+    },
+  ],
+}
 
 export async function checkForAppUpdates() {
   // En Electron, electron-updater se encarga de la comprobacion automatica en segundo plano

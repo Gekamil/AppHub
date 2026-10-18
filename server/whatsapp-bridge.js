@@ -1235,6 +1235,14 @@ export async function startBaileysConnection(phoneNumber = null) {
     return currentStatus
   }
 
+  // Si ya existía un socket previo pendiente o desconectado, cerrarlo limpiamente
+  if (sock) {
+    try {
+      sock.end(undefined)
+    } catch (e) {}
+    sock = null
+  }
+
   const cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '') : null
 
   currentStatus = {
@@ -1339,7 +1347,9 @@ export async function startBaileysConnection(phoneNumber = null) {
 
         console.log(`[Baileys]: Conexión cerrada (Código: ${statusCode}). Reconectar: ${shouldReconnect}`)
 
-        if (shouldReconnect) {
+        // Solo autoreconectar si ya estaba previamente autenticado/registrado.
+        // Si no estaba registrado (estaba esperando QR o código), no reintentar en bucle para evitar rate-limits de WhatsApp.
+        if (shouldReconnect && sock?.authState?.creds?.registered) {
           setTimeout(() => startBaileysConnection(), 3000)
         }
       } else if (connection === 'open') {

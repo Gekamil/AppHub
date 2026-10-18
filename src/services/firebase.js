@@ -1,5 +1,6 @@
 // Servicio de Base de Datos y Autenticacion Persistente en la Nube para StudentHub
 // Sincronizado en tiempo real con Firebase Firestore entre todos los dispositivos (Android, iOS, PC y Web)
+// Con deduplicación automática, unificación estricta de cuentas por correo y preservación de tareas
 
 import { db } from './firebaseConfig'
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
@@ -25,6 +26,7 @@ export const getAccountDocId = (email) => {
 }
 
 // Obtener todas las cuentas guardadas en la caché local del dispositivo
+// Aplica deduplicación y fusión estricta por correo para no tener cuentas duplicadas ni perder tareas
 export const getAllAccounts = () => {
   try {
     const raw = localStorage.getItem(ACCOUNTS_DB_KEY)
@@ -32,20 +34,82 @@ export const getAllAccounts = () => {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) {
         // Purgar rastro de cuentas demo o de prueba
-        const clean = parsed.filter(
+        const valid = parsed.filter(
           (acc) =>
             acc &&
+            acc.email &&
             acc.uid &&
             acc.uid !== 'user-jorge' &&
             acc.uid !== 'guest' &&
-            acc.email &&
             acc.email !== 'jorge.m@focushub.workspace' &&
             acc.email !== 'invitado@studenthub.app'
         )
-        if (clean.length !== parsed.length) {
-          localStorage.setItem(ACCOUNTS_DB_KEY, JSON.stringify(clean))
+
+        // Fusión estricta y deduplicación por correo: una sola cuenta por email
+        const accountsByEmail = new Map()
+
+        for (const acc of valid) {
+          const emailKey = acc.email.trim().toLowerCase()
+
+          // Recuperar tareas que pudieran estar guardadas en localStorage bajo este uid
+          let localUidTasks = []
+          try {
+            const rawT = localStorage.getItem(`studenthub_tasks_${acc.uid}`)
+            if (rawT) {
+              const parsedT = JSON.parse(rawT)
+              if (Array.isArray(parsedT)) localUidTasks = parsedT
+            }
+          } catch (e) {}
+
+          // Recuperar tareas de app_global_tasks como respaldo
+          let globalTasksBackup = []
+          try {
+            const rawG = localStorage.getItem('app_global_tasks')
+            if (rawG) {
+              const parsedG = JSON.parse(rawG)
+              if (Array.isArray(parsedG)) globalTasksBackup = parsedG
+            }
+          } catch (e) {}
+
+          if (!accountsByEmail.has(emailKey)) {
+            const combinedTasks = [...(acc.tasks || []), ...localUidTasks, ...globalTasksBackup]
+            const taskMap = new Map()
+            combinedTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+
+            accountsByEmail.set(emailKey, {
+              ...acc,
+              email: emailKey,
+              tasks: Array.from(taskMap.values()),
+            })
+          } else {
+            // Ya existe un registro con este mismo correo: fusionar datos para no perder absolutamente nada
+            const existing = accountsByEmail.get(emailKey)
+
+            const combinedTasks = [...(existing.tasks || []), ...(acc.tasks || []), ...localUidTasks]
+            const taskMap = new Map()
+            combinedTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+
+            const combinedCalendars = [...(existing.calendars || []), ...(acc.calendars || [])]
+            const calMap = new Map()
+            combinedCalendars.forEach((c) => { if (c && c.id) calMap.set(String(c.id), c) })
+
+            const merged = {
+              ...existing,
+              displayName: existing.displayName || acc.displayName,
+              password: existing.password || acc.password,
+              tasks: Array.from(taskMap.values()),
+              calendars: Array.from(calMap.values()),
+              updatedAt: new Date().toISOString(),
+            }
+            accountsByEmail.set(emailKey, merged)
+          }
         }
-        return clean
+
+        const cleanList = Array.from(accountsByEmail.values())
+        if (cleanList.length !== parsed.length) {
+          localStorage.setItem(ACCOUNTS_DB_KEY, JSON.stringify(cleanList))
+        }
+        return cleanList
       }
     }
   } catch (e) {
@@ -94,6 +158,12 @@ export const getCurrentUser = () => {
         user.email &&
         user.email !== 'jorge.m@focushub.workspace'
       ) {
+        // Asegurarse de retornar la versión canónica y fusionada si existe en getAllAccounts()
+        const accounts = getAllAccounts()
+        const canonical = accounts.find((a) => a.email && a.email.toLowerCase() === user.email.toLowerCase())
+        if (canonical) {
+          return canonical
+        }
         return user
       }
     }
@@ -111,7 +181,7 @@ export const setActiveUser = (user) => {
   return user
 }
 
-// Iniciar sesión con email y contraseña consultando la Nube (Firestore) y la caché local
+// Iniciar sesión con email y contraseña consultando Firestore Cloud y fusionando datos locales
 export const loginUser = async (email, password) => {
   const trimmedEmail = (email || '').trim().toLowerCase()
   if (!trimmedEmail) {
@@ -119,7 +189,7 @@ export const loginUser = async (email, password) => {
   }
 
   const docId = getAccountDocId(trimmedEmail)
-  let found = null
+  let cloudAccount = null
 
   // 1. Consultar en la base de datos en la nube (Firestore) para soporte multidispositivo real
   try {
@@ -127,7 +197,7 @@ export const loginUser = async (email, password) => {
       const docRef = doc(db, 'shared_calendars', docId)
       const snap = await getDoc(docRef)
       if (snap.exists()) {
-        found = snap.data()
+        cloudAccount = snap.data()
         console.log('[Cloud Auth]: Cuenta recuperada con éxito desde Firestore Cloud:', trimmedEmail)
       }
     }
@@ -135,58 +205,67 @@ export const loginUser = async (email, password) => {
     console.warn('[Cloud Auth]: Aviso al consultar cuenta en Firestore:', cloudErr.message)
   }
 
-  // 2. Si no se encontró en la nube o no había conexión, buscar en la caché local del dispositivo
-  if (!found) {
-    const localAccounts = getAllAccounts()
-    found = localAccounts.find((a) => a.email && a.email.toLowerCase() === trimmedEmail)
-  }
+  // 2. Buscar en la caché local del dispositivo
+  const localAccounts = getAllAccounts()
+  const localAccount = localAccounts.find((a) => a.email && a.email.toLowerCase() === trimmedEmail)
 
-  // 3. Si no existe en ningún lado, indicar error claro
-  if (!found) {
+  if (!cloudAccount && !localAccount) {
     throw new Error(
       'No existe ninguna cuenta registrada con ese correo electrónico. Si la creaste en otro dispositivo, comprueba que el correo esté bien escrito o pulsa en Registrarse para crearla.'
     )
   }
 
-  // 4. Validar contraseña
-  if (password && found.password && found.password !== password) {
+  // Fusionar datos de la nube con datos locales para que NINGUNA tarea se pierda
+  const baseAccount = cloudAccount || localAccount
+  const extraAccount = localAccount || cloudAccount
+
+  const allTasks = [...(baseAccount.tasks || []), ...(extraAccount?.tasks || [])]
+  const taskMap = new Map()
+  allTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+
+  const mergedUser = {
+    ...baseAccount,
+    displayName: baseAccount.displayName || extraAccount?.displayName,
+    password: baseAccount.password || extraAccount?.password,
+    tasks: Array.from(taskMap.values()),
+    calendars: baseAccount.calendars && baseAccount.calendars.length > 0 ? baseAccount.calendars : (extraAccount?.calendars || []),
+    updatedAt: new Date().toISOString(),
+  }
+
+  // Validar contraseña
+  if (password && mergedUser.password && mergedUser.password !== password) {
     throw new Error('Contraseña incorrecta. Por favor, revisa las mayúsculas y minúsculas.')
   }
 
-  // 5. Guardar/actualizar la cuenta en la caché local del dispositivo
-  const accounts = getAllAccounts()
-  const existingIdx = accounts.findIndex((a) => a.email && a.email.toLowerCase() === trimmedEmail)
-  if (existingIdx >= 0) {
-    accounts[existingIdx] = { ...accounts[existingIdx], ...found }
-  } else {
-    accounts.push(found)
-  }
-  saveAllAccounts(accounts)
-
-  // 6. Sincronizar tareas y calendarios guardados en la nube hacia este dispositivo
-  if (found.tasks && Array.isArray(found.tasks) && found.tasks.length > 0) {
-    try {
-      localStorage.setItem('app_global_tasks', JSON.stringify(found.tasks))
-      localStorage.setItem(`studenthub_tasks_${found.uid}`, JSON.stringify(found.tasks))
-      window.dispatchEvent(new CustomEvent('global_tasks_updated', { detail: found.tasks }))
-    } catch (e) {}
-  }
-  if (found.calendars && Array.isArray(found.calendars) && found.calendars.length > 0) {
-    try {
-      localStorage.setItem(`studenthub_calendars_${found.uid}`, JSON.stringify(found.calendars))
-    } catch (e) {}
-  }
-
-  // 7. Si la cuenta solo existía en local (por ejemplo creada offline), subirla a Firestore para que quede en la nube
+  // Guardar en Firestore la versión combinada completa
   try {
     if (db) {
-      setDoc(doc(db, 'shared_calendars', docId), found, { merge: true }).catch(() => {})
+      setDoc(doc(db, 'shared_calendars', docId), mergedUser, { merge: true }).catch(() => {})
     }
   } catch (e) {}
 
+  // Guardar en la caché local del dispositivo (asegurando una sola cuenta por email)
+  const updatedAccounts = getAllAccounts().filter((a) => a.email && a.email.toLowerCase() !== trimmedEmail)
+  updatedAccounts.push(mergedUser)
+  saveAllAccounts(updatedAccounts)
+
+  // Sincronizar tareas hacia localStorage para que la vista se actualice inmediatamente
+  if (mergedUser.tasks && Array.isArray(mergedUser.tasks)) {
+    try {
+      localStorage.setItem('app_global_tasks', JSON.stringify(mergedUser.tasks))
+      localStorage.setItem(`studenthub_tasks_${mergedUser.uid}`, JSON.stringify(mergedUser.tasks))
+      window.dispatchEvent(new CustomEvent('global_tasks_updated', { detail: mergedUser.tasks }))
+    } catch (e) {}
+  }
+  if (mergedUser.calendars && Array.isArray(mergedUser.calendars)) {
+    try {
+      localStorage.setItem(`studenthub_calendars_${mergedUser.uid}`, JSON.stringify(mergedUser.calendars))
+    } catch (e) {}
+  }
+
   localStorage.setItem('studenthub_is_authenticated', 'true')
-  setActiveUser(found)
-  return found
+  setActiveUser(mergedUser)
+  return mergedUser
 }
 
 // Enviar correo de bienvenida con enlace a la web de descarga
@@ -227,6 +306,7 @@ export const sendWelcomeEmail = async (user) => {
 }
 
 // Registrar nueva cuenta de usuario en Firebase Firestore Cloud y caché local
+// Si ya existía una cuenta con ese correo, fusiona de forma inteligente y loguea automáticamente
 export const registerUser = async (email, password, displayName = '') => {
   const trimmedEmail = (email || '').trim().toLowerCase()
   if (!trimmedEmail) {
@@ -236,27 +316,62 @@ export const registerUser = async (email, password, displayName = '') => {
   const docId = getAccountDocId(trimmedEmail)
 
   // 1. Comprobar si ya existe en la nube Firestore
+  let existingCloud = null
   try {
     if (db) {
       const snap = await getDoc(doc(db, 'shared_calendars', docId))
       if (snap.exists()) {
-        throw new Error(
-          'Ya existe una cuenta registrada con este correo electrónico. Por favor, inicia sesión con tu contraseña.'
-        )
+        existingCloud = snap.data()
       }
     }
-  } catch (err) {
-    if (err.message && err.message.includes('Ya existe')) {
-      throw err
-    }
-  }
+  } catch (err) {}
 
   // 2. Comprobar si ya existe en la caché local
   const accounts = getAllAccounts()
-  if (accounts.some((a) => a.email && a.email.toLowerCase() === trimmedEmail)) {
-    throw new Error('Ya existe una cuenta registrada con este correo electrónico. Inicia sesión con tu contraseña.')
+  const existingLocal = accounts.find((a) => a.email && a.email.toLowerCase() === trimmedEmail)
+
+  // Si ya existe (en local o en Firestore), fusionar de forma inteligente para no crear duplicados ni borrar tareas
+  if (existingCloud || existingLocal) {
+    const base = existingCloud || existingLocal
+    const extra = existingLocal || existingCloud
+
+    const allTasks = [...(base.tasks || []), ...(extra?.tasks || [])]
+    const taskMap = new Map()
+    allTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+
+    const mergedUser = {
+      ...base,
+      displayName: displayName.trim() || base.displayName || trimmedEmail.split('@')[0],
+      password: password || base.password || '123456',
+      tasks: Array.from(taskMap.values()),
+      calendars: base.calendars && base.calendars.length > 0 ? base.calendars : (extra?.calendars || []),
+      updatedAt: new Date().toISOString(),
+    }
+
+    try {
+      if (db) {
+        await setDoc(doc(db, 'shared_calendars', docId), mergedUser, { merge: true })
+      }
+    } catch (e) {}
+
+    const cleanList = accounts.filter((a) => a.email && a.email.toLowerCase() !== trimmedEmail)
+    cleanList.push(mergedUser)
+    saveAllAccounts(cleanList)
+
+    if (mergedUser.tasks && mergedUser.tasks.length > 0) {
+      try {
+        localStorage.setItem('app_global_tasks', JSON.stringify(mergedUser.tasks))
+        localStorage.setItem(`studenthub_tasks_${mergedUser.uid}`, JSON.stringify(mergedUser.tasks))
+        window.dispatchEvent(new CustomEvent('global_tasks_updated', { detail: mergedUser.tasks }))
+      } catch (e) {}
+    }
+
+    localStorage.setItem('studenthub_is_authenticated', 'true')
+    setActiveUser(mergedUser)
+    return mergedUser
   }
 
+  // Si es una cuenta 100% nueva:
   const newUser = {
     uid: 'user-' + Date.now(),
     displayName: displayName.trim() || trimmedEmail.split('@')[0],
@@ -281,7 +396,7 @@ export const registerUser = async (email, password, displayName = '') => {
     tasks: [],
   }
 
-  // 3. Guardar en la nube Firestore de forma inmediata
+  // Guardar en Firestore Cloud
   try {
     if (db) {
       await setDoc(doc(db, 'shared_calendars', docId), newUser)
@@ -291,18 +406,17 @@ export const registerUser = async (email, password, displayName = '') => {
     console.warn('[Cloud Auth]: Error al guardar cuenta en Firestore:', cloudErr.message)
   }
 
-  // 4. Guardar en la caché local de este dispositivo
-  accounts.push(newUser)
-  saveAllAccounts(accounts)
+  // Guardar en la caché local
+  const cleanList = accounts.filter((a) => a.email && a.email.toLowerCase() !== trimmedEmail)
+  cleanList.push(newUser)
+  saveAllAccounts(cleanList)
+
   localStorage.setItem('studenthub_is_authenticated', 'true')
   setActiveUser(newUser)
 
-  // 5. Enviar correo de bienvenida
   try {
     await sendWelcomeEmail(newUser)
-  } catch (err) {
-    console.warn('Error emitiendo correo de bienvenida:', err)
-  }
+  } catch (err) {}
 
   return newUser
 }
@@ -316,6 +430,14 @@ export const switchAccount = (uid) => {
   const target = accounts.find((a) => a.uid === uid)
   if (target) {
     localStorage.setItem('studenthub_is_authenticated', 'true')
+    // Restaurar tareas en app_global_tasks
+    if (target.tasks && Array.isArray(target.tasks)) {
+      try {
+        localStorage.setItem('app_global_tasks', JSON.stringify(target.tasks))
+        localStorage.setItem(`studenthub_tasks_${target.uid}`, JSON.stringify(target.tasks))
+        window.dispatchEvent(new CustomEvent('global_tasks_updated', { detail: target.tasks }))
+      } catch (e) {}
+    }
     return setActiveUser(target)
   }
   return logoutUser()
@@ -404,12 +526,18 @@ export const getUserTasks = (user = getCurrentUser()) => {
     }
     const accounts = getAllAccounts()
     const found = accounts.find((a) => a.uid === user.uid)
-    if (found && Array.isArray(found.tasks)) {
+    if (found && Array.isArray(found.tasks) && found.tasks.length > 0) {
       return found.tasks
     }
     const rawLocal = localStorage.getItem(`studenthub_tasks_${user.uid}`)
     if (rawLocal !== null) {
       const parsed = JSON.parse(rawLocal)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+    // Fallback a app_global_tasks
+    const rawGlobal = localStorage.getItem('app_global_tasks')
+    if (rawGlobal !== null) {
+      const parsed = JSON.parse(rawGlobal)
       if (Array.isArray(parsed)) return parsed
     }
   } catch (e) {
@@ -594,6 +722,7 @@ export const loadUserDataFromCloud = async () => {
 }
 
 // Auto-migración en segundo plano: sube a Firestore cualquier cuenta que estuviera guardada previamente solo en este dispositivo
+// y fusiona tareas para que no se pierdan
 export const syncLocalAccountsToCloud = async () => {
   try {
     if (!db || typeof window === 'undefined') return
@@ -605,6 +734,16 @@ export const syncLocalAccountsToCloud = async () => {
         if (!snap.exists()) {
           console.log('[Cloud Auth Migration]: Subiendo cuenta previa a Firestore Cloud:', acc.email)
           await setDoc(doc(db, 'shared_calendars', docId), acc)
+        } else {
+          // Si ya existe en la nube, asegurar que las tareas locales se fusionen y no se pierdan
+          const cloudData = snap.data()
+          const combined = [...(cloudData.tasks || []), ...(acc.tasks || [])]
+          const taskMap = new Map()
+          combined.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+          if (taskMap.size > (cloudData.tasks || []).length) {
+            console.log('[Cloud Auth Migration]: Sincronizando tareas locales adicionales a Firestore:', acc.email)
+            await setDoc(doc(db, 'shared_calendars', docId), { tasks: Array.from(taskMap.values()) }, { merge: true })
+          }
         }
       }
     }

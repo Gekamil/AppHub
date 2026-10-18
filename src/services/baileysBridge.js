@@ -1,7 +1,35 @@
-// Servicio del Frontend para comunicarse con el Puente de WhatsApp Baileys
-// Compatible tanto con Web/PWA como con empaquetado nativo móvil (.APK en Android e iOS)
+export const RENDER_BACKEND_URL = 'https://freestudentapphub.onrender.com'
 
-const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || ''
+export function getApiBase() {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, '')
+  }
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin || ''
+    const proto = window.location.protocol || ''
+    const host = window.location.hostname || ''
+
+    // Si ya estamos navegando en la web alojada en Render, usar endpoints relativos
+    if (origin.includes('onrender.com')) {
+      return ''
+    }
+
+    // Si estamos en la app móvil (.apk en Capacitor/Android), app de escritorio (.exe en Electron),
+    // o cualquier entorno fuera del host de Render (Vercel, localhost, file://, capacitor://)
+    if (
+      proto === 'file:' ||
+      proto === 'capacitor:' ||
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      origin.includes('vercel.app')
+    ) {
+      return RENDER_BACKEND_URL
+    }
+  }
+  return RENDER_BACKEND_URL
+}
+
+export const API_BASE = getApiBase()
 
 export async function getBaileysStatus() {
   try {

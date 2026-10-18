@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import FloatingAICopilot from '../components/FloatingAICopilot'
+import UpdateNotification from '../components/UpdateNotification'
 import {
   getCurrentUser,
   isGuestUser,
@@ -473,6 +474,7 @@ export default function AppShell() {
         {aiAssistantMode === 'floating' && (
           <FloatingAICopilot globalTasks={globalTasks} setGlobalTasks={setGlobalTasks} />
         )}
+        <UpdateNotification />
       </div>
     </div>
   )
