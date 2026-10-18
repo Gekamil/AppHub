@@ -2925,7 +2925,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Top Command & Filter Deck (Elegante y Limpio: Solo 2 filas) */}
-      <div className="w-full flex flex-col gap-space-md mb-space-xl">
+      <div className="w-full flex flex-col gap-space-md mb-space-xl pt-2 sm:pt-0">
         {/* Fila 1: Navegador de Fecha, Selector de Calendario y Vistas */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-white dark:bg-[#161b26] p-3 sm:p-space-md rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">

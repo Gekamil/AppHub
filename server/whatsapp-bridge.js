@@ -306,8 +306,9 @@ const DIVIDER = '- - - - - - - - - - - - - - - - - - - -'
 // Estado en memoria del puente
 let sock = null
 let currentStatus = {
-  status: 'disconnected', // 'disconnected' | 'connecting' | 'qr_ready' | 'connected'
+  status: 'disconnected', // 'disconnected' | 'connecting' | 'qr_ready' | 'pairing_code_ready' | 'connected'
   qrCode: null,
+  pairingCode: null,
   user: null,
   phone: null,
   lastUpdated: Date.now(),
@@ -1228,19 +1229,23 @@ function startMidnightScheduler() {
   }, 40000)
 }
 
-// Iniciar conexión con Baileys
-export async function startBaileysConnection() {
+// Iniciar conexión con Baileys (Soporta Código QR y Código de Vinculación de 8 Dígitos para el mismo móvil)
+export async function startBaileysConnection(phoneNumber = null) {
   if (currentStatus.status === 'connected' && sock) {
     return currentStatus
   }
 
+  const cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '') : null
+
   currentStatus = {
     status: 'connecting',
     qrCode: null,
+    pairingCode: null,
     user: null,
-    phone: null,
+    phone: cleanPhone ? `+${cleanPhone}` : null,
     lastUpdated: Date.now(),
   }
+  broadcastStatusUpdate(currentStatus)
 
   try {
     if (!fs.existsSync(AUTH_DIR)) {
@@ -1261,6 +1266,38 @@ export async function startBaileysConnection() {
       browser: ['StudentHub App', 'Chrome', '120.0.0'],
     })
 
+    // Si se solicita emparejamiento por código de teléfono en el mismo móvil
+    if (cleanPhone && !sock.authState.creds.registered) {
+      setTimeout(async () => {
+        try {
+          if (sock && !sock.authState.creds.registered) {
+            let code = await sock.requestPairingCode(cleanPhone)
+            code = code?.match(/.{1,4}/g)?.join('-') || code
+            currentStatus = {
+              status: 'pairing_code_ready',
+              pairingCode: code,
+              qrCode: null,
+              user: null,
+              phone: `+${cleanPhone}`,
+              lastUpdated: Date.now(),
+            }
+            broadcastStatusUpdate(currentStatus)
+            console.log(`[Baileys]: Código de vinculación generado para +${cleanPhone}: ${code}`)
+          }
+        } catch (pairingErr) {
+          console.error('[Baileys Pairing Code Error]:', pairingErr)
+          currentStatus = {
+            ...currentStatus,
+            status: 'disconnected',
+            pairingCode: null,
+            error: `Error al generar código: ${pairingErr.message}`,
+            lastUpdated: Date.now(),
+          }
+          broadcastStatusUpdate(currentStatus)
+        }
+      }, 2500)
+    }
+
     // Actualizaciones de Conexión (QR, Conectado, Desconectado)
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update
@@ -1268,15 +1305,18 @@ export async function startBaileysConnection() {
       if (qr) {
         try {
           const qrDataUrl = await QRCode.toDataURL(qr, { scale: 8, margin: 2 })
-          currentStatus = {
-            status: 'qr_ready',
-            qrCode: qrDataUrl,
-            user: null,
-            phone: null,
-            lastUpdated: Date.now(),
+          if (!cleanPhone && currentStatus.status !== 'pairing_code_ready') {
+            currentStatus = {
+              status: 'qr_ready',
+              qrCode: qrDataUrl,
+              pairingCode: null,
+              user: null,
+              phone: null,
+              lastUpdated: Date.now(),
+            }
+            broadcastStatusUpdate(currentStatus)
+            console.log('[Baileys]: Código QR generado y listo para escanear.')
           }
-          broadcastStatusUpdate(currentStatus)
-          console.log('[Baileys]: Código QR generado y listo para escanear.')
         } catch (e) {
           console.error('[Baileys QR Error]:', e)
         }
@@ -1289,6 +1329,7 @@ export async function startBaileysConnection() {
         currentStatus = {
           status: 'disconnected',
           qrCode: null,
+          pairingCode: null,
           user: null,
           phone: null,
           lastUpdated: Date.now(),
@@ -1308,6 +1349,7 @@ export async function startBaileysConnection() {
         currentStatus = {
           status: 'connected',
           qrCode: null,
+          pairingCode: null,
           user: sock.user?.name || 'Usuario StudentHub',
           phone: rawPhone ? `+${rawPhone}` : 'Dispositivo Vinculado',
           lastUpdated: Date.now(),
@@ -1714,6 +1756,7 @@ export async function disconnectBaileys() {
   currentStatus = {
     status: 'disconnected',
     qrCode: null,
+    pairingCode: null,
     user: null,
     phone: null,
     lastUpdated: Date.now(),
@@ -1934,16 +1977,60 @@ export function handleBaileysApiRoute(req, res) {
   }
 
   if (pathname === '/api/baileys/connect' && req.method === 'POST') {
-    startBaileysConnection()
-      .then((st) => {
-        res.statusCode = 200
+    let body = ''
+    req.on('data', (chunk) => { body += chunk })
+    req.on('end', () => {
+      let phoneNumber = null
+      try {
+        if (body) {
+          const parsed = JSON.parse(body)
+          phoneNumber = parsed.phoneNumber || null
+        }
+      } catch (e) {}
+
+      startBaileysConnection(phoneNumber)
+        .then((st) => {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify(st))
+        })
+        .catch((err) => {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: err.message }))
+        })
+    })
+    return true
+  }
+
+  if (pathname === '/api/baileys/pairing-code' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => { body += chunk })
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(body || '{}')
+        const phoneNumber = parsed.phoneNumber
+        if (!phoneNumber) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Falta phoneNumber' }))
+          return
+        }
+        startBaileysConnection(phoneNumber)
+          .then((st) => {
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify(st))
+          })
+          .catch((err) => {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          })
+      } catch (e) {
+        res.statusCode = 400
         res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify(st))
-      })
-      .catch((err) => {
-        res.statusCode = 500
-        res.end(JSON.stringify({ error: err.message }))
-      })
+        res.end(JSON.stringify({ error: e.message }))
+      }
+    })
     return true
   }
 

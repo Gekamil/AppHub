@@ -10,17 +10,35 @@ export async function getBaileysStatus() {
       return await res.json()
     }
   } catch (e) {}
-  return { status: 'disconnected', qrCode: null, user: null, phone: null }
+  return { status: 'disconnected', qrCode: null, pairingCode: null, user: null, phone: null }
 }
 
-export async function requestBaileysConnect() {
+export async function requestBaileysConnect(phoneNumber = null) {
   try {
-    const res = await fetch(`${API_BASE}/api/baileys/connect`, { method: 'POST' })
+    const res = await fetch(`${API_BASE}/api/baileys/connect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber }),
+    })
     if (res.ok) {
       return await res.json()
     }
   } catch (e) {}
-  return { status: 'connecting', qrCode: null }
+  return { status: 'connecting', qrCode: null, pairingCode: null }
+}
+
+export async function requestBaileysPairingCode(phoneNumber) {
+  try {
+    const res = await fetch(`${API_BASE}/api/baileys/pairing-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber }),
+    })
+    if (res.ok) {
+      return await res.json()
+    }
+  } catch (e) {}
+  return { status: 'connecting', pairingCode: null }
 }
 
 export async function requestBaileysDisconnect() {
@@ -30,7 +48,7 @@ export async function requestBaileysDisconnect() {
       return await res.json()
     }
   } catch (e) {}
-  return { status: 'disconnected', qrCode: null }
+  return { status: 'disconnected', qrCode: null, pairingCode: null }
 }
 
 export async function getBaileysRecentTasks() {
