@@ -10,6 +10,7 @@ import {
   DisconnectReason,
   downloadMediaMessage,
   extractMessageContent,
+  Browsers,
 } from '@whiskeysockets/baileys'
 import QRCode from 'qrcode'
 import pino from 'pino'
@@ -1230,22 +1231,37 @@ function startMidnightScheduler() {
 }
 
 // Iniciar conexión con Baileys (Soporta Código QR y Código de Vinculación de 8 Dígitos para el mismo móvil)
-export async function startBaileysConnection(phoneNumber = null) {
+export async function startBaileysConnection(phoneNumber = null, forceRefresh = false) {
+  let cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '') : null
+  if (cleanPhone && cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('7'))) {
+    cleanPhone = '34' + cleanPhone
+  }
+
+  // 1. Si ya está conectado y activo, no tocar nada
   if (currentStatus.status === 'connected' && sock) {
     return currentStatus
   }
 
-  // Si ya existía un socket previo pendiente o desconectado, cerrarlo limpiamente
+  // 2. Si ya hay un código de vinculación listo para el MISMO número y el socket sigue vivo, devolverlo sin matar el socket
+  if (!forceRefresh && sock && currentStatus.status === 'pairing_code_ready' && currentStatus.pairingCode) {
+    if (cleanPhone && currentStatus.phone === `+${cleanPhone}`) {
+      return currentStatus
+    }
+  }
+
+  // 3. Si ya hay un código QR listo y vigente (< 45s) y no se fuerza refresco, devolverlo sin matar el socket
+  if (!forceRefresh && !cleanPhone && sock && currentStatus.status === 'qr_ready' && currentStatus.qrCode) {
+    if (Date.now() - (currentStatus.lastUpdated || 0) < 45000) {
+      return currentStatus
+    }
+  }
+
+  // Si ya existía un socket previo no conectado o se pide un modo/número nuevo, cerrarlo limpiamente
   if (sock) {
     try {
       sock.end(undefined)
     } catch (e) {}
     sock = null
-  }
-
-  let cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '') : null
-  if (cleanPhone && cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('7'))) {
-    cleanPhone = '34' + cleanPhone
   }
 
   currentStatus = {
@@ -1260,23 +1276,12 @@ export async function startBaileysConnection(phoneNumber = null) {
   broadcastStatusUpdate(currentStatus)
 
   try {
-    if (!fs.existsSync(AUTH_DIR)) {
+    // Limpiar credenciales previas si no estábamos conectados para que Baileys entre en modo emparejamiento limpio
+    try {
+      fs.rmSync(AUTH_DIR, { recursive: true, force: true })
+      await clearAuthFromFirestore().catch(() => {})
       fs.mkdirSync(AUTH_DIR, { recursive: true })
-    }
-
-    // Si se solicita emparejamiento con código de teléfono, limpiar credenciales previas no conectadas
-    if (cleanPhone) {
-      try {
-        fs.rmSync(AUTH_DIR, { recursive: true, force: true })
-        await clearAuthFromFirestore().catch(() => {})
-        fs.mkdirSync(AUTH_DIR, { recursive: true })
-      } catch (e) {}
-    } else {
-      // Si Render reinició el contenedor y la carpeta local está vacía, restaurar desde Firestore
-      if (!fs.existsSync(path.join(AUTH_DIR, 'creds.json'))) {
-        await restoreAuthFromFirestore()
-      }
-    }
+    } catch (e) {}
 
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
 
@@ -1284,7 +1289,10 @@ export async function startBaileysConnection(phoneNumber = null) {
       auth: state,
       logger: pino({ level: 'silent' }),
       printQRInTerminal: false,
-      browser: ['StudentHub App', 'Chrome', '120.0.0'],
+      browser: Browsers.ubuntu('Chrome'),
+      markOnlineOnConnect: false,
+      generateHighQualityLinkPreview: true,
+      syncFullHistory: false,
     })
 
     // Si se solicita emparejamiento por código de teléfono en el mismo móvil
@@ -1334,6 +1342,7 @@ export async function startBaileysConnection(phoneNumber = null) {
               pairingCode: null,
               user: null,
               phone: null,
+              error: null,
               lastUpdated: Date.now(),
             }
             broadcastStatusUpdate(currentStatus)

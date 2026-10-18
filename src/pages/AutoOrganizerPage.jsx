@@ -2725,7 +2725,7 @@ export default function AutoOrganizerPage() {
                               Pedir otro código o cambiar número
                             </button>
                           </div>
-                        ) : baileysState.status === 'connecting' && isBaileysActionLoading ? (
+                        ) : (baileysState.status === 'connecting' || isBaileysActionLoading) ? (
                           <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                             <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                             <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
@@ -2819,7 +2819,7 @@ export default function AutoOrganizerPage() {
                               <span>Regenerar / Actualizar Código QR</span>
                             </button>
                           </div>
-                        ) : baileysState.status === 'connecting' && isBaileysActionLoading ? (
+                        ) : (baileysState.status === 'connecting' || isBaileysActionLoading) ? (
                           <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                             <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                             <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
