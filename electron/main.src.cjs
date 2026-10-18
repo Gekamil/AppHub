@@ -93,6 +93,12 @@ function createWindow() {
     title: 'StudentHub',
     icon: iconPath,
     autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#0b0f19',
+      symbolColor: '#94a3b8',
+      height: 48,
+    },
     backgroundColor: '#0b0f19',
     show: false,
     webPreferences: {
@@ -100,6 +106,21 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.cjs'),
     },
+  })
+
+  // Permite al frontend cambiar dinamicamente los colores de los controles de la ventana segun tema claro/oscuro
+  ipcMain.on('set-title-bar-theme', (_event, { isDark }) => {
+    if (mainWindow && !mainWindow.isDestroyed() && typeof mainWindow.setTitleBarOverlay === 'function') {
+      try {
+        mainWindow.setTitleBarOverlay({
+          color: isDark ? '#0b0f19' : '#ffffff',
+          symbolColor: isDark ? '#94a3b8' : '#334155',
+          height: 48,
+        })
+      } catch (e) {
+        console.warn('[Electron] setTitleBarOverlay error:', e ? e.message : e)
+      }
+    }
   })
 
   mainWindow.once('ready-to-show', () => {

@@ -793,5 +793,27 @@ html[data-theme-style="executive"] .font-code-sm {
   font-weight: 500 !important;
 }
 
+/* Soporte nativo de arrastre y ventana sin marcos para Electron Desktop */
+.app-drag-region {
+  -webkit-app-region: drag;
+  user-select: none;
+}
 
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
 
+/* Aceleracion por hardware para animaciones ultra-fluidas a 120 FPS */
+.transform-gpu {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Suavizado global de tipografia y scroll */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}

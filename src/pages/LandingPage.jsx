@@ -7,13 +7,12 @@ export default function LandingPage() {
   const [activeView, setActiveView] = useState('semanal')
   const [isIosModalOpen, setIsIosModalOpen] = useState(false)
   const [currentTimeStr, setCurrentTimeStr] = useState('16:03 : 07')
-  const [scrollProgress, setScrollProgress] = useState(0)
-  const [spotlightPos, setSpotlightPos] = useState({ x: -500, y: -500 })
-
   const cardRef = useRef(null)
   const orb1Ref = useRef(null)
   const orb2Ref = useRef(null)
   const orb3Ref = useRef(null)
+  const spotlightRef = useRef(null)
+  const progressBarRef = useRef(null)
 
   // Reloj de precision Madrid
   useEffect(() => {
@@ -38,30 +37,48 @@ export default function LandingPage() {
     return () => clearInterval(timer)
   }, [])
 
-  // Spotlight mouse aura
+  // Spotlight mouse aura ultra fluido a 120 FPS sin re-renders de React
   useEffect(() => {
+    let rafMouseId = null
     const handleMouseMove = (e) => {
-      setSpotlightPos({ x: e.clientX, y: e.clientY })
+      if (rafMouseId) cancelAnimationFrame(rafMouseId)
+      rafMouseId = requestAnimationFrame(() => {
+        if (spotlightRef.current) {
+          spotlightRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`
+        }
+      })
     }
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    return () => window.removeEventListener('mousemove', handleMouseMove)
+    return () => {
+      if (rafMouseId) cancelAnimationFrame(rafMouseId)
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
   }, [])
 
-  // Scroll progress y parallax en esferas de luz
+  // Scroll progress y parallax en esferas de luz con aceleracion GPU
   useEffect(() => {
+    let rafScrollId = null
     const handleScroll = () => {
-      const winScroll = document.documentElement.scrollTop || document.body.scrollTop
-      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
-      const scrolled = height > 0 ? (winScroll / height) * 100 : 0
-      setScrollProgress(scrolled)
+      if (rafScrollId) cancelAnimationFrame(rafScrollId)
+      rafScrollId = requestAnimationFrame(() => {
+        const winScroll = document.documentElement.scrollTop || document.body.scrollTop
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
+        const scrolled = height > 0 ? (winScroll / height) * 100 : 0
 
-      if (orb1Ref.current) orb1Ref.current.style.transform = `translate(-50%, ${winScroll * 0.1}px)`
-      if (orb2Ref.current) orb2Ref.current.style.transform = `translateY(${winScroll * -0.06}px)`
-      if (orb3Ref.current) orb3Ref.current.style.transform = `translateY(${winScroll * -0.12}px)`
+        if (progressBarRef.current) {
+          progressBarRef.current.style.width = `${scrolled}%`
+        }
+        if (orb1Ref.current) orb1Ref.current.style.transform = `translate3d(-50%, ${winScroll * 0.1}px, 0)`
+        if (orb2Ref.current) orb2Ref.current.style.transform = `translate3d(0, ${winScroll * -0.06}px, 0)`
+        if (orb3Ref.current) orb3Ref.current.style.transform = `translate3d(0, ${winScroll * -0.12}px, 0)`
+      })
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      if (rafScrollId) cancelAnimationFrame(rafScrollId)
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   // IntersectionObserver para animaciones de revelado
@@ -107,19 +124,19 @@ export default function LandingPage() {
     <div className="landing-root bg-[#0e0e10] text-[#e5e1e4] antialiased selection:bg-[#7928ca] selection:text-[#eeefff] min-h-screen relative overflow-x-hidden font-sans">
       {/* Interactive Mouse Spotlight Aura */}
       <div
-        className="fixed w-[550px] h-[550px] rounded-full bg-gradient-to-tr from-[#dbb8ff]/10 via-[#00eefc]/10 to-[#00e293]/10 blur-[130px] opacity-70 pointer-events-none -z-10 transition-all duration-75"
+        ref={spotlightRef}
+        className="fixed top-0 left-0 w-[550px] h-[550px] rounded-full bg-gradient-to-tr from-[#dbb8ff]/10 via-[#00eefc]/10 to-[#00e293]/10 blur-[130px] opacity-70 pointer-events-none -z-10 will-change-transform"
         style={{
-          left: `${spotlightPos.x}px`,
-          top: `${spotlightPos.y}px`,
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate3d(-500px, -500px, 0) translate(-50%, -50%)',
         }}
       />
 
       {/* Fixed Top Scroll Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-[3px] bg-[#353437] z-[100] pointer-events-none">
         <div
-          className="h-full bg-gradient-to-r from-[#dbb8ff] via-[#00eefc] to-[#00e293] transition-all duration-75 shadow-[0_0_12px_rgba(219,184,255,0.7)]"
-          style={{ width: `${scrollProgress}%` }}
+          ref={progressBarRef}
+          className="h-full bg-gradient-to-r from-[#dbb8ff] via-[#00eefc] to-[#00e293] shadow-[0_0_12px_rgba(219,184,255,0.7)] will-change-[width]"
+          style={{ width: '0%' }}
         />
       </div>
 

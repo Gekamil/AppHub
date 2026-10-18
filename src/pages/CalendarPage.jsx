@@ -2892,40 +2892,40 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Fondo de Diseño Dinámico Multitono (Atmosphere Aurora Mesh con todos los calendarios presentes) */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+      {/* Fondo de Diseño Dinámico Multitono (Atmosphere Aurora Mesh optimizado por GPU a 120 FPS) */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden contain-strict">
         {/* Patrón de textura arquitectónica sutil */}
         <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.07] bg-[radial-gradient(#000_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#fff_1.2px,transparent_1.2px)] [background-size:20px_20px]" />
         
         {/* Aurora principal: color del calendario activo */}
         <div
-          className="absolute -top-24 -left-20 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] rounded-full blur-[100px] sm:blur-[140px] opacity-35 dark:opacity-25 transition-all duration-700 ease-out"
+          className="absolute -top-24 -left-20 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] rounded-full blur-[64px] sm:blur-[96px] opacity-30 dark:opacity-20 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
           style={{ backgroundColor: bgCal1 }}
         />
         
         {/* Aurora secundaria en cuadrante superior derecho: segundo calendario */}
         <div
-          className="absolute top-1/6 -right-16 w-[400px] sm:w-[580px] h-[400px] sm:h-[580px] rounded-full blur-[110px] sm:blur-[150px] opacity-25 dark:opacity-20 transition-all duration-700 ease-out"
+          className="absolute top-1/6 -right-16 w-[400px] sm:w-[580px] h-[400px] sm:h-[580px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
           style={{ backgroundColor: bgCal2 }}
         />
         
         {/* Resplandor terciario inferior: tercer calendario */}
         <div
-          className="absolute -bottom-10 left-1/4 w-[380px] sm:w-[500px] h-[380px] sm:h-[500px] rounded-full blur-[110px] sm:blur-[140px] opacity-25 dark:opacity-20 transition-all duration-700 ease-out"
+          className="absolute -bottom-10 left-1/4 w-[380px] sm:w-[500px] h-[380px] sm:h-[500px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
           style={{ backgroundColor: bgCal3 }}
         />
 
         {/* Resplandor cuaternario: cuarto calendario si existe */}
         {otherCalendars.length > 2 && (
           <div
-            className="absolute bottom-1/4 -right-20 w-[350px] sm:w-[480px] h-[350px] sm:h-[480px] rounded-full blur-[110px] sm:blur-[140px] opacity-20 dark:opacity-15 transition-all duration-700 ease-out"
+            className="absolute bottom-1/4 -right-20 w-[350px] sm:w-[480px] h-[350px] sm:h-[480px] rounded-full blur-[70px] sm:blur-[100px] opacity-15 dark:opacity-10 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
             style={{ backgroundColor: bgCal4 }}
           />
         )}
       </div>
 
       {/* Top Command & Filter Deck (Elegante y Limpio: Solo 2 filas) */}
-      <div className="w-full flex flex-col gap-space-md mb-space-xl pt-2 sm:pt-0">
+      <div className="w-full flex flex-col gap-space-md mb-space-xl pt-3.5 sm:pt-0.5">
         {/* Fila 1: Navegador de Fecha, Selector de Calendario y Vistas */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-white dark:bg-[#161b26] p-3 sm:p-space-md rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">

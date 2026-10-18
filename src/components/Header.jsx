@@ -38,7 +38,15 @@ export default function Header({
     const isPwa = window.matchMedia?.('(display-mode: standalone)')?.matches || navigator.standalone === true
     return isCap || isElec || isPwa
   })
+  const isElectron = typeof window !== 'undefined' && !!(window.electronAPI?.isElectron || /Electron/i.test(navigator.userAgent || ''))
   const profileButtonRef = useRef(null)
+
+  useEffect(() => {
+    if (isElectron && window.electronAPI?.setTitleBarTheme) {
+      const isDark = document.documentElement.classList.contains('dark') || localStorage.getItem('app_theme') === 'dark'
+      window.electronAPI.setTitleBarTheme(isDark)
+    }
+  }, [theme, currentAppTheme, isElectron])
 
   useEffect(() => {
     const checkStandalone = () => {
@@ -234,16 +242,16 @@ export default function Header({
   return (
     <>
       <header
-        className={`fixed top-0 right-0 bg-surface-pure/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex flex-col justify-center px-3 sm:px-gutter-lg transition-all duration-300 left-0 ${
+        className={`fixed top-0 right-0 bg-surface-pure/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex flex-col justify-center px-3 sm:px-gutter-lg ${isElectron ? 'md:pr-38' : ''} transition-all duration-300 left-0 app-drag-region ${
           navPosition === 'sidebar' && isSidebarOpen ? 'md:left-60' : 'md:left-0'
         }`}
       >
         <div className="h-14 flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 app-no-drag">
             {navPosition === 'sidebar' && (
               <button
                 onClick={onToggleSidebar}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag"
                 title="Alternar barra lateral"
               >
                 <span className="material-symbols-outlined text-[20px]">menu</span>
@@ -251,7 +259,7 @@ export default function Header({
             )}
             <NavLink
               to={isStandaloneApp ? '/app' : '/'}
-              className="flex items-center gap-2 group cursor-pointer"
+              className="flex items-center gap-2 group cursor-pointer app-no-drag"
               title={isStandaloneApp ? 'StudentHub Tareas' : 'Ir a la pagina principal de StudentHub'}
             >
               <img
@@ -267,7 +275,7 @@ export default function Header({
           {navPosition === 'top' && (
             <nav
               ref={navContainerRef}
-              className="hidden md:flex items-center gap-1 bg-surface-muted/70 p-1 rounded-2xl border border-outline-variant/30 shadow-2xs relative"
+              className="hidden md:flex items-center gap-1 bg-surface-muted/70 p-1 rounded-2xl border border-outline-variant/30 shadow-2xs relative app-no-drag"
             >
               {/* Pastilla Deslizante Apple */}
               <div
@@ -313,12 +321,12 @@ export default function Header({
             </nav>
           )}
 
-          <div className="flex items-center gap-1 sm:gap-space-xs">
+          <div className="flex items-center gap-1 sm:gap-space-xs app-no-drag">
             {!isStandaloneApp && (
               <button
                 type="button"
                 onClick={() => setIsInstallModalOpen(true)}
-                className="h-8 px-2.5 rounded-xl flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs"
+                className="h-8 px-2.5 rounded-xl flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs app-no-drag"
                 title="Descargar o instalar StudentHub en tu móvil (Android / iOS) o PC"
               >
                 <span className="material-symbols-outlined text-[17px]">install_mobile</span>
@@ -327,14 +335,14 @@ export default function Header({
             )}
             <button
               onClick={() => alert('Módulo en desarrollo')}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag"
               title="Notificaciones"
             >
               <span className="material-symbols-outlined text-[18px]">notifications</span>
             </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag"
               title="Ajustes de la aplicación"
             >
               <span className="material-symbols-outlined text-[18px]">settings</span>
@@ -344,7 +352,7 @@ export default function Header({
                 ref={profileButtonRef}
                 type="button"
                 onClick={() => setIsProfileOpen((prev) => !prev)}
-                className="relative w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center ml-1 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                className="relative w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center ml-1 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0 app-no-drag"
                 title="Modo Invitado (Sin sesión) • Pulsa para abrir menú o iniciar sesión"
               >
                 <span className="material-symbols-outlined text-[18px]">person</span>
@@ -358,7 +366,7 @@ export default function Header({
                 ref={profileButtonRef}
                 type="button"
                 onClick={() => setIsProfileOpen((prev) => !prev)}
-                className="relative w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[11px] tracking-tight ml-1 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                className="relative w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[11px] tracking-tight ml-1 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0 app-no-drag"
                 title={`Conectado como ${user.displayName || 'Usuario'} (Sesión activa)`}
               >
                 {user.displayName
@@ -380,7 +388,7 @@ export default function Header({
 
         {/* Fila 2 solo en Móvil cuando navPosition === 'top' con Pastilla Deslizante Fluida que entra 100% en la pantalla */}
         {navPosition === 'top' && (
-          <div className="md:hidden pb-2 pt-1 px-1">
+          <div className="md:hidden pb-2 pt-1 px-1 app-no-drag">
             <div
               ref={mobileNavContainerRef}
               className="w-full bg-surface-muted/70 p-1 rounded-2xl border border-outline-variant/30 relative"
