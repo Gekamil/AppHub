@@ -36,7 +36,9 @@
 
         <!-- Calendar Widget Receiver -->
         <receiver
-            android:name=".CalendarWidgetProvider"
+            android:name="com.apphub.workspace.CalendarWidgetProvider"
+            android:label="@string/widget_calendar_name"
+            android:icon="@mipmap/ic_launcher"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -49,7 +51,9 @@
 
         <!-- Weekly Plan Widget Receiver -->
         <receiver
-            android:name=".WeeklyPlanWidgetProvider"
+            android:name="com.apphub.workspace.WeeklyPlanWidgetProvider"
+            android:label="@string/widget_weekly_plan_name"
+            android:icon="@mipmap/ic_launcher"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -61,7 +65,9 @@
 
         <!-- App Widgets Hub Receiver -->
         <receiver
-            android:name=".AppWidgetsProvider"
+            android:name="com.apphub.workspace.AppWidgetsProvider"
+            android:label="@string/widget_app_hub_name"
+            android:icon="@mipmap/ic_launcher"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
