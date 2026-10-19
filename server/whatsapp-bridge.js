@@ -17,6 +17,7 @@ import pino from 'pino'
 import path from 'path'
 import fs from 'fs'
 import http from 'http'
+import https from 'https'
 
 const AUTH_DIR = path.resolve(process.cwd(), '.whatsapp_auth')
 const TASKS_FILE = path.resolve(process.cwd(), '.whatsapp_synced_tasks.json')
@@ -2371,12 +2372,120 @@ function serveStatic(req, res) {
   return false
 }
 
+// Cache de URLs firmadas de descarga para entregar APKs y EXEs oficiales al instante
+const downloadUrlCache = new Map()
+
+async function resolveGitHubDownloadUrl(assetName) {
+  const cached = downloadUrlCache.get(assetName)
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.url
+  }
+
+  const token = process.env.GITHUB_TOKEN || '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'
+  const opt1 = {
+    hostname: 'api.github.com',
+    path: '/repos/Gekamil/AppHub/releases/tags/latest',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'User-Agent': 'StudentHub-Render-Server',
+    },
+  }
+
+  const releaseData = await new Promise((resolve, reject) => {
+    https.get(opt1, (res) => {
+      let data = ''
+      res.on('data', (d) => (data += d))
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data))
+        } catch (e) {
+          reject(e)
+        }
+      })
+    }).on('error', reject)
+  })
+
+  const asset = (releaseData.assets || []).find(
+    (a) => a.name.toLowerCase() === assetName.toLowerCase()
+  )
+  if (!asset) return null
+
+  const opt2 = {
+    hostname: 'api.github.com',
+    path: `/repos/Gekamil/AppHub/releases/assets/${asset.id}`,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'User-Agent': 'StudentHub-Render-Server',
+      Accept: 'application/octet-stream',
+    },
+  }
+
+  const signedUrl = await new Promise((resolve, reject) => {
+    https.get(opt2, (res) => {
+      resolve(res.headers.location || null)
+    }).on('error', reject)
+  })
+
+  if (signedUrl) {
+    downloadUrlCache.set(assetName, {
+      url: signedUrl,
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    })
+  }
+
+  return signedUrl
+}
+
+function handleDownloadRoute(req, res) {
+  const parsedUrl = new URL(req.url, 'http://localhost')
+  const pathname = parsedUrl.pathname.toLowerCase()
+
+  let targetAsset = null
+  if (pathname === '/download/studenthub.apk' || pathname === '/download/apphub.apk') {
+    targetAsset = 'AppHub.apk'
+  } else if (
+    pathname === '/download/studenthub-setup.exe' ||
+    pathname === '/download/apphub-setup.exe' ||
+    pathname === '/download/studenthub.exe'
+  ) {
+    targetAsset = 'AppHub-Setup.exe'
+  }
+
+  if (!targetAsset) return false
+
+  resolveGitHubDownloadUrl(targetAsset)
+    .then((signedUrl) => {
+      if (signedUrl) {
+        res.writeHead(302, {
+          Location: signedUrl,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        })
+        res.end()
+      } else {
+        if (!serveStatic(req, res)) {
+          res.statusCode = 404
+          res.end('Download not available')
+        }
+      }
+    })
+    .catch((err) => {
+      console.warn('[Download Router Fallback]:', err.message)
+      if (!serveStatic(req, res)) {
+        res.statusCode = 404
+        res.end('Download error')
+      }
+    })
+
+  return true
+}
+
 // Si se ejecuta directamente con Node (`node server/whatsapp-bridge.js`)
 if (process.argv[1] && process.argv[1].endsWith('whatsapp-bridge.js')) {
   const PORT = process.env.PORT || 5005
   const HOST = '0.0.0.0'
   const server = http.createServer((req, res) => {
     if (handleBaileysApiRoute(req, res)) return
+    if (handleDownloadRoute(req, res)) return
     if (serveStatic(req, res)) return
 
     res.statusCode = 404
