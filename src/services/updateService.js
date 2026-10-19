@@ -1,15 +1,25 @@
 import { Capacitor } from '@capacitor/core'
 
-export const CURRENT_VERSION = '0.0.3'
+export const CURRENT_VERSION = '0.0.4'
 const GITHUB_REPO = 'Gekamil/AppHub'
 
 export const APP_CHANGELOG = {
-  version: '0.0.3',
-  date: '18 de Octubre, 2026',
-  badge: 'Actualización v0.0.3',
+  version: '0.0.4',
+  date: '19 de Octubre, 2026',
+  badge: 'Actualización v0.0.4',
   title: 'StudentHub se ha actualizado con éxito',
   description: 'Hemos aplicado las siguientes mejoras y correcciones en todos tus dispositivos:',
   features: [
+    {
+      title: 'Persistencia Total de Calendarios y Auto-Recuperación',
+      description: 'Los calendarios creados ahora se sincronizan en la nube (Firestore) y se recuperan automáticamente a partir de sus eventos, apareciendo siempre en el selector.',
+      icon: 'calendar_month',
+    },
+    {
+      title: 'Filtrado Contextual Inteligente',
+      description: 'Los eventos de universidad, deportes y proyectos se enlazan de forma inmediata a sus respectivos calendarios.',
+      icon: 'filter_alt',
+    },
     {
       title: 'WhatsApp con Código de 8 dígitos 100% Estable',
       description: 'El socket de enlace se mantiene activo y protegido mientras introduces el código en tu móvil, garantizando que WhatsApp complete la vinculación sin errores.',
@@ -24,16 +34,6 @@ export const APP_CHANGELOG = {
       title: 'App de Escritorio Windows con Conexión Live',
       description: 'La app instalada en Windows ahora se conecta directamente al servidor en la nube. Cualquier cambio futuro aparecerá automáticamente al abrir la aplicación sin tener que reinstalar.',
       icon: 'desktop_windows',
-    },
-    {
-      title: 'Sincronización en la Nube y Fusión de Cuentas',
-      description: 'Tus cuentas, tareas y notas se sincronizan en tiempo real con Firebase Firestore. Se han unificado las cuentas duplicadas sin perder datos.',
-      icon: 'cloud_sync',
-    },
-    {
-      title: 'Espaciado Superior Móvil Ajustado',
-      description: 'La barra de navegación ya no tapa el selector de fecha ni los botones superiores en pantallas móviles.',
-      icon: 'aspect_ratio',
     },
   ],
 }

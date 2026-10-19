@@ -602,22 +602,119 @@ export default function CalendarPage() {
     return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
   }, [])
 
-  // Sincronizar calendarios de forma aislada para la cuenta activa y con el puente WhatsApp
+  // Sincronizar calendarios de forma aislada para la cuenta activa, en la nube Firestore y con el puente WhatsApp
   useEffect(() => {
-    saveUserCalendars(calendars, getCurrentUser())
+    const curUser = getCurrentUser()
+    saveUserCalendars(calendars, curUser)
+    if (!isGuestUser(curUser)) {
+      syncCalendarsToCloud(calendars).catch(() => {})
+    }
     syncBaileysCalendars(calendars).catch(() => {})
   }, [calendars])
 
-  // Cargar datos remotos de calendarios al iniciar si el usuario está registrado
+  // Cargar datos remotos de calendarios al iniciar sin sobreescribir ni borrar los calendarios locales
   useEffect(() => {
     const curUser = getCurrentUser()
     if (isGuestUser(curUser)) return // Un invitado sin cuenta NUNCA descarga datos de otros
     loadUserDataFromCloud().then((cloudData) => {
-      if (cloudData && cloudData.calendars && cloudData.calendars.length > 0) {
-        setCalendars(cloudData.calendars)
+      if (cloudData && cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
+        setCalendars((prev) => {
+          const map = new Map()
+          ;(prev || []).forEach((c) => { if (c && c.id) map.set(c.id, c) })
+          cloudData.calendars.forEach((c) => {
+            if (c && c.id) {
+              if (!map.has(c.id)) {
+                map.set(c.id, c)
+              } else {
+                map.set(c.id, { ...c, ...map.get(c.id) })
+              }
+            }
+          })
+          const merged = Array.from(map.values())
+          saveUserCalendars(merged, curUser)
+          syncCalendarsToCloud(merged).catch(() => {})
+          return merged
+        })
       }
     }).catch(() => {})
   }, [])
+
+  // Auto-recuperación de calendarios huérfanos a partir de tareas existentes en globalTasks
+  // Si existen eventos cuyo calendarId no está en la lista de calendarios, los reconstruye automáticamente
+  useEffect(() => {
+    if (!globalTasks || globalTasks.length === 0) return
+    const knownCalIds = new Set(calendars.map((c) => c.id))
+    const orphanTasksByCalId = new Map()
+
+    for (const task of globalTasks) {
+      const cId = task.calendarId
+      if (cId && cId !== 'cal-default' && !knownCalIds.has(cId)) {
+        if (!orphanTasksByCalId.has(cId)) {
+          orphanTasksByCalId.set(cId, [])
+        }
+        orphanTasksByCalId.get(cId).push(task)
+      }
+    }
+
+    if (orphanTasksByCalId.size > 0) {
+      setCalendars((prev) => {
+        const updated = [...prev]
+        let addedCount = 0
+
+        for (const [cId, tasks] of orphanTasksByCalId.entries()) {
+          if (updated.some((c) => c.id === cId)) continue
+
+          const sample = tasks[0] || {}
+          let calName = sample.calendarName || ''
+          let calColor = sample.color && sample.color.startsWith('#') ? sample.color : null
+
+          if (!calName) {
+            const ctx = sample.context || ''
+            const hasUni = tasks.some(
+              (t) =>
+                (t.title || '').includes('@uma.es') ||
+                (t.description || '').includes('@uma.es') ||
+                (t.context || '').toLowerCase().includes('uni')
+            )
+            if (hasUni || ctx.toLowerCase().includes('uni') || cId.includes('uni')) {
+              calName = 'Universidad & Estudios'
+              calColor = calColor || '#8b5cf6'
+            } else if (ctx.toLowerCase().includes('health') || ctx.toLowerCase().includes('gym') || cId.includes('health')) {
+              calName = 'Salud & Deporte'
+              calColor = calColor || '#10b981'
+            } else if (ctx.toLowerCase().includes('project') || ctx.toLowerCase().includes('work') || cId.includes('work')) {
+              calName = 'Trabajo & Proyectos'
+              calColor = calColor || '#f59e0b'
+            } else {
+              calName = ctx ? `${ctx}` : `Calendario ${cId.replace(/^cal-/, '')}`
+              calColor = calColor || '#6366f1'
+            }
+          }
+
+          const recoveredCal = {
+            id: cId,
+            name: calName,
+            color: calColor || '#8b5cf6',
+            dot: 'bg-primary',
+            sharedFrom: [],
+            syncUrl: sample.syncUrl || '',
+            isShared: false,
+            shareCode: '',
+            sharedRole: 'owner',
+          }
+          updated.push(recoveredCal)
+          addedCount++
+        }
+
+        if (addedCount > 0) {
+          const curUser = getCurrentUser()
+          saveUserCalendars(updated, curUser)
+          syncCalendarsToCloud(updated).catch(() => {})
+        }
+        return updated
+      })
+    }
+  }, [globalTasks, calendars])
 
   const handleReorderCalendars = (fromIdx, toIdx) => {
     if (fromIdx === null || toIdx === null || fromIdx === toIdx) return
@@ -654,7 +751,21 @@ export default function CalendarPage() {
     setDraggedCalIdx(null)
     setDragOverCalIdx(null)
   }
-  const [activeCalendarId, setActiveCalendarId] = useState('cal-default')
+  const [activeCalendarId, setActiveCalendarId] = useState(() => {
+    try {
+      return localStorage.getItem('studenthub_active_cal_id') || 'cal-default'
+    } catch (e) {
+      return 'cal-default'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      if (activeCalendarId) {
+        localStorage.setItem('studenthub_active_cal_id', activeCalendarId)
+      }
+    } catch (e) {}
+  }, [activeCalendarId])
   const [calendarMode, setCalendarMode] = useState('single') // 'single' | 'cascade'
   const [isCalDropdownOpen, setIsCalDropdownOpen] = useState(false)
   const [collapsedCalIds, setCollapsedCalIds] = useState([])
@@ -973,6 +1084,26 @@ export default function CalendarPage() {
       const taskCalId = t.calendarId || 'cal-default'
       if (taskCalId === cal.id) return true
       if (cal.sharedFrom && cal.sharedFrom.includes(taskCalId)) return true
+
+      // Si el calendario es el de Universidad y la tarea es de ámbito académico/UMA
+      if (cal.id === 'cal-university' && (
+        (t.context || '').toLowerCase().includes('uni') ||
+        (t.title || '').includes('@uma.es') ||
+        (t.description || '').includes('@uma.es')
+      )) {
+        return true
+      }
+      // Si el calendario es Salud & Deporte y el contexto es Health & Gym
+      if (cal.id === 'cal-health' && (t.context || '').toLowerCase().includes('health')) {
+        return true
+      }
+      // Si el calendario es Trabajo & Proyectos y el contexto es Projects o Work
+      if (cal.id === 'cal-work' && (
+        (t.context || '').toLowerCase().includes('project') ||
+        (t.context || '').toLowerCase().includes('work')
+      )) {
+        return true
+      }
       return false
     })
   }
@@ -1488,7 +1619,13 @@ export default function CalendarPage() {
         connectedAt: Date.now(),
       }
 
-      setCalendars((prev) => [...prev, newCal])
+      setCalendars((prev) => {
+        const updated = [...prev, newCal]
+        const curUser = getCurrentUser()
+        saveUserCalendars(updated, curUser)
+        syncCalendarsToCloud(updated).catch(() => {})
+        return updated
+      })
       setActiveCalendarId(newCal.id)
 
       if (remoteEvents.length > 0) {
@@ -1530,9 +1667,13 @@ export default function CalendarPage() {
         shareCode: calendarForm.shareCode || existing.shareCode || '',
         sharedRole: calendarForm.sharedRole || existing.sharedRole || 'owner',
       }
-      setCalendars((prev) =>
-        prev.map((c) => (c.id === targetCalId ? updatedCal : c))
-      )
+      setCalendars((prev) => {
+        const updated = prev.map((c) => (c.id === targetCalId ? updatedCal : c))
+        const curUser = getCurrentUser()
+        saveUserCalendars(updated, curUser)
+        syncCalendarsToCloud(updated).catch(() => {})
+        return updated
+      })
       setFeedbackToast(`Calendario "${calendarForm.name.trim()}" guardado`)
       setTimeout(() => setFeedbackToast(null), 3000)
       if (cleanSyncUrl && cleanSyncUrl !== existing.syncUrl) {
@@ -1554,7 +1695,13 @@ export default function CalendarPage() {
         shareCode: calendarForm.shareCode || '',
         sharedRole: calendarForm.sharedRole || 'owner',
       }
-      setCalendars((prev) => [...prev, newCal])
+      setCalendars((prev) => {
+        const updated = [...prev, newCal]
+        const curUser = getCurrentUser()
+        saveUserCalendars(updated, curUser)
+        syncCalendarsToCloud(updated).catch(() => {})
+        return updated
+      })
       setActiveCalendarId(newCal.id)
       setFeedbackToast(`Calendario "${newCal.name}" creado con éxito`)
       setTimeout(() => setFeedbackToast(null), 3000)
@@ -1585,7 +1732,13 @@ export default function CalendarPage() {
     const deletedIds = toDelete.map((t) => t.id)
     const remainingTasks = (globalTasks || []).filter((t) => t.calendarId !== calId)
 
-    setCalendars((prev) => prev.filter((c) => c.id !== calId))
+    setCalendars((prev) => {
+      const remainingCals = prev.filter((c) => c.id !== calId)
+      const curUser = getCurrentUser()
+      saveUserCalendars(remainingCals, curUser)
+      syncCalendarsToCloud(remainingCals).catch(() => {})
+      return remainingCals
+    })
     setGlobalTasks(remainingTasks)
     try {
       localStorage.setItem('app_global_tasks', JSON.stringify(remainingTasks))

@@ -223,12 +223,16 @@ export const loginUser = async (email, password) => {
   const taskMap = new Map()
   allTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
 
+  const allCals = [...(baseAccount.calendars || []), ...(extraAccount?.calendars || [])]
+  const calMap = new Map()
+  allCals.forEach((c) => { if (c && c.id) calMap.set(String(c.id), c) })
+
   const mergedUser = {
     ...baseAccount,
     displayName: baseAccount.displayName || extraAccount?.displayName,
     password: baseAccount.password || extraAccount?.password,
     tasks: Array.from(taskMap.values()),
-    calendars: baseAccount.calendars && baseAccount.calendars.length > 0 ? baseAccount.calendars : (extraAccount?.calendars || []),
+    calendars: Array.from(calMap.values()),
     updatedAt: new Date().toISOString(),
   }
 
@@ -339,12 +343,16 @@ export const registerUser = async (email, password, displayName = '') => {
     const taskMap = new Map()
     allTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
 
+    const allCals = [...(base.calendars || []), ...(extra?.calendars || [])]
+    const calMap = new Map()
+    allCals.forEach((c) => { if (c && c.id) calMap.set(String(c.id), c) })
+
     const mergedUser = {
       ...base,
       displayName: displayName.trim() || base.displayName || trimmedEmail.split('@')[0],
       password: password || base.password || '123456',
       tasks: Array.from(taskMap.values()),
-      calendars: base.calendars && base.calendars.length > 0 ? base.calendars : (extra?.calendars || []),
+      calendars: Array.from(calMap.values()),
       updatedAt: new Date().toISOString(),
     }
 
@@ -365,6 +373,11 @@ export const registerUser = async (email, password, displayName = '') => {
         window.dispatchEvent(new CustomEvent('global_tasks_updated', { detail: mergedUser.tasks }))
       } catch (e) {}
     }
+    if (mergedUser.calendars && mergedUser.calendars.length > 0) {
+      try {
+        localStorage.setItem(`studenthub_calendars_${mergedUser.uid}`, JSON.stringify(mergedUser.calendars))
+      } catch (e) {}
+    }
 
     localStorage.setItem('studenthub_is_authenticated', 'true')
     setActiveUser(mergedUser)
@@ -372,6 +385,42 @@ export const registerUser = async (email, password, displayName = '') => {
   }
 
   // Si es una cuenta 100% nueva:
+  const defaultCalendars = [
+    {
+      id: 'cal-default',
+      name: 'Personal & General',
+      color: '#3b82f6',
+      dot: 'bg-blue-500',
+      sharedFrom: [],
+      isDefault: true,
+      syncUrl: '',
+    },
+    {
+      id: 'cal-university',
+      name: 'Universidad & Estudios',
+      color: '#8b5cf6',
+      dot: 'bg-purple-500',
+      sharedFrom: [],
+      syncUrl: '',
+    },
+    {
+      id: 'cal-health',
+      name: 'Salud & Deporte',
+      color: '#10b981',
+      dot: 'bg-emerald-500',
+      sharedFrom: [],
+      syncUrl: '',
+    },
+    {
+      id: 'cal-work',
+      name: 'Trabajo & Proyectos',
+      color: '#f59e0b',
+      dot: 'bg-amber-500',
+      sharedFrom: [],
+      syncUrl: '',
+    },
+  ]
+
   const newUser = {
     uid: 'user-' + Date.now(),
     displayName: displayName.trim() || trimmedEmail.split('@')[0],
@@ -382,17 +431,7 @@ export const registerUser = async (email, password, displayName = '') => {
     location: 'Málaga, ES',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    calendars: [
-      {
-        id: 'cal-default',
-        name: 'Personal & General',
-        color: '#3b82f6',
-        dot: 'bg-blue-500',
-        sharedFrom: [],
-        isDefault: true,
-        syncUrl: '',
-      },
-    ],
+    calendars: defaultCalendars,
     tasks: [],
   }
 
@@ -565,20 +604,45 @@ export const saveUserTasks = (tasks, user = getCurrentUser()) => {
   }
 }
 
+// Calendarios por defecto del sistema
+export const DEFAULT_USER_CALENDARS = [
+  {
+    id: 'cal-default',
+    name: 'Personal & General',
+    color: '#3b82f6',
+    dot: 'bg-blue-500',
+    sharedFrom: [],
+    isDefault: true,
+    syncUrl: '',
+  },
+  {
+    id: 'cal-university',
+    name: 'Universidad & Estudios',
+    color: '#8b5cf6',
+    dot: 'bg-purple-500',
+    sharedFrom: [],
+    syncUrl: '',
+  },
+  {
+    id: 'cal-health',
+    name: 'Salud & Deporte',
+    color: '#10b981',
+    dot: 'bg-emerald-500',
+    sharedFrom: [],
+    syncUrl: '',
+  },
+  {
+    id: 'cal-work',
+    name: 'Trabajo & Proyectos',
+    color: '#f59e0b',
+    dot: 'bg-amber-500',
+    sharedFrom: [],
+    syncUrl: '',
+  },
+]
+
 // Obtener calendarios del usuario actual
 export const getUserCalendars = (user = getCurrentUser()) => {
-  const DEFAULT_GUEST_CALENDARS = [
-    {
-      id: 'cal-default',
-      name: 'Personal & General',
-      color: '#3b82f6',
-      dot: 'bg-blue-500',
-      sharedFrom: [],
-      isDefault: true,
-      syncUrl: '',
-    },
-  ]
-
   try {
     if (isGuestUser(user)) {
       const rawGuest = localStorage.getItem('studenthub_guest_calendars')
@@ -586,7 +650,7 @@ export const getUserCalendars = (user = getCurrentUser()) => {
         const parsed = JSON.parse(rawGuest)
         if (Array.isArray(parsed) && parsed.length > 0) return parsed
       }
-      return DEFAULT_GUEST_CALENDARS
+      return DEFAULT_USER_CALENDARS
     }
 
     const accounts = getAllAccounts()
@@ -602,7 +666,7 @@ export const getUserCalendars = (user = getCurrentUser()) => {
   } catch (e) {
     console.warn('Error leyendo calendarios de usuario:', e)
   }
-  return DEFAULT_GUEST_CALENDARS
+  return DEFAULT_USER_CALENDARS
 }
 
 // Guardar calendarios de forma aislada por usuario
@@ -619,6 +683,8 @@ export const saveUserCalendars = (calendars, user = getCurrentUser()) => {
       accounts[idx].calendars = calendars
       saveAllAccounts(accounts)
     }
+    // Sincronizar automáticamente en la nube Firestore
+    syncCalendarsToCloud(calendars).catch(() => {})
   } catch (e) {
     console.warn('Error guardando calendarios de usuario:', e)
   }
@@ -697,7 +763,22 @@ export const loadUserDataFromCloud = async () => {
           localStorage.setItem(`studenthub_tasks_${current.uid}`, JSON.stringify(cloudData.tasks))
         }
         if (cloudData.calendars && Array.isArray(cloudData.calendars)) {
-          localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(cloudData.calendars))
+          // Fusionar con los calendarios locales para NUNCA borrar creaciones locales
+          const localCals = getUserCalendars(current)
+          const mergedCalsMap = new Map()
+          localCals.forEach((c) => { if (c && c.id) mergedCalsMap.set(c.id, c) })
+          cloudData.calendars.forEach((c) => {
+            if (c && c.id) {
+              if (!mergedCalsMap.has(c.id)) {
+                mergedCalsMap.set(c.id, c)
+              } else {
+                mergedCalsMap.set(c.id, { ...c, ...mergedCalsMap.get(c.id) })
+              }
+            }
+          })
+          const mergedCals = Array.from(mergedCalsMap.values())
+          localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(mergedCals))
+          cloudData.calendars = mergedCals
         }
         return {
           tasks: cloudData.tasks || null,
