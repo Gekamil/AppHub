@@ -40,6 +40,17 @@ export default function Header({
 
   const notifRef = useRef(null)
   const profileButtonRef = useRef(null)
+  const mobileProfileButtonRef = useRef(null)
+
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  )
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const [isStandaloneApp, setIsStandaloneApp] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -347,7 +358,7 @@ export default function Header({
             </nav>
           )}
 
-          <div className="flex items-center gap-1 sm:gap-space-xs app-no-drag">
+          <div className="hidden md:flex items-center gap-1 sm:gap-space-xs app-no-drag">
             {!isStandaloneApp && (
               <button
                 type="button"
@@ -359,38 +370,16 @@ export default function Header({
                 <span className="hidden sm:inline font-bold">Instalar App</span>
               </button>
             )}
-            <div className="relative app-no-drag">
-              <button
-                type="button"
-                onClick={() => setIsNotificationsOpen((prev) => !prev)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag relative"
-                title="Centro de notificaciones"
-              >
-                <span className="material-symbols-outlined text-[18px]">notifications</span>
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              </button>
-
-              {isNotificationsOpen && (
-                <div
-                  ref={notifRef}
-                  className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#161b26] rounded-2xl shadow-xl border border-slate-200/90 dark:border-slate-800 p-3 z-50 animate-in fade-in zoom-in-95 duration-150 text-left select-none"
-                >
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                    <span className="font-bold text-xs text-on-surface">Notificaciones</span>
-                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                      Al día
-                    </span>
-                  </div>
-                  <div className="py-4 flex flex-col items-center justify-center text-center gap-1.5">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                    </div>
-                    <p className="text-xs font-semibold text-on-surface">Todo sincronizado</p>
-                    <p className="text-[11px] text-secondary">No tienes tareas atrasadas ni avisos pendientes.</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              data-notif-button
+              onClick={() => setIsNotificationsOpen((prev) => !prev)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag relative"
+              title="Centro de notificaciones"
+            >
+              <span className="material-symbols-outlined text-[18px]">notifications</span>
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag"
@@ -499,15 +488,123 @@ export default function Header({
         )}
       </header>
 
+      {/* BARRA INFERIOR EXCLUSIVA PARA MÓVIL (PERFIL, AJUSTES, CAMPANITA) */}
+      <nav
+        aria-label="Barra de herramientas móvil"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 backdrop-blur-xl border-t border-outline-variant/30 py-1.5 px-6 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)] app-no-drag"
+      >
+        {/* Campanita Notificaciones */}
+        <button
+          type="button"
+          data-notif-button
+          onClick={() => setIsNotificationsOpen((prev) => !prev)}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative active:scale-95 ${
+            isNotificationsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
+          }`}
+          title="Centro de notificaciones"
+        >
+          <span className="material-symbols-outlined text-[22px]">notifications</span>
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500"></span>
+        </button>
+
+        {/* Ajustes de la Aplicación */}
+        <button
+          type="button"
+          onClick={() => setIsSettingsOpen(true)}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 ${
+            isSettingsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
+          }`}
+          title="Ajustes del Sistema"
+        >
+          <span className="material-symbols-outlined text-[22px]">settings</span>
+        </button>
+
+        {/* Instalar App (Solo si no es app instalada nativa/PWA) */}
+        {!isStandaloneApp && (
+          <button
+            type="button"
+            onClick={() => setIsInstallModalOpen(true)}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-primary bg-primary/10 hover:bg-primary/20 transition-all cursor-pointer shadow-2xs active:scale-95"
+            title="Instalar App en el dispositivo"
+          >
+            <span className="material-symbols-outlined text-[20px]">install_mobile</span>
+          </button>
+        )}
+
+        {/* Perfil de Usuario */}
+        {isGuest ? (
+          <button
+            ref={mobileProfileButtonRef}
+            type="button"
+            onClick={() => setIsProfileOpen((prev) => !prev)}
+            className="relative w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+            title="Modo Invitado • Pulsa para abrir menú de cuenta"
+          >
+            <span className="material-symbols-outlined text-[20px]">person</span>
+            <span
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white dark:border-[#161b26]"
+              title="Sin sesión iniciada"
+            />
+          </button>
+        ) : (
+          <button
+            ref={mobileProfileButtonRef}
+            type="button"
+            onClick={() => setIsProfileOpen((prev) => !prev)}
+            className="relative w-9 h-9 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-xs tracking-tight cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+            title={`Conectado como ${user.displayName || 'Usuario'}`}
+          >
+            {user.displayName
+              ? user.displayName
+                  .split(' ')
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()
+              : 'U'}
+            <span
+              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#161b26]"
+              title="Sesión activa"
+            />
+          </button>
+        )}
+      </nav>
+
+      {/* CENTRO DE NOTIFICACIONES (RESPONSIVE: ARRIBA EN PC, HACIA ARRIBA DESDE LA BARRA EN MÓVIL) */}
+      {isNotificationsOpen && (
+        <div
+          ref={notifRef}
+          className={`fixed z-50 ${
+            isMobile
+              ? 'bottom-16 right-3 left-3 w-auto max-w-sm ml-auto shadow-[0_-8px_30px_rgba(0,0,0,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-150'
+              : 'top-14 right-4 sm:right-6 md:right-16 w-72 shadow-xl animate-in fade-in zoom-in-95 duration-150'
+          } bg-white dark:bg-[#161b26] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3.5 text-left select-none`}
+        >
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="font-bold text-xs text-on-surface">Notificaciones</span>
+            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+              Al día
+            </span>
+          </div>
+          <div className="py-4 flex flex-col items-center justify-center text-center gap-1.5">
+            <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+            </div>
+            <p className="text-xs font-semibold text-on-surface">Todo sincronizado</p>
+            <p className="text-[11px] text-secondary">No tienes tareas atrasadas ni avisos pendientes.</p>
+          </div>
+        </div>
+      )}
+
       {/* MODAL DE AJUSTES (IDIOMA, TEMA Y PESTAÑAS - DISEÑO EXPANDIDO LATERAL) */}
       {isSettingsOpen && (
         <div
           onClick={() => setIsSettingsOpen(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs cursor-pointer"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xs cursor-pointer"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-surface-pure rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl lg:max-w-3xl border border-outline-variant/30 animate-in fade-in zoom-in-95 duration-150 cursor-default relative max-h-[88vh] flex flex-col"
+            className="bg-surface-pure rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl lg:max-w-3xl border border-outline-variant/30 animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 cursor-default relative max-h-[82vh] sm:max-h-[88vh] flex flex-col mb-1 sm:mb-0"
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-muted shrink-0">
               <div className="flex items-center gap-2.5">
@@ -886,8 +983,8 @@ export default function Header({
       <ProfilePopover
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
-        anchorRef={profileButtonRef}
-        placement="header"
+        anchorRef={isMobile ? mobileProfileButtonRef : profileButtonRef}
+        placement={isMobile ? 'bottom-bar' : 'header'}
         onOpenAccountModal={(tab) => {
           setAccountModalTab(tab)
           setIsAccountModalOpen(true)

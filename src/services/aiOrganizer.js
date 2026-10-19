@@ -3,7 +3,83 @@
 
 const GROQ_API_KEY = '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'
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
-const AI_MODEL = 'qwen/qwen3.8-27b'
+const GROQ_MODELS = ['qwen/qwen3.8-27b', 'allam-2-7b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
+const RENDER_BACKEND_URL = 'https://freestudentapphub.onrender.com'
+
+/**
+ * Llamada resiliente a la API de Groq con failover automático entre modelos
+ * y fallback directo al backend de Render si la red cliente falla.
+ */
+export async function callGroqWithFallback({ messages, temperature = 0.2, max_tokens = 850, jsonMode = true }) {
+  let lastError = null
+
+  // 1. Probar modelos de texto disponibles en Groq directamente
+  for (const model of GROQ_MODELS) {
+    try {
+      const body = {
+        model,
+        messages,
+        temperature,
+        max_tokens,
+      }
+      if (jsonMode) {
+        body.response_format = { type: 'json_object' }
+      }
+
+      const res = await fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const text = data.choices?.[0]?.message?.content || ''
+        if (text && text.trim()) {
+          return { success: true, content: text, model }
+        }
+      } else {
+        const errText = await res.text().catch(() => '')
+        console.warn(`[AI Failover] Modelo ${model} respondió status ${res.status}: ${errText.slice(0, 80)}`)
+        lastError = new Error(`Groq ${model} status ${res.status}`)
+      }
+    } catch (err) {
+      console.warn(`[AI Failover] Excepción con modelo ${model}:`, err.message)
+      lastError = err
+    }
+  }
+
+  // 2. Fallback a endpoint de chat en backend Render
+  try {
+    const userText = messages[messages.length - 1]?.content || ''
+    const backendRes = await fetch(`${RENDER_BACKEND_URL}/api/baileys/chat-test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: userText,
+        applyActions: false,
+      }),
+    })
+    if (backendRes.ok) {
+      const data = await backendRes.json()
+      if (data && (data.reply || data.content)) {
+        return {
+          success: true,
+          content: JSON.stringify(data),
+          model: 'render-backend-bridge',
+          parsedData: data,
+        }
+      }
+    }
+  } catch (backendErr) {
+    console.warn('[AI Failover] Fallback a backend Render falló:', backendErr.message)
+  }
+
+  return { success: false, error: lastError }
+}
 
 export function getCalendarReference(targetDate = null) {
   const baseD = targetDate
@@ -102,29 +178,21 @@ Instrucciones:
 }`
 
   try {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [
-          { role: 'system', content: 'Eres un organizador de productividad. Responde exclusivamente con JSON válido.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.2,
-        max_tokens: 600,
-      }),
+    const aiRes = await callGroqWithFallback({
+      messages: [
+        { role: 'system', content: 'Eres un organizador de productividad. Responde exclusivamente con JSON válido.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.2,
+      max_tokens: 600,
+      jsonMode: true,
     })
 
-    if (!res.ok) {
-      throw new Error(`Error en API Groq: ${res.statusText}`)
+    if (!aiRes.success) {
+      throw new Error('Servicio de IA temporalmente inaccesible')
     }
 
-    const data = await res.json()
-    const content = data.choices[0]?.message?.content || '{}'
+    const content = aiRes.content || '{}'
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content)
 
@@ -217,26 +285,18 @@ Devuelve ÚNICAMENTE un JSON con este formato exacto:
 }`
 
   try {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [
-          { role: 'system', content: 'Eres un asistente experto en análisis de agendas. Responde exclusivamente con JSON válido.' },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.1,
-        max_tokens: 800,
-      }),
+    const aiRes = await callGroqWithFallback({
+      messages: [
+        { role: 'system', content: 'Eres un asistente experto en análisis de agendas. Responde exclusivamente con JSON válido.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.1,
+      max_tokens: 800,
+      jsonMode: true,
     })
 
-    if (!res.ok) throw new Error('Error en API Groq')
-    const data = await res.json()
-    const content = data.choices[0]?.message?.content || '{}'
+    if (!aiRes.success) throw new Error('Servicio de IA temporalmente inaccesible')
+    const content = aiRes.content || '{}'
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content)
 
@@ -546,23 +606,135 @@ export function applyAIActions(currentTasks = [], actions = []) {
 }
 
 /**
- * Conversación inteligente con el Asistente IA (Groq) con CONTROL TOTAL sobre el calendario y tareas
+ * Resuelve peticiones conversacionales y de control de calendario de forma local
+ * cuando los servicios remotos no responden o hay problemas de conexión.
+ */
+export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHistory = []) {
+  const calRef = getCalendarReference()
+  const todayStr = calRef.todayYmd
+  const lower = (userMessage || '').toLowerCase().trim()
+
+  // 1. Consulta de tareas de hoy / resumen
+  if (/qu[eé] tengo hoy|tengo hoy|tareas de hoy|mi d[ií]a|agenda de hoy|horario de hoy|qu[eé] hay hoy/i.test(lower)) {
+    const todayTasks = (currentTasks || []).filter(t => t.date === todayStr && !t.completed)
+    if (todayTasks.length === 0) {
+      return {
+        reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) no tienes tareas pendientes registradas en tu calendario. ¿Quieres que programemos alguna sesión de estudio, gym o proyecto?`,
+        actions: [],
+      }
+    }
+    const list = todayTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.context || 'General'})`).join('\n')
+    return {
+      reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) tienes ${todayTasks.length} tarea(s) pendiente(s):\n\n${list}\n\n¿Quieres que modifique la hora de alguna o marque alguna como completada?`,
+      actions: [],
+    }
+  }
+
+  // 2. Consulta de mañana
+  if (/qu[eé] tengo ma[ñn]ana|tareas de ma[ñn]ana|agenda de ma[ñn]ana/i.test(lower)) {
+    const tomorrowStr = addDays(todayStr, 1)
+    const tomorrowTasks = (currentTasks || []).filter(t => t.date === tomorrowStr && !t.completed)
+    if (tomorrowTasks.length === 0) {
+      return {
+        reply: `Mañana (${tomorrowStr}) no tienes tareas pendientes asignadas. ¿Quieres que programemos alguna?`,
+        actions: [],
+      }
+    }
+    const list = tomorrowTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title}`).join('\n')
+    return {
+      reply: `Para mañana tienes ${tomorrowTasks.length} tarea(s):\n\n${list}`,
+      actions: [],
+    }
+  }
+
+  // 3. Borrar / Eliminar tarea
+  if (/borra|elimina|quita|suprime/i.test(lower)) {
+    const targetMatch = lower.replace(/borra(?:r)?|elimina(?:r)?|quita(?:r)?|suprime|la tarea de|la tarea|el evento|de mi calendario/gi, '').trim()
+    const found = (currentTasks || []).find(t => t.title && t.title.toLowerCase().includes(targetMatch))
+    if (found) {
+      return {
+        reply: `He eliminado "${found.title}" de tu calendario correctamente.`,
+        actions: [{ type: 'delete_task', taskId: found.id, targetTitle: found.title }],
+      }
+    }
+    return {
+      reply: `He buscado "${targetMatch}" para eliminarla pero no he encontrado ninguna tarea coincidente. Puedes comprobar el nombre exacto en el calendario.`,
+      actions: [],
+    }
+  }
+
+  // 4. Completar tarea
+  if (/terminad[ao]|completad[ao]|hech[ao]|marcar como (?:hecha|completada)|ya hice/i.test(lower)) {
+    const targetMatch = lower.replace(/he terminado|he completado|ya he hecho|marcar como hecha|marca como hecha|marca como completada|la tarea de|la tarea|el evento/gi, '').trim()
+    const found = (currentTasks || []).find(t => t.title && t.title.toLowerCase().includes(targetMatch))
+    if (found) {
+      return {
+        reply: `He marcado "${found.title}" como completada en tu calendario.`,
+        actions: [{ type: 'complete_task', taskId: found.id, targetTitle: found.title, completed: true }],
+      }
+    }
+  }
+
+  // 5. Cambiar / Mover / Modificar hora o fecha
+  if (/cambia|pasa|mueve|pon|aplaza|retrasa/i.test(lower) && (/a las|para el|al /i.test(lower) || /\d{1,2}:\d{2}/.test(lower))) {
+    const timeMatch = lower.match(/(?:a las?|alas?)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|de la mañana|de la tarde|de la noche)?/i)
+    let newTime = null
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10)
+      const m = timeMatch[2] || '00'
+      const mod = (timeMatch[3] || '').toLowerCase()
+      if ((mod.includes('pm') || mod.includes('tarde') || mod.includes('noche')) && h < 12) h += 12
+      newTime = `${String(h).padStart(2, '0')}:${m}`
+    }
+
+    const matchedTask = (currentTasks || []).find(t => t.title && lower.includes(t.title.toLowerCase()))
+    if (matchedTask) {
+      const updates = {}
+      if (newTime) updates.time = newTime
+      return {
+        reply: `He actualizado la tarea "${matchedTask.title}"${newTime ? ` a las ${newTime}` : ''} en tu calendario.`,
+        actions: [{ type: 'update_task', taskId: matchedTask.id, targetTitle: matchedTask.title, updates }],
+      }
+    }
+  }
+
+  // 6. Añadir / Programar nueva(s) tarea(s)
+  if (/a[ñn]ade|crea|pon|programa|apunta|tengo que|debo|clase de|partido de|entrenamiento/i.test(lower)) {
+    const parsed = parseScheduleLocalHeuristics(userMessage)
+    if (parsed && parsed.tasks && parsed.tasks.length > 0) {
+      const titles = parsed.tasks.map(t => `"${t.title}" (${t.date} a las ${t.time})`).join(', ')
+      return {
+        reply: `He programado en tu calendario: ${titles}. ¿Quieres que ajuste la duración o el nivel de esfuerzo?`,
+        actions: [{ type: 'add_tasks', tasks: parsed.tasks }],
+      }
+    }
+  }
+
+  // 7. Respuesta conversacional inteligente por defecto
+  const pendingCount = (currentTasks || []).filter(t => !t.completed).length
+  return {
+    reply: `Entendido. Tienes ${pendingCount} tareas activas en tu calendario. Puedes pedirme que añada una nueva tarea (ej: "Añade estudio de Redes el jueves a las 17:00"), que mueva la hora de alguna, que marque una tarea como completada o que te muestre el resumen de tu día.`,
+    actions: [],
+  }
+}
+
+/**
+ * Conversación inteligente con el Asistente IA (Groq) con failover automático y CONTROL TOTAL sobre tareas
  */
 export async function chatWithAICopilot({ userMessage, currentTasks = [], chatHistory = [] }) {
   const calRef = getCalendarReference()
   const todayStr = calRef.todayYmd
 
-  // Contexto conciso de tareas actuales
-  const tasksSummary = currentTasks.map(t => ({
+  // Contexto conciso y optimizado en tokens (máximo 25 tareas relevantes)
+  const tasksSummary = (currentTasks || []).slice(0, 25).map(t => ({
     id: t.id,
     title: t.title,
     date: t.date,
     time: t.time,
     effort: t.effort,
     context: t.context,
-    est: t.est,
-    completed: t.completed,
-    isRecurring: t.isRecurring,
+    completed: !!t.completed,
+    isRecurring: !!t.isRecurring,
   }))
 
   const systemPrompt = `Eres el Asistente Inteligente de Productividad integrado en StudentHub con CONTROL TOTAL sobre el calendario y tareas del usuario.
@@ -579,7 +751,7 @@ Tienes permisos plenos para:
 6. ELIMINAR / BORRAR tareas (ej: "Borra la tarea de la cena").
 7. RESPONDER DUDAS y dar consejos sobre qué hacer hoy, cómo organizarse, técnica Pomodoro o descansos.
 
-Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto introductorio ni explicaciones fuera del JSON:
+Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto adicional:
 {
   "reply": "Respuesta en español explicando con claridad y amabilidad los cambios realizados o respondiendo a la pregunta",
   "actions": [
@@ -606,7 +778,7 @@ Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto introductorio
 
   const messages = [
     { role: 'system', content: systemPrompt },
-    ...chatHistory.slice(-6).map(m => ({
+    ...chatHistory.slice(-4).map(m => ({
       role: m.sender === 'user' ? 'user' : 'assistant',
       content: m.text,
     })),
@@ -614,45 +786,41 @@ Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto introductorio
   ]
 
   try {
-    const res = await fetch(GROQ_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages,
-        temperature: 0.2,
-        max_tokens: 850,
-      }),
+    const aiResult = await callGroqWithFallback({
+      messages,
+      temperature: 0.2,
+      max_tokens: 850,
+      jsonMode: true,
     })
 
-    if (!res.ok) throw new Error('Error al conectar con Groq API')
-    const data = await res.json()
-    const content = data.choices[0]?.message?.content || '{}'
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
-    const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content)
+    if (aiResult.success) {
+      const content = aiResult.content || '{}'
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : (aiResult.parsedData || JSON.parse(content))
 
-    // Normalizar lista de acciones devuelta por la IA
-    const actions = parsed.actions || []
-    if (parsed.newTasks && parsed.newTasks.length > 0 && actions.length === 0) {
-      actions.push({
-        type: 'add_tasks',
-        tasks: parsed.newTasks,
-      })
+      const actions = parsed.actions || []
+      if (parsed.newTasks && parsed.newTasks.length > 0 && actions.length === 0) {
+        actions.push({
+          type: 'add_tasks',
+          tasks: parsed.newTasks,
+        })
+      }
+
+      if (parsed.reply || actions.length > 0) {
+        return {
+          reply: parsed.reply || 'He procesado tu petición correctamente.',
+          actions,
+        }
+      }
     }
 
-    return {
-      reply: parsed.reply || 'He procesado tu petición correctamente.',
-      actions,
-    }
+    // Fallback inteligente local
+    console.info('[AI Copilot] Conexión remota no disponible, resolviendo con motor local...')
+    return resolveAICopilotLocally(userMessage, currentTasks, chatHistory)
   } catch (err) {
-    console.warn('Error en chat IA:', err)
-    return {
-      reply: 'No he podido contactar con el servicio en este momento. Si deseas gestionar una tarea, puedes usar los controles de la aplicación.',
-      actions: [],
-    }
+    console.warn('[AI Copilot] Error procesando chat con IA, resolviendo con motor local:', err)
+    return resolveAICopilotLocally(userMessage, currentTasks, chatHistory)
   }
 }
+
 
