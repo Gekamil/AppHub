@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { chatWithAICopilot, applyAIActions } from '../services/aiOrganizer'
-import { getCurrentUser, isGuestUser } from '../services/firebase'
+import { getCurrentUser, isGuestUser, getUserCalendars } from '../services/firebase'
 import AIBotIcon from './AIBotIcon'
 
 export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) {
@@ -85,6 +85,7 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) 
       const response = await chatWithAICopilot({
         userMessage: userMsg.text,
         currentTasks: globalTasks,
+        currentCalendars: getUserCalendars(getCurrentUser()),
         chatHistory: messages,
       })
 
@@ -419,6 +420,16 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) 
                                   <span className="font-code-sm text-secondary shrink-0">{t.date} • {t.time}</span>
                                 </div>
                               ))}
+                            </div>
+                          )
+                        }
+                        if (act.type === 'move_calendar_events') {
+                          return (
+                            <div key={idx} className="px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 text-[11px] flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
+                              <span className="material-symbols-outlined text-[14px]">sync_alt</span>
+                              <span className="font-medium">
+                                Eventos movidos de "{act.sourceCalendarName}" al rol/calendario "{act.targetCalendarName || act.targetContext}"
+                              </span>
                             </div>
                           )
                         }

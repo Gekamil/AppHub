@@ -6,7 +6,7 @@
 
 import {
   makeWASocket,
-  useMultiFileAuthState,
+  useMultiFileAuthState as initMultiFileAuthState,
   DisconnectReason,
   downloadMediaMessage,
   extractMessageContent,
@@ -1283,7 +1283,7 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
       fs.mkdirSync(AUTH_DIR, { recursive: true })
     } catch (e) {}
 
-    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+    const { state, saveCreds } = await initMultiFileAuthState(AUTH_DIR)
 
     sock = makeWASocket({
       auth: state,

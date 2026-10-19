@@ -17,6 +17,7 @@ import {
   subscribeToBaileysLiveUpdates,
 } from '../services/baileysBridge'
 import { getVisibleNavTabs } from '../services/navSettings'
+import { syncWidgetData, checkInitialWidgetRoute, listenWidgetRoute } from '../services/widgetBridge'
 
 const DEFAULT_TASKS = []
 
@@ -200,10 +201,20 @@ export default function AppShell() {
   const isRemoteSyncRef = useRef(false)
   const lastPushedTasksJsonRef = useRef('')
 
-  // Sincronizar tareas persistentemente con el espacio privado de la cuenta activa
+  // Escuchar enlaces y rutas provenientes de los widgets de Android
+  useEffect(() => {
+    checkInitialWidgetRoute(navigate)
+    const cleanup = listenWidgetRoute(navigate)
+    return () => {
+      if (typeof cleanup === 'function') cleanup()
+    }
+  }, [navigate])
+
+  // Sincronizar tareas persistentemente con el espacio privado de la cuenta activa y los widgets del sistema
   useEffect(() => {
     const curUser = getCurrentUser()
     saveUserTasks(globalTasks, curUser)
+    syncWidgetData({ tasks: globalTasks })
 
     // Si el usuario está en modo invitado (sin sesión iniciada), NO sincronizar hacia la nube ni Baileys
     if (isGuestUser(curUser)) {

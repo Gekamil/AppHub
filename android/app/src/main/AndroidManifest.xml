@@ -33,6 +33,43 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Calendar Widget Receiver -->
+        <receiver
+            android:name=".CalendarWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.apphub.workspace.ACTION_CALENDAR_SET_MODE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/calendar_widget_info" />
+        </receiver>
+
+        <!-- Weekly Plan Widget Receiver -->
+        <receiver
+            android:name=".WeeklyPlanWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/weekly_plan_widget_info" />
+        </receiver>
+
+        <!-- App Widgets Hub Receiver -->
+        <receiver
+            android:name=".AppWidgetsProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widgets_info" />
+        </receiver>
     </application>
 
     <!-- Permissions -->

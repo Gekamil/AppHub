@@ -1,5 +1,6 @@
 // Servicio de IA Avanzada para Auto-Organizer y Asistente Global (Groq API de ultra-alta velocidad)
 // Modelo: qwen/qwen3.8-27b
+import { getUserCalendars, getCurrentUser } from './firebase.js'
 
 const GROQ_API_KEY = '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'
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
@@ -555,8 +556,30 @@ export function applyAIActions(currentTasks = [], actions = []) {
           return {
             ...t,
             ...updates,
+            calendarId: updates.calendarId || t.calendarId,
+            calendarName: updates.calendarName || t.calendarName,
+            context: updates.context || t.context,
             effort: newEffort,
             color: effortColors[newEffort] || t.color,
+          }
+        }
+        return t
+      })
+    } else if (act.type === 'move_calendar_events' || act.type === 'reassign_calendar_events') {
+      const { sourceCalendarId, sourceCalendarName, targetCalendarId, targetCalendarName, targetContext } = act
+      updatedTasks = updatedTasks.map((t) => {
+        const matchesId = sourceCalendarId && String(t.calendarId) === String(sourceCalendarId)
+        const matchesName = sourceCalendarName && (
+          (t.calendarName && t.calendarName.toLowerCase().includes(sourceCalendarName.toLowerCase())) ||
+          (t.context && t.context.toLowerCase().includes(sourceCalendarName.toLowerCase())) ||
+          (t.calendarId && String(t.calendarId).toLowerCase().includes(sourceCalendarName.toLowerCase()))
+        )
+        if (matchesId || matchesName) {
+          return {
+            ...t,
+            calendarId: targetCalendarId || t.calendarId,
+            calendarName: targetCalendarName || t.calendarName,
+            context: targetContext || targetCalendarName || t.context,
           }
         }
         return t
@@ -609,12 +632,85 @@ export function applyAIActions(currentTasks = [], actions = []) {
  * Resuelve peticiones conversacionales y de control de calendario de forma local
  * cuando los servicios remotos no responden o hay problemas de conexión.
  */
-export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHistory = []) {
+export function resolveAICopilotLocally(userMessage, currentTasks = [], currentCalendars = [], chatHistory = []) {
   const calRef = getCalendarReference()
   const todayStr = calRef.todayYmd
   const lower = (userMessage || '').toLowerCase().trim()
 
-  // 1. Consulta de tareas de hoy / resumen
+  const calendarsList = (Array.isArray(currentCalendars) && currentCalendars.length > 0)
+    ? currentCalendars
+    : getUserCalendars(getCurrentUser())
+
+  // 1. Mover todos los eventos de un calendario o rol a otro
+  // Ej: "mete todos los eventos de mi calendario X en el rol Y", "mueve todas las tareas de mates a universidad"
+  const moveAllMatch = lower.match(/(?:mete|pasa|mueve|cambia|asigna)\s+(?:todos\s+los\s+eventos|todas\s+las\s+tareas|todo)\s+(?:de\s+mi\s+calendario|del\s+calendario|de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|la\s+categor[ií]a|rol|calendario)?\s*(.*)/i)
+  if (moveAllMatch) {
+    const rawSource = moveAllMatch[1].replace(/mi calendario|calendario|rol|categoría/gi, '').trim()
+    const rawTarget = moveAllMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
+
+    const targetCal = calendarsList.find(c => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
+    const targetCalId = targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-'))
+    const targetCalName = targetCal ? targetCal.name : rawTarget
+
+    const matchingTasks = currentTasks.filter(t => {
+      const matchName = (t.calendarName && t.calendarName.toLowerCase().includes(rawSource.toLowerCase()))
+      const matchContext = (t.context && t.context.toLowerCase().includes(rawSource.toLowerCase()))
+      const matchId = (t.calendarId && t.calendarId.toLowerCase().includes(rawSource.toLowerCase()))
+      return matchName || matchContext || matchId
+    })
+
+    if (matchingTasks.length > 0) {
+      return {
+        reply: `He movido ${matchingTasks.length} evento(s) del calendario "${rawSource}" al rol/calendario "${targetCalName}" correctamente.`,
+        actions: [
+          {
+            type: 'move_calendar_events',
+            sourceCalendarName: rawSource,
+            targetCalendarId: targetCalId,
+            targetCalendarName: targetCalName,
+            targetContext: targetCalName,
+          }
+        ]
+      }
+    } else {
+      return {
+        reply: `No he encontrado tareas asociadas al calendario o rol "${rawSource}". Los calendarios detectados son: ${calendarsList.map(c => c.name).join(', ')}.`,
+        actions: []
+      }
+    }
+  }
+
+  // 2. Mover un evento específico a un rol o calendario
+  // Ej: "mete el evento de mates al rol universidad"
+  const moveSingleMatch = lower.match(/(?:mete|pasa|mueve|cambia|asigna)\s+(?:el\s+evento|la\s+tarea)\s+(?:de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|rol|calendario)?\s*(.*)/i)
+  if (moveSingleMatch) {
+    const rawTask = moveSingleMatch[1].trim()
+    const rawTarget = moveSingleMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
+    const targetCal = calendarsList.find(c => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
+    const targetCalId = targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-'))
+    const targetCalName = targetCal ? targetCal.name : rawTarget
+
+    const found = currentTasks.find(t => t.title && t.title.toLowerCase().includes(rawTask.toLowerCase()))
+    if (found) {
+      return {
+        reply: `He asignado el evento "${found.title}" al rol/calendario "${targetCalName}" correctamente.`,
+        actions: [
+          {
+            type: 'update_task',
+            taskId: found.id,
+            targetTitle: found.title,
+            updates: {
+              calendarId: targetCalId,
+              calendarName: targetCalName,
+              context: targetCalName,
+            }
+          }
+        ]
+      }
+    }
+  }
+
+  // 3. Consulta de tareas de hoy / resumen
   if (/qu[eé] tengo hoy|tengo hoy|tareas de hoy|mi d[ií]a|agenda de hoy|horario de hoy|qu[eé] hay hoy/i.test(lower)) {
     const todayTasks = (currentTasks || []).filter(t => t.date === todayStr && !t.completed)
     if (todayTasks.length === 0) {
@@ -623,14 +719,14 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHist
         actions: [],
       }
     }
-    const list = todayTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.context || 'General'})`).join('\n')
+    const list = todayTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})`).join('\n')
     return {
       reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) tienes ${todayTasks.length} tarea(s) pendiente(s):\n\n${list}\n\n¿Quieres que modifique la hora de alguna o marque alguna como completada?`,
       actions: [],
     }
   }
 
-  // 2. Consulta de mañana
+  // 4. Consulta de mañana
   if (/qu[eé] tengo ma[ñn]ana|tareas de ma[ñn]ana|agenda de ma[ñn]ana/i.test(lower)) {
     const tomorrowStr = addDays(todayStr, 1)
     const tomorrowTasks = (currentTasks || []).filter(t => t.date === tomorrowStr && !t.completed)
@@ -647,7 +743,7 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHist
     }
   }
 
-  // 3. Borrar / Eliminar tarea
+  // 5. Borrar / Eliminar tarea
   if (/borra|elimina|quita|suprime/i.test(lower)) {
     const targetMatch = lower.replace(/borra(?:r)?|elimina(?:r)?|quita(?:r)?|suprime|la tarea de|la tarea|el evento|de mi calendario/gi, '').trim()
     const found = (currentTasks || []).find(t => t.title && t.title.toLowerCase().includes(targetMatch))
@@ -663,7 +759,7 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHist
     }
   }
 
-  // 4. Completar tarea
+  // 6. Completar tarea
   if (/terminad[ao]|completad[ao]|hech[ao]|marcar como (?:hecha|completada)|ya hice/i.test(lower)) {
     const targetMatch = lower.replace(/he terminado|he completado|ya he hecho|marcar como hecha|marca como hecha|marca como completada|la tarea de|la tarea|el evento/gi, '').trim()
     const found = (currentTasks || []).find(t => t.title && t.title.toLowerCase().includes(targetMatch))
@@ -675,7 +771,7 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHist
     }
   }
 
-  // 5. Cambiar / Mover / Modificar hora o fecha
+  // 7. Cambiar / Mover / Modificar hora o fecha
   if (/cambia|pasa|mueve|pon|aplaza|retrasa/i.test(lower) && (/a las|para el|al /i.test(lower) || /\d{1,2}:\d{2}/.test(lower))) {
     const timeMatch = lower.match(/(?:a las?|alas?)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|de la mañana|de la tarde|de la noche)?/i)
     let newTime = null
@@ -698,7 +794,7 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHist
     }
   }
 
-  // 6. Añadir / Programar nueva(s) tarea(s)
+  // 8. Añadir / Programar nueva(s) tarea(s)
   if (/a[ñn]ade|crea|pon|programa|apunta|tengo que|debo|clase de|partido de|entrenamiento/i.test(lower)) {
     const parsed = parseScheduleLocalHeuristics(userMessage)
     if (parsed && parsed.tasks && parsed.tasks.length > 0) {
@@ -710,55 +806,97 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], chatHist
     }
   }
 
-  // 7. Respuesta conversacional inteligente por defecto
+  // 9. Respuesta conversacional inteligente por defecto
   const pendingCount = (currentTasks || []).filter(t => !t.completed).length
   return {
-    reply: `Entendido. Tienes ${pendingCount} tareas activas en tu calendario. Puedes pedirme que añada una nueva tarea (ej: "Añade estudio de Redes el jueves a las 17:00"), que mueva la hora de alguna, que marque una tarea como completada o que te muestre el resumen de tu día.`,
+    reply: `Entendido. Tienes ${pendingCount} tareas activas y ${calendarsList.length} calendarios/roles disponibles (${calendarsList.map(c => c.name).join(', ')}). Puedes pedirme que mueva eventos a un rol o calendario, que añada nuevas tareas, que mueva horarios o que te resuma tu día.`,
     actions: [],
   }
 }
 
 /**
- * Conversación inteligente con el Asistente IA (Groq) con failover automático y CONTROL TOTAL sobre tareas
+ * Conversación inteligente con el Asistente IA (Groq) con failover automático y CONTROL TOTAL sobre tareas y calendarios
  */
-export async function chatWithAICopilot({ userMessage, currentTasks = [], chatHistory = [] }) {
+export async function chatWithAICopilot({ userMessage, currentTasks = [], currentCalendars = [], chatHistory = [] }) {
   const calRef = getCalendarReference()
   const todayStr = calRef.todayYmd
 
-  // Contexto conciso y optimizado en tokens (máximo 25 tareas relevantes)
-  const tasksSummary = (currentTasks || []).slice(0, 25).map(t => ({
-    id: t.id,
-    title: t.title,
-    date: t.date,
-    time: t.time,
-    effort: t.effort,
-    context: t.context,
-    completed: !!t.completed,
-    isRecurring: !!t.isRecurring,
-  }))
+  const calendarsList = (Array.isArray(currentCalendars) && currentCalendars.length > 0)
+    ? currentCalendars
+    : getUserCalendars(getCurrentUser())
 
-  const systemPrompt = `Eres el Asistente Inteligente de Productividad integrado en StudentHub con CONTROL TOTAL sobre el calendario y tareas del usuario.
+  // Contexto conciso y optimizado en tokens con identificación precisa de calendarios y roles
+  const tasksSummary = (currentTasks || []).slice(0, 35).map(t => {
+    const cal = (calendarsList || []).find(c => String(c.id) === String(t.calendarId)) || {}
+    return {
+      id: t.id,
+      title: t.title,
+      date: t.date,
+      time: t.time,
+      effort: t.effort,
+      context: t.context,
+      calendarId: t.calendarId || 'cal-default',
+      calendarName: cal.name || t.calendarName || 'Principal',
+      completed: !!t.completed,
+      isRecurring: !!t.isRecurring,
+    }
+  })
+
+  const systemPrompt = `Eres el Asistente Inteligente de Productividad integrado en StudentHub con CONTROL TOTAL sobre los calendarios, roles y tareas del usuario.
 ${calRef.calendarTableText}
-Tareas actuales del usuario en el sistema:
+
+Calendarios y Roles disponibles del usuario en el sistema:
+${JSON.stringify((calendarsList || []).map(c => ({ id: c.id, name: c.name, color: c.color })), null, 2)}
+
+Tareas y Eventos actuales del usuario (con su calendario y rol actual):
 ${JSON.stringify(tasksSummary, null, 2)}
 
 Tienes permisos plenos para:
-1. MODIFICAR/EDITAR tareas existentes cuando el usuario diga que se ha equivocado, quiera cambiar la hora, fecha, título, descripción, dificultad/esfuerzo, duración o categoría (ej: "Me he equivocado con esto, cámbialo a las 18:00", "Ponle a mates dificultad alta", "Pasa la cena al sábado"). Identifica la tarea por su "taskId" y/o "targetTitle".
-2. CREAR o AÑADIR nuevas tareas/eventos (simples o múltiples, ej: "Añade 2 ejercicios de mates para el jueves de 50m cada uno").
-3. AÑADIR RECURRENCIA / REPETICIÓN (ej: "Haz que se repita la clase de pádel todos los miércoles", "Ponlo semanal").
-4. CAMBIAR DIFICULTAD / ESFUERZO (ej: "Ponle a esta tarea esfuerzo alto", "Bájale la dificultad a bajo"). Valores válidos: "Low", "Medium", "High".
-5. COMPLETAR / DESMARCAR tareas (ej: "Ya he terminado el gimnasio", "Marca como hecha la tarea de IA").
-6. ELIMINAR / BORRAR tareas (ej: "Borra la tarea de la cena").
-7. RESPONDER DUDAS y dar consejos sobre qué hacer hoy, cómo organizarse, técnica Pomodoro o descansos.
+1. REASIGNAR O MOVER EVENTOS ENTRE CALENDARIOS O ROLES:
+   - Cuando el usuario diga "mete todos los eventos de MI CALENDARIO X en el rol Y" o "mueve las tareas de X a Y":
+     Identifica el calendario/rol origen X y el calendario/rol destino Y.
+     Devuelve una acción "move_calendar_events" con:
+     {
+       "type": "move_calendar_events",
+       "sourceCalendarName": "X",
+       "sourceCalendarId": "id de X si se conoce",
+       "targetCalendarName": "Y",
+       "targetCalendarId": "id de Y si existe en la lista de calendarios, o nuevo cal-id",
+       "targetContext": "Y"
+     }
+   - Cuando el usuario diga "mete el evento X al rol Y" o "asigna la tarea X al calendario Y":
+     Identifica la tarea o evento X y el calendario/rol destino Y.
+     Devuelve una acción "update_task" con:
+     {
+       "type": "update_task",
+       "targetTitle": "nombre de la tarea X",
+       "updates": {
+         "calendarId": "id del calendario Y",
+         "calendarName": "nombre de Y",
+         "context": "Y"
+       }
+     }
+2. MODIFICAR/EDITAR tareas existentes cuando el usuario diga que se ha equivocado, quiera cambiar la hora, fecha, título, descripción, dificultad/esfuerzo, duración o categoría. Identifica la tarea por su "taskId" y/o "targetTitle".
+3. CREAR o AÑADIR nuevas tareas/eventos (simples o múltiples) con su calendario asignado.
+4. AÑADIR RECURRENCIA / REPETICIÓN semanal.
+5. CAMBIAR DIFICULTAD / ESFUERZO ("Low", "Medium", "High").
+6. COMPLETAR / DESMARCAR tareas.
+7. ELIMINAR / BORRAR tareas.
+8. RESPONDER DUDAS y dar consejos sobre qué hacer hoy, cómo organizarse, técnica Pomodoro o descansos.
 
 Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto adicional:
 {
   "reply": "Respuesta en español explicando con claridad y amabilidad los cambios realizados o respondiendo a la pregunta",
   "actions": [
     {
-      "type": "add_tasks" | "update_task" | "delete_task" | "complete_task" | "make_recurring",
+      "type": "add_tasks" | "update_task" | "delete_task" | "complete_task" | "make_recurring" | "move_calendar_events",
       "taskId": 1,
       "targetTitle": "palabras clave para identificar la tarea si aplica",
+      "sourceCalendarName": "Calendario origen",
+      "sourceCalendarId": "cal-origen",
+      "targetCalendarName": "Calendario destino",
+      "targetCalendarId": "cal-destino",
+      "targetContext": "Rol o categoría destino",
       "tasks": [ ... ],
       "updates": {
         "time": "HH:MM",
@@ -767,6 +905,8 @@ Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto adicional:
         "title": "Nuevo título",
         "description": "Nueva descripción",
         "context": "University" | "Health & Gym" | "Personal" | "Projects",
+        "calendarId": "cal-id",
+        "calendarName": "Nombre calendario",
         "est": "50m"
       },
       "frequency": "weekly",
@@ -816,10 +956,10 @@ Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto adicional:
 
     // Fallback inteligente local
     console.info('[AI Copilot] Conexión remota no disponible, resolviendo con motor local...')
-    return resolveAICopilotLocally(userMessage, currentTasks, chatHistory)
+    return resolveAICopilotLocally(userMessage, currentTasks, calendarsList, chatHistory)
   } catch (err) {
     console.warn('[AI Copilot] Error procesando chat con IA, resolviendo con motor local:', err)
-    return resolveAICopilotLocally(userMessage, currentTasks, chatHistory)
+    return resolveAICopilotLocally(userMessage, currentTasks, calendarsList, chatHistory)
   }
 }
 

@@ -4,4 +4,10 @@
     <string name="title_activity_main">StudentHub</string>
     <string name="package_name">com.apphub.workspace</string>
     <string name="custom_url_scheme">com.apphub.workspace</string>
+    <string name="widget_calendar_name">StudentHub: Calendario</string>
+    <string name="widget_calendar_desc">Visualiza tus eventos y citas en modo Día, Semana o Mes</string>
+    <string name="widget_weekly_plan_name">StudentHub: Plan Semanal</string>
+    <string name="widget_weekly_plan_desc">Vista rápida de tus tareas y planificación de toda la semana</string>
+    <string name="widget_app_hub_name">StudentHub: Widgets de la App</string>
+    <string name="widget_app_hub_desc">Acceso rápido a Temporizador Focus, notas, tareas y widgets activos</string>
 </resources>

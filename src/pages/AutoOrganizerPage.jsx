@@ -2418,31 +2418,6 @@ export default function AutoOrganizerPage() {
             </div>
           )}
 
-          {/* Bloque 4: Otras tareas o sin fecha específica */}
-          {tasksPastOrOther.length > 0 && (
-            <div className="space-y-3 pt-3">
-              <div className="flex items-center gap-2 px-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                  Otras tareas • {tasksPastOrOther.length}
-                </h3>
-              </div>
-
-              <div className="flex flex-col gap-2.5">
-                {tasksPastOrOther.map((task) => (
-                  <TaskCardItem
-                    key={task.id}
-                    task={task}
-                    onToggle={toggleTaskCompleted}
-                    onEdit={handleOpenEditModal}
-                    onDelete={handleDeleteTask}
-                    onStartFocus={startFocusTimer}
-                    appTheme={appTheme}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </section>
       </div>
 
