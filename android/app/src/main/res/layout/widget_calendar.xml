@@ -5,14 +5,14 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="10dp">
 
     <!-- Top Header Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -33,29 +33,29 @@
                 android:id="@+id/tv_calendar_header_subtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Lunes, 19 Oct"
+                android:text="Octubre 2026"
                 android:textColor="#64748B"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
 
-        <!-- Mode Selectors: Dia, Semana, Mes -->
+        <!-- Mode Selectors: Mes, Semana, Dia -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/btn_mode_day"
+                android:id="@+id/btn_mode_month"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/widget_pill_active"
                 android:paddingLeft="8dp"
-                android:paddingTop="3dp"
+                android:paddingTop="2dp"
                 android:paddingRight="8dp"
-                android:paddingBottom="3dp"
-                android:text="Día"
+                android:paddingBottom="2dp"
+                android:text="Mes"
                 android:textColor="#FFFFFF"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -65,27 +65,27 @@
                 android:layout_marginLeft="4dp"
                 android:background="@drawable/widget_pill_inactive"
                 android:paddingLeft="8dp"
-                android:paddingTop="3dp"
+                android:paddingTop="2dp"
                 android:paddingRight="8dp"
-                android:paddingBottom="3dp"
+                android:paddingBottom="2dp"
                 android:text="Semana"
                 android:textColor="#334155"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/btn_mode_month"
+                android:id="@+id/btn_mode_day"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="4dp"
                 android:background="@drawable/widget_pill_inactive"
                 android:paddingLeft="8dp"
-                android:paddingTop="3dp"
+                android:paddingTop="2dp"
                 android:paddingRight="8dp"
-                android:paddingBottom="3dp"
-                android:text="Mes"
+                android:paddingBottom="2dp"
+                android:text="Día"
                 android:textColor="#334155"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
@@ -93,8 +93,8 @@
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
         android:background="#E2E8F0"
         android:contentDescription="@null" />
 
@@ -104,176 +104,280 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <!-- 1. Day View -->
+        <!-- 1. MONTH VIEW (Full Visual Calendar Grid) -->
         <LinearLayout
-            android:id="@+id/layout_day_view"
+            android:id="@+id/layout_month_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:visibility="visible">
 
-            <TextView
-                android:id="@+id/tv_day_empty"
+            <!-- Day of Week Row -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:gravity="center"
-                android:text="No hay eventos programados para hoy"
-                android:textColor="#94A3B8"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <!-- Event 1 -->
-            <LinearLayout
-                android:id="@+id/item_day_1"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="5dp"
-                android:background="@drawable/widget_card_item"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="7dp">
+                android:weightSum="7">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Lun" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Mar" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Mié" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Jue" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Vie" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Sáb" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Dom" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
+            </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_day_time_1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="09:00"
-                    android:textColor="#0071E3"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="8dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tv_day_title_1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Revisión de Temas"
-                        android:textColor="#1E293B"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_day_tag_1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Universidad"
-                        android:textColor="#64748B"
-                        android:textSize="10sp" />
+            <!-- Calendar Rows 1 to 6 -->
+            <!-- Row 1 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="horizontal" android:weightSum="7">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d0" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="28" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d1" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="29" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d2" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="30" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d3" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="1" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d4" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="2" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d5" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="3" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d6" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="4" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Event 2 -->
-            <LinearLayout
-                android:id="@+id/item_day_2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="5dp"
-                android:background="@drawable/widget_card_item"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="7dp">
-
-                <TextView
-                    android:id="@+id/tv_day_time_2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="12:30"
-                    android:textColor="#0071E3"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="8dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tv_day_title_2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Entrega de Proyecto"
-                        android:textColor="#1E293B"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_day_tag_2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Proyectos"
-                        android:textColor="#64748B"
-                        android:textSize="10sp" />
+            <!-- Row 2 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="horizontal" android:weightSum="7">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d7" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="5" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d8" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="6" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot8" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d9" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="7" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot9" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d10" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="8" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot10" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d11" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="9" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot11" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d12" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="10" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot12" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d13" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="11" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot13" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Event 3 -->
+            <!-- Row 3 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="horizontal" android:weightSum="7">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d14" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="12" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot14" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d15" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="13" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot15" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d16" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="14" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot16" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d17" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="15" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot17" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d18" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="16" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot18" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d19" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="17" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot19" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d20" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="18" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot20" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Row 4 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="horizontal" android:weightSum="7">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d21" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="19" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot21" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d22" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="20" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot22" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d23" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="21" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot23" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d24" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="22" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot24" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d25" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="23" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot25" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d26" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="24" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot26" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d27" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="25" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot27" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Row 5 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:orientation="horizontal" android:weightSum="7">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d28" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="26" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot28" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d29" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="27" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot29" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d30" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="28" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot30" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d31" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="29" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot31" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d32" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="30" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot32" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d33" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="31" android:textColor="#0F172A" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot33" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d34" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="1" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot34" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Row 6 (conditionally visible) -->
             <LinearLayout
-                android:id="@+id/item_day_3"
+                android:id="@+id/row_cal_6"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:weightSum="7">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d35" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="2" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot35" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d36" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="3" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot36" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d37" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="4" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot37" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d38" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="5" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot38" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d39" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="6" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot39" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d40" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="7" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot40" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                    <TextView android:id="@+id/tv_cal_d41" android:layout_width="20dp" android:layout_height="16dp" android:gravity="center" android:text="8" android:textColor="#CBD5E1" android:textSize="9sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/tv_cal_dot41" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="8sp" android:textStyle="bold" android:visibility="invisible" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                android:background="#E2E8F0"
+                android:contentDescription="@null" />
+
+            <!-- Bottom Month Events Highlight -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/widget_card_item"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="7dp">
+                android:orientation="vertical"
+                android:padding="6dp">
 
                 <TextView
-                    android:id="@+id/tv_day_time_3"
+                    android:id="@+id/tv_month_event_header"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="17:00"
+                    android:text="Hoy • Eventos programados"
                     android:textColor="#0071E3"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/tv_month_event_1"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="8dp"
-                    android:orientation="vertical">
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="09:30 • Revisión de Temas (Universidad)"
+                    android:textColor="#0F172A"
+                    android:textSize="10sp" />
 
-                    <TextView
-                        android:id="@+id/tv_day_title_3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Entrenamiento / Gimnasio"
-                        android:textColor="#1E293B"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_day_tag_3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="Salud"
-                        android:textColor="#64748B"
-                        android:textSize="10sp" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_month_event_2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="12:30 • Entrega de Proyecto (Proyectos)"
+                    android:textColor="#0F172A"
+                    android:textSize="10sp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 2. Week View -->
+        <!-- 2. WEEK VIEW -->
         <LinearLayout
             android:id="@+id/layout_week_view"
             android:layout_width="match_parent"
@@ -284,96 +388,54 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:gravity="center"
+                android:orientation="horizontal"
                 android:weightSum="7">
 
                 <!-- Mon -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:padding="2dp" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="L" android:textColor="#64748B" android:textSize="10sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_num_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="19" android:textColor="#0F172A" android:textSize="11sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_cnt_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- Tue -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:padding="2dp" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="M" android:textColor="#64748B" android:textSize="10sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_num_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="20" android:textColor="#0F172A" android:textSize="11sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_cnt_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- Wed -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:padding="2dp" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="X" android:textColor="#64748B" android:textSize="10sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_num_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="21" android:textColor="#0F172A" android:textSize="11sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_cnt_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- Thu -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:padding="2dp" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="J" android:textColor="#64748B" android:textSize="10sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_num_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="22" android:textColor="#0F172A" android:textSize="11sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_cnt_4" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- Fri -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:padding="2dp" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="V" android:textColor="#64748B" android:textSize="10sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_num_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="23" android:textColor="#0F172A" android:textSize="11sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_cnt_5" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- Sat -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:padding="2dp" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="S" android:textColor="#64748B" android:textSize="10sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_num_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="24" android:textColor="#0F172A" android:textSize="11sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_cnt_6" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="12sp" />
                 </LinearLayout>
 
                 <!-- Sun -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="2dp"
-                    android:orientation="vertical">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:padding="2dp" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="D" android:textColor="#64748B" android:textSize="10sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_num_7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="25" android:textColor="#0F172A" android:textSize="11sp" android:textStyle="bold" />
                     <TextView android:id="@+id/tv_week_cnt_7" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="•" android:textColor="#0071E3" android:textSize="12sp" />
@@ -392,49 +454,172 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- 3. Month View -->
+        <!-- 3. DAY VIEW -->
         <LinearLayout
-            android:id="@+id/layout_month_view"
+            android:id="@+id/layout_day_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:visibility="gone">
 
+            <TextView
+                android:id="@+id/tv_day_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="No hay eventos programados para hoy"
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- Event 1 -->
             <LinearLayout
+                android:id="@+id/item_day_1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/widget_card_item"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <TextView
+                    android:id="@+id/tv_day_time_1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="09:00"
+                    android:textColor="#0071E3"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="6dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_day_title_1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Revisión de Temas"
+                        android:textColor="#1E293B"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_day_tag_1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Universidad"
+                        android:textColor="#64748B"
+                        android:textSize="9sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Event 2 -->
+            <LinearLayout
+                android:id="@+id/item_day_2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/widget_card_item"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <TextView
+                    android:id="@+id/tv_day_time_2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="12:30"
+                    android:textColor="#0071E3"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="6dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_day_title_2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Entrega de Proyecto"
+                        android:textColor="#1E293B"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_day_tag_2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Proyectos"
+                        android:textColor="#64748B"
+                        android:textSize="9sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Event 3 -->
+            <LinearLayout
+                android:id="@+id/item_day_3"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/widget_card_item"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
 
                 <TextView
-                    android:id="@+id/tv_month_title"
+                    android:id="@+id/tv_day_time_3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Octubre 2026"
-                    android:textColor="#0F172A"
-                    android:textSize="12sp"
+                    android:text="17:00"
+                    android:textColor="#0071E3"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tv_month_total_events"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="14 eventos registrados en tus calendarios"
-                    android:textColor="#0071E3"
-                    android:textSize="11sp" />
+                    android:layout_weight="1"
+                    android:layout_marginLeft="6dp"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tv_month_highlights"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:text="Próximas entregas y exámenes programados para final de mes."
-                    android:textColor="#64748B"
-                    android:textSize="11sp" />
+                    <TextView
+                        android:id="@+id/tv_day_title_3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Entrenamiento / Gimnasio"
+                        android:textColor="#1E293B"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_day_tag_3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Salud"
+                        android:textColor="#64748B"
+                        android:textSize="9sp" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>
@@ -444,7 +629,7 @@
         android:id="@+id/btn_open_calendar_app"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:gravity="right|center_vertical"
         android:orientation="horizontal">
 

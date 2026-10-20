@@ -70,6 +70,21 @@ public class WidgetBridgePlugin extends Plugin {
             editor.putString("focus_task_sub", focusTaskSub);
         }
 
+        String weeklyEvents = call.getString("weeklyEvents");
+        if (weeklyEvents != null) {
+            editor.putString("weekly_events", weeklyEvents);
+        }
+
+        String weeklyEventsFlat = call.getString("weeklyEventsFlat");
+        if (weeklyEventsFlat != null) {
+            editor.putString("weekly_events_flat_list", weeklyEventsFlat);
+        }
+
+        String monthEventsMap = call.getString("monthEventsMap");
+        if (monthEventsMap != null) {
+            editor.putString("month_events_map", monthEventsMap);
+        }
+
         Integer pendingCount = call.getInt("pendingCount");
         if (pendingCount != null) {
             editor.putInt("pending_tasks_count", pendingCount);
@@ -103,6 +118,7 @@ public class WidgetBridgePlugin extends Plugin {
 
         ComponentName wpComponent = new ComponentName(context, WeeklyPlanWidgetProvider.class);
         int[] wpIds = manager.getAppWidgetIds(wpComponent);
+        manager.notifyAppWidgetViewDataChanged(wpIds, R.id.lv_weekly_plan);
         for (int id : wpIds) {
             WeeklyPlanWidgetProvider.updateWidget(context, manager, id);
         }

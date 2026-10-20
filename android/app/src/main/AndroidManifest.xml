@@ -63,6 +63,12 @@
                 android:resource="@xml/weekly_plan_widget_info" />
         </receiver>
 
+        <!-- Weekly Plan RemoteViews Service for scrollable event list -->
+        <service
+            android:name="com.apphub.workspace.WeeklyPlanWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
         <!-- App Widgets Hub Receiver -->
         <receiver
             android:name="com.apphub.workspace.AppWidgetsProvider"

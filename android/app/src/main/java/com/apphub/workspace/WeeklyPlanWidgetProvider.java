@@ -6,10 +6,10 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.widget.RemoteViews;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -74,13 +74,14 @@ public class WeeklyPlanWidgetProvider extends AppWidgetProvider {
         } catch (Exception ignored) {
         }
 
-        // Focus card
-        String focusTitle = prefs.getString("focus_task_title", "Sin tareas pendientes urgentes");
-        String focusSub = prefs.getString("focus_task_sub", "Todo al día en StudentHub");
-        views.setTextViewText(R.id.tv_wp_focus_title, focusTitle);
-        views.setTextViewText(R.id.tv_wp_focus_sub, focusSub);
+        // Connect RemoteViewsService to ListView
+        Intent serviceIntent = new Intent(context, WeeklyPlanWidgetService.class);
+        serviceIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        serviceIntent.setData(Uri.parse(serviceIntent.toUri(Intent.URI_INTENT_SCHEME)));
+        views.setRemoteAdapter(R.id.lv_weekly_plan, serviceIntent);
+        views.setEmptyView(R.id.lv_weekly_plan, R.id.tv_wp_empty);
 
-        // Open App PendingIntent
+        // Open App PendingIntent for footer & strip
         Intent openAppIntent = new Intent(context, MainActivity.class);
         openAppIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         openAppIntent.putExtra("route", "/auto-organizer");
@@ -89,7 +90,15 @@ public class WeeklyPlanWidgetProvider extends AppWidgetProvider {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
         views.setOnClickPendingIntent(R.id.btn_open_tasks_app, openAppPendingIntent);
-        views.setOnClickPendingIntent(R.id.wp_card_today, openAppPendingIntent);
+
+        // PendingIntent template for ListView items
+        Intent itemClickIntent = new Intent(context, MainActivity.class);
+        itemClickIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent itemClickPendingIntent = PendingIntent.getActivity(
+                context, 201, itemClickIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+        );
+        views.setPendingIntentTemplate(R.id.lv_weekly_plan, itemClickPendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }

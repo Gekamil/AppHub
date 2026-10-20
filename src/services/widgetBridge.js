@@ -31,45 +31,113 @@ export async function syncWidgetData({ tasks = [], calendars = [] } = {}) {
     const pendingTasks = tasks.filter(t => !t.completed && !t.done);
 
     // 1. Today events
-    let todayTasks = pendingTasks.filter(t => {
+    let todayTasks = tasks.filter(t => {
       if (!t.date) return false;
       return t.date === todayKey || t.date.startsWith(todayKey);
-    });
+    }).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
     if (todayTasks.length === 0) {
       // Fallback: pick the first 3 pending tasks
       todayTasks = pendingTasks.slice(0, 3);
     }
 
-    const todayEvents = todayTasks.slice(0, 3).map(t => ({
+    const todayEvents = todayTasks.slice(0, 4).map(t => ({
       time: t.time || 'Hoy',
       title: t.title || 'Tarea',
       tag: t.role || t.context || t.calendarName || 'General',
+      completed: !!(t.completed || t.done),
     }));
 
-    // 2. Weekly Distribution (Lun -> Dom)
+    // 2. Weekly Distribution and Complete Events by Day (Lun -> Dom)
     const monday = getStartOfWeek(today);
     const weeklyDistribution = [0, 0, 0, 0, 0, 0, 0];
-    const weekDates = [];
+    const weeklyEvents = [];
+    const weeklyEventsFlat = [];
+
+    const SPANISH_DAYS_FULL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const SPANISH_DAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const SPANISH_MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
     for (let i = 0; i < 7; i++) {
       const dayDate = new Date(monday);
       dayDate.setDate(monday.getDate() + i);
       const dayKey = formatDateKey(dayDate);
-      weekDates.push(dayKey);
+      const dayNum = dayDate.getDate();
+      const monthShort = SPANISH_MONTHS_SHORT[dayDate.getMonth()];
+      const isToday = dayKey === todayKey;
 
-      const count = pendingTasks.filter(t => t.date && t.date.startsWith(dayKey)).length;
-      weeklyDistribution[i] = count;
+      const dayTasks = tasks
+        .filter(t => t.date && t.date.startsWith(dayKey))
+        .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+      weeklyDistribution[i] = dayTasks.length;
+
+      const dayEventsList = dayTasks.map(t => ({
+        id: t.id,
+        time: t.time || 'Todo el día',
+        title: t.title || 'Tarea',
+        tag: t.role || t.context || t.calendarName || 'General',
+        completed: !!(t.completed || t.done),
+      }));
+
+      weeklyEvents.push({
+        dayIndex: i,
+        dayName: SPANISH_DAYS_FULL[i],
+        dayShort: SPANISH_DAYS_SHORT[i],
+        dayNumber: dayNum,
+        monthShort,
+        dateKey: dayKey,
+        isToday,
+        events: dayEventsList,
+      });
+
+      // Flat list for ListView in Android Widget
+      weeklyEventsFlat.push({
+        type: 'HEADER',
+        title: `${SPANISH_DAYS_FULL[i]}, ${dayNum} ${monthShort}`,
+        count: `${dayTasks.length} ${dayTasks.length === 1 ? 'tarea' : 'tareas'}`,
+        isToday,
+      });
+
+      if (dayEventsList.length === 0) {
+        weeklyEventsFlat.push({
+          type: 'EMPTY',
+          text: 'Sin eventos programados',
+        });
+      } else {
+        dayEventsList.forEach(ev => {
+          weeklyEventsFlat.push({
+            type: 'EVENT',
+            time: ev.time,
+            title: ev.title,
+            tag: ev.tag,
+            completed: ev.completed,
+          });
+        });
+      }
     }
 
-    // 3. Focus task
+    // 3. Month Events Map (for Calendar Grid dots)
+    const monthEventsMap = {};
+    tasks.forEach(t => {
+      if (!t.date) return;
+      const key = t.date.slice(0, 10);
+      monthEventsMap[key] = (monthEventsMap[key] || 0) + 1;
+      const d = new Date(key);
+      if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        const dayStr = String(d.getDate());
+        monthEventsMap[dayStr] = (monthEventsMap[dayStr] || 0) + 1;
+      }
+    });
+
+    // 4. Focus task
     const highPriorityTask = pendingTasks.find(t => t.effort === 'high' || t.priority === 'urgent' || t.priority === 'high') || pendingTasks[0];
     const focusTaskTitle = highPriorityTask ? highPriorityTask.title : 'Sin tareas pendientes';
     const focusTaskSub = highPriorityTask
       ? `${highPriorityTask.role || highPriorityTask.context || 'General'} • ${highPriorityTask.time || 'Prioritaria'}`
       : 'Todo al día en StudentHub';
 
-    // 4. Month count and highlights
+    // 5. Month count and highlights
     const monthTasks = pendingTasks.filter(t => {
       if (!t.date) return false;
       const d = new Date(t.date);
@@ -86,6 +154,9 @@ export async function syncWidgetData({ tasks = [], calendars = [] } = {}) {
     const payload = {
       todayEvents: JSON.stringify(todayEvents),
       weeklyDistribution: JSON.stringify(weeklyDistribution),
+      weeklyEvents: JSON.stringify(weeklyEvents),
+      weeklyEventsFlat: JSON.stringify(weeklyEventsFlat),
+      monthEventsMap: JSON.stringify(monthEventsMap),
       focusTaskTitle,
       focusTaskSub,
       pendingCount: pendingTasks.length,
@@ -99,6 +170,9 @@ export async function syncWidgetData({ tasks = [], calendars = [] } = {}) {
       ...payload,
       todayEventsList: todayEvents,
       weeklyDistributionList: weeklyDistribution,
+      weeklyEventsList: weeklyEvents,
+      weeklyEventsFlatList: weeklyEventsFlat,
+      monthEventsMapping: monthEventsMap,
       lastUpdated: new Date().toISOString(),
     }));
 

@@ -18,6 +18,7 @@ import {
   findOrCreateSharedRole,
   ROLE_PRESET_COLORS,
   ROLE_PRESET_ICONS,
+  isEventFinished,
 } from '../services/sharedRoles'
 import { deleteBaileysTask, syncBaileysTasks, syncBaileysCalendars } from '../services/baileysBridge'
 import { getAppTheme, getAppThemeTokens } from '../services/appTheme'
@@ -1039,9 +1040,17 @@ export default function CalendarPage() {
     calendarId: 'cal-default',
   })
 
-  // Nueva categoría form
+  // Nueva categoría form y edición
   const [newCatName, setNewCatName] = useState('')
   const [selectedPalette, setSelectedPalette] = useState(CATEGORY_PALETTES[0])
+  const [editingCategory, setEditingCategory] = useState(null) // { id, name, hex }
+
+  // Ticker de tiempo real cada 20 segundos para actualizar eventos finalizados en directo
+  const [nowTicker, setNowTicker] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setNowTicker(new Date()), 20000)
+    return () => clearInterval(timer)
+  }, [])
 
   const timetableRef = useRef(null)
 
@@ -1417,6 +1426,18 @@ export default function CalendarPage() {
     })
     setCategories(updated)
     setNewCatName('')
+  }
+
+  const handleUpdateCategory = (roleId, newName, newHex) => {
+    if (!newName || !newName.trim()) return
+    const updated = updateSharedRole(roleId, {
+      name: newName.trim(),
+      hexColor: newHex || selectedPalette.hex,
+    })
+    setCategories(updated)
+    setEditingCategory(null)
+    setFeedbackToast(`Categoría "${newName.trim()}" actualizada correctamente`)
+    setTimeout(() => setFeedbackToast(null), 3000)
   }
 
   const handleDeleteCategory = (catName) => {
@@ -2160,11 +2181,11 @@ export default function CalendarPage() {
                         setSelectedDetailTask(task)
                       }}
                       className={`group/item relative px-1.5 py-0.5 rounded-md text-[11px] flex items-center shadow-2xs transition-all border border-black/5 dark:border-white/5 ${scheme.bg} ${scheme.text} ${
-                        task.completed ? 'opacity-40 line-through grayscale-[30%]' : ''
+                        task.completed || isEventFinished(task, nowTicker) ? 'opacity-40 line-through grayscale-[30%]' : ''
                       }`}
                       title={`${task.time || 'Todo el día'} · ${task.title}`}
                     >
-                      <div className="flex items-center justify-between gap-1 w-full min-w-0 pr-1 group-hover/item:pr-3">
+                      <div className="flex items-center justify-between gap-1 w-full min-w-0 pr-1 group-hover/item:pr-7">
                         <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
                           <span className={`w-1.5 h-1.5 rounded-full ${scheme.dot} shrink-0`}></span>
                           <span className="truncate font-semibold text-[10.5px] leading-tight">{task.title}</span>
@@ -2175,19 +2196,32 @@ export default function CalendarPage() {
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteTask(task.id)
-                        }}
-                        className="absolute right-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 hover:text-error w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all z-20 cursor-pointer p-0 shrink-0"
-                        title="Eliminar evento"
-                      >
-                        <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                          <path d="M2 2l8 8M10 2l-8 8" />
-                        </svg>
-                      </button>
+                      <div className="absolute right-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 flex items-center gap-0.5 z-20">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStartEditEvent(task)
+                          }}
+                          className="hover:text-primary w-3 h-3 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer p-0 shrink-0"
+                          title="Editar evento"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteTask(task.id)
+                          }}
+                          className="hover:text-error w-3 h-3 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer p-0 shrink-0"
+                          title="Eliminar evento"
+                        >
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                            <path d="M2 2l8 8M10 2l-8 8" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
@@ -2287,24 +2321,37 @@ export default function CalendarPage() {
                             setSelectedDetailTask(task)
                           }}
                           className={`p-2 rounded-xl border border-black/5 dark:border-white/5 shadow-2xs flex flex-col gap-1 transition-all hover:shadow-xs cursor-pointer group ${scheme.bg} ${scheme.text} ${
-                            task.completed ? 'opacity-40 line-through grayscale-[30%]' : ''
+                            task.completed || isEventFinished(task, nowTicker) ? 'opacity-40 line-through grayscale-[30%]' : ''
                           }`}
                         >
                           <div className="flex items-center justify-between gap-1 min-w-0">
                             <span className="font-semibold text-xs truncate leading-snug">{task.title}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                deleteTask(task.id)
-                              }}
-                              className="opacity-0 group-hover:opacity-100 hover:text-error w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all shrink-0 cursor-pointer p-0"
-                              title="Eliminar evento"
-                            >
-                              <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                                <path d="M2 2l8 8M10 2l-8 8" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleStartEditEvent(task)
+                                }}
+                                className="opacity-0 group-hover:opacity-100 hover:text-primary w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all shrink-0 cursor-pointer p-0"
+                                title="Editar evento"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  deleteTask(task.id)
+                                }}
+                                className="opacity-0 group-hover:opacity-100 hover:text-error w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all shrink-0 cursor-pointer p-0"
+                                title="Eliminar evento"
+                              >
+                                <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                                  <path d="M2 2l8 8M10 2l-8 8" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1 text-[10px] opacity-80 font-code-sm">
                             <span className="material-symbols-outlined text-[11px]">schedule</span>
@@ -2465,7 +2512,9 @@ export default function CalendarPage() {
                         <div
                           key={task.id}
                           onClick={() => setSelectedDetailTask(task)}
-                          className={`absolute left-1 right-1 z-10 ${scheme.bg} hover:shadow-md transition-all rounded-xl p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer group border border-black/5 dark:border-white/10`}
+                          className={`absolute left-1 right-1 z-10 ${scheme.bg} hover:shadow-md transition-all rounded-xl p-1.5 flex flex-col justify-between overflow-hidden cursor-pointer group border border-black/5 dark:border-white/10 ${
+                            task.completed || isEventFinished(task, nowTicker) ? 'opacity-40 line-through grayscale-[30%]' : ''
+                          }`}
                           style={{ top, height: cardHeight }}
                         >
                           <div className="flex items-center justify-between gap-1 min-w-0">
@@ -2473,19 +2522,32 @@ export default function CalendarPage() {
                               <span className={`w-1.5 h-1.5 rounded-full ${scheme.dot} shrink-0`}></span>
                               <span className={`font-label-sm text-xs font-semibold truncate ${scheme.text}`}>{task.title}</span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                deleteTask(task.id)
-                              }}
-                              className="opacity-0 group-hover:opacity-100 hover:text-error w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all shrink-0 cursor-pointer z-20 p-0"
-                              title="Eliminar evento"
-                            >
-                              <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                                <path d="M2 2l8 8M10 2l-8 8" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center gap-0.5 shrink-0 z-20">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleStartEditEvent(task)
+                                }}
+                                className="opacity-0 group-hover:opacity-100 hover:text-primary w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer p-0"
+                                title="Editar evento"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  deleteTask(task.id)
+                                }}
+                                className="opacity-0 group-hover:opacity-100 hover:text-error w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer p-0"
+                                title="Eliminar evento"
+                              >
+                                <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                                  <path d="M2 2l8 8M10 2l-8 8" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           <div className={`flex items-center justify-between ${scheme.text} font-code-sm text-[10px] opacity-80 pt-0.5`}>
                             <span>
@@ -2596,7 +2658,7 @@ export default function CalendarPage() {
                       key={task.id}
                       onClick={() => setSelectedDetailTask(task)}
                       className={`p-3 rounded-2xl border border-black/5 dark:border-white/5 shadow-2xs flex items-center justify-between gap-2 cursor-pointer hover:shadow-xs transition-all ${scheme.bg} ${scheme.text} ${
-                        task.completed ? 'opacity-40 line-through grayscale-[30%]' : ''
+                        task.completed || isEventFinished(task, nowTicker) ? 'opacity-40 line-through grayscale-[30%]' : ''
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -2698,7 +2760,9 @@ export default function CalendarPage() {
                 <div
                   key={task.id}
                   onClick={() => setSelectedDetailTask(task)}
-                  className={`absolute left-2 right-2 sm:left-4 sm:right-4 z-10 ${scheme.bg} hover:shadow-md transition-all rounded-2xl p-2.5 sm:p-3 flex items-center justify-between group cursor-pointer border border-black/5 dark:border-white/10`}
+                  className={`absolute left-2 right-2 sm:left-4 sm:right-4 z-10 ${scheme.bg} hover:shadow-md transition-all rounded-2xl p-2.5 sm:p-3 flex items-center justify-between group cursor-pointer border border-black/5 dark:border-white/10 ${
+                    task.completed || isEventFinished(task, nowTicker) ? 'opacity-40 line-through grayscale-[30%]' : ''
+                  }`}
                   style={{ top, height: cardHeight }}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -2729,19 +2793,32 @@ export default function CalendarPage() {
                       </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteTask(task.id)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 hover:text-error w-5 h-5 rounded-md flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer shrink-0 z-20 p-0"
-                    title="Eliminar evento"
-                  >
-                    <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                      <path d="M2 2l8 8M10 2l-8 8" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0 z-20">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleStartEditEvent(task)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 text-secondary hover:text-on-surface transition-colors cursor-pointer"
+                      title="Editar evento"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteTask(task.id)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 hover:text-error w-5 h-5 rounded-md flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer shrink-0 p-0"
+                      title="Eliminar evento"
+                    >
+                      <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                        <path d="M2 2l8 8M10 2l-8 8" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )
             })}
@@ -4720,53 +4797,122 @@ export default function CalendarPage() {
                         <span className={`w-3.5 h-3.5 rounded-full shadow-2xs ${c.dot}`}></span>
                         <span className="font-label-md text-label-md text-on-surface font-bold">{c.name}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(c.name)}
-                        disabled={categories.length <= 1}
-                        className={`p-1.5 rounded-xl text-secondary hover:text-error hover:bg-error/10 transition-colors ${
-                          categories.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'
-                        }`}
-                        title="Eliminar categoría"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCategory({
+                              id: c.id,
+                              name: c.name,
+                              hex: c.hex || '#3b82f6',
+                            })
+                            const foundPal = CATEGORY_PALETTES.find((p) => p.hex.toLowerCase() === (c.hex || '').toLowerCase())
+                            if (foundPal) {
+                              setSelectedPalette(foundPal)
+                            } else {
+                              setSelectedPalette({
+                                name: 'Personalizado',
+                                bg: 'bg-primary-50 dark:bg-primary-950/60',
+                                text: 'text-primary dark:text-primary-300',
+                                dot: 'bg-primary',
+                                hex: c.hex || '#3b82f6',
+                              })
+                            }
+                          }}
+                          className="p-1.5 rounded-xl text-secondary hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                          title="Editar categoría"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(c.name)}
+                          disabled={categories.length <= 1}
+                          className={`p-1.5 rounded-xl text-secondary hover:text-error hover:bg-error/10 transition-colors ${
+                            categories.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'
+                          }`}
+                          title="Eliminar categoría"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Columna Derecha: Crear nueva categoría */}
+              {/* Columna Derecha: Crear nueva categoría o Editar categoría seleccionada */}
               <div className="flex flex-col gap-4 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800 pt-4 md:pt-0 md:pl-6">
-                <div>
-                  <label className="block font-label-sm text-label-sm text-secondary font-medium mb-1.5">Añadir nueva categoría:</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Nombre (ej: Trabajo, Música)..."
-                      value={newCatName}
-                      onChange={(e) => setNewCatName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddCategory()
-                        }
-                      }}
-                      className="flex-1 h-10 px-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddCategory}
-                      className="px-4 py-2 bg-primary-container text-on-primary text-label-sm font-semibold rounded-2xl hover:bg-primary transition-all active:scale-95 cursor-pointer shadow-xs shrink-0"
-                    >
-                      + Añadir
-                    </button>
+                {editingCategory ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block font-label-sm text-label-sm text-primary font-bold">Editar categoría:</label>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategory(null)}
+                        className="text-xs text-secondary hover:underline cursor-pointer"
+                      >
+                        Cancelar edición
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nombre de la categoría..."
+                        value={editingCategory.name}
+                        onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleUpdateCategory(editingCategory.id, editingCategory.name, selectedPalette.hex)
+                          }
+                        }}
+                        className="flex-1 h-10 px-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateCategory(editingCategory.id, editingCategory.name, selectedPalette.hex)}
+                        className="px-4 py-2 bg-primary text-white text-label-sm font-semibold rounded-2xl hover:opacity-95 transition-all active:scale-95 cursor-pointer shadow-xs shrink-0"
+                      >
+                        Guardar
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="block font-label-sm text-label-sm text-secondary font-medium mb-1.5">Añadir nueva categoría:</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nombre (ej: Trabajo, Música)..."
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddCategory()
+                          }
+                        }}
+                        className="flex-1 h-10 px-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCategory}
+                        className="px-4 py-2 bg-primary-container text-on-primary text-label-sm font-semibold rounded-2xl hover:bg-primary transition-all active:scale-95 cursor-pointer shadow-xs shrink-0"
+                      >
+                        + Añadir
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                {/* Paleta de colores */}
+                {/* Paleta de colores + Selector RGB personalizado */}
                 <div>
-                  <span className="text-[11px] text-secondary font-medium block mb-2">Color del distintivo:</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] text-secondary font-medium">Color del distintivo:</span>
+                    <span className="text-[11px] font-mono text-secondary">{selectedPalette?.hex}</span>
+                  </div>
                   <div className="flex items-center gap-2.5 flex-wrap">
                     {CATEGORY_PALETTES.map((pal) => (
                       <button
@@ -4779,6 +4925,36 @@ export default function CalendarPage() {
                         title={pal.name}
                       />
                     ))}
+
+                    {/* Selector de color personalizado RGB / Rueda Arcoíris (SIEMPRE ÚLTIMA OPCIÓN) */}
+                    <label
+                      className={`relative w-7 h-7 rounded-full cursor-pointer overflow-hidden border border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-2xs hover:scale-110 transition-all ${
+                        !CATEGORY_PALETTES.some((p) => p.hex === selectedPalette?.hex) ? 'ring-2 ring-primary ring-offset-2 scale-110' : ''
+                      }`}
+                      title="Seleccionar color RGB personalizado"
+                      style={{
+                        background: 'conic-gradient(from 180deg at 50% 50%, #ff0000 0deg, #ff8800 60deg, #ffff00 120deg, #00ff00 180deg, #00ffff 240deg, #0000ff 300deg, #ff00ff 360deg)'
+                      }}
+                    >
+                      <input
+                        type="color"
+                        value={selectedPalette?.hex?.startsWith('#') && selectedPalette.hex.length === 7 ? selectedPalette.hex : '#3b82f6'}
+                        onChange={(e) => {
+                          const hex = e.target.value
+                          setSelectedPalette({
+                            name: 'Personalizado',
+                            bg: 'bg-primary-50 dark:bg-primary-950/60',
+                            text: 'text-primary dark:text-primary-300',
+                            dot: 'bg-primary',
+                            hex,
+                          })
+                        }}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                      <span className="material-symbols-outlined text-[13px] text-white drop-shadow pointer-events-none">
+                        palette
+                      </span>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -4971,6 +5147,27 @@ export default function CalendarPage() {
                       title={pal.name}
                     />
                   ))}
+
+                  {/* Selector de color personalizado RGB / Rueda Arcoíris (SIEMPRE ÚLTIMA OPCIÓN) */}
+                  <label
+                    className={`relative w-6 h-6 rounded-full cursor-pointer overflow-hidden border border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-2xs hover:scale-110 transition-all ${
+                      !ROLE_PRESET_COLORS.some((p) => p.hex === roleToEdit.hex) ? 'ring-2 ring-primary ring-offset-2 scale-110' : ''
+                    }`}
+                    title="Seleccionar color RGB personalizado"
+                    style={{
+                      background: 'conic-gradient(from 180deg at 50% 50%, #ff0000 0deg, #ff8800 60deg, #ffff00 120deg, #00ff00 180deg, #00ffff 240deg, #0000ff 300deg, #ff00ff 360deg)'
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={roleToEdit.hex?.startsWith('#') && roleToEdit.hex.length === 7 ? roleToEdit.hex : '#3b82f6'}
+                      onChange={(e) => setRoleToEdit({ ...roleToEdit, hex: e.target.value })}
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                    />
+                    <span className="material-symbols-outlined text-[13px] text-white drop-shadow pointer-events-none">
+                      palette
+                    </span>
+                  </label>
                 </div>
               </div>
 

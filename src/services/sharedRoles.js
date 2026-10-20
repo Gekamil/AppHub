@@ -255,3 +255,82 @@ export function deleteSharedRole(id) {
   return saveSharedRoles(updated)
 }
 
+/**
+ * Determina en tiempo real si un evento o actividad ya ha finalizado:
+ * - Si su fecha es anterior a hoy (ayer, antes de ayer...), está finalizado.
+ * - Si su fecha es hoy, comprueba si su hora de finalización (o inicio + duración) ya ha pasado.
+ * Si le faltan 5 minutos, devolverá false hasta que pasen esos 5 minutos.
+ */
+export function isEventFinished(task, now = new Date()) {
+  if (!task || !task.date) return false
+  const taskDateStr = String(task.date).slice(0, 10)
+  if (!taskDateStr) return false
+
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const todayStr = `${y}-${m}-${d}`
+
+  // Día anterior: finalizado
+  if (taskDateStr < todayStr) return true
+  // Día posterior: futuro
+  if (taskDateStr > todayStr) return false
+
+  // Es hoy: comprobar horas
+  if (!task.time) return false
+
+  let endHour = null
+  let endMinute = null
+
+  // 1. Si tiene endTime explícito (ej. "11:30")
+  if (task.endTime) {
+    const endMatch = String(task.endTime).match(/(\d{1,2}):(\d{2})/i)
+    if (endMatch) {
+      endHour = parseInt(endMatch[1], 10)
+      endMinute = parseInt(endMatch[2], 10)
+    }
+  }
+
+  // 2. Si task.time es un rango (ej: "10:00 - 11:30" o "10:00 a 11:30")
+  if (endHour === null) {
+    const rangeMatch = String(task.time).match(/(\d{1,2}):(\d{2})\s*(?:-|a|to)\s*(\d{1,2}):(\d{2})/i)
+    if (rangeMatch) {
+      endHour = parseInt(rangeMatch[3], 10)
+      endMinute = parseInt(rangeMatch[4], 10)
+    }
+  }
+
+  // 3. Si solo tiene hora de inicio (ej: "09:30" o "09:30 AM")
+  if (endHour === null) {
+    const singleMatch = String(task.time).match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i)
+    if (singleMatch) {
+      let h = parseInt(singleMatch[1], 10)
+      const min = parseInt(singleMatch[2], 10)
+      const meridiem = (singleMatch[3] || '').toLowerCase()
+      if (meridiem === 'pm' && h < 12) h += 12
+      if (meridiem === 'am' && h === 12) h = 0
+
+      let durationMinutes = 60
+      if (task.duration && !isNaN(parseInt(task.duration, 10))) {
+        durationMinutes = parseInt(task.duration, 10)
+      } else if (task.est) {
+        const estNum = parseInt(String(task.est).replace(/\D/g, ''), 10)
+        if (!isNaN(estNum) && estNum > 0) {
+          durationMinutes = String(task.est).toLowerCase().includes('h') ? estNum * 60 : estNum
+        }
+      }
+
+      const totalEndMinutes = h * 60 + min + durationMinutes
+      endHour = Math.floor(totalEndMinutes / 60)
+      endMinute = totalEndMinutes % 60
+    }
+  }
+
+  if (endHour === null || endMinute === null) return false
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes()
+  const eventEndMinutes = endHour * 60 + endMinute
+
+  return currentMinutes >= eventEndMinutes
+}
+

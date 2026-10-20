@@ -8,6 +8,7 @@
     android:description="@string/widget_weekly_plan_desc"
     android:previewImage="@mipmap/ic_launcher"
     android:initialLayout="@layout/widget_weekly_plan"
+    android:previewLayout="@layout/widget_weekly_plan"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen">
 </appwidget-provider>

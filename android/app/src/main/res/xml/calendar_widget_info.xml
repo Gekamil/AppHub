@@ -8,6 +8,7 @@
     android:description="@string/widget_calendar_desc"
     android:previewImage="@mipmap/ic_launcher"
     android:initialLayout="@layout/widget_calendar"
+    android:previewLayout="@layout/widget_calendar"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen">
 </appwidget-provider>

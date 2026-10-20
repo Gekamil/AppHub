@@ -711,34 +711,68 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
   }
 
   // 3. Consulta de tareas de hoy / resumen
-  if (/qu[eé] tengo hoy|tengo hoy|tareas de hoy|mi d[ií]a|agenda de hoy|horario de hoy|qu[eé] hay hoy/i.test(lower)) {
-    const todayTasks = (currentTasks || []).filter(t => t.date === todayStr && !t.completed)
+  if (/(?:qu[eé]\s+(?:actividades|eventos|tareas|planes|cosas)?\s*(?:hay|tengo|tenemos|programad[ao]s?|previst[ao]s?)|actividades|eventos|tareas|planes|agenda|horario)\s*(?:para|de|en)?\s*hoy|hoy\s*(?:qu[eé]\s+(?:hay|tengo)|qu[eé]\s+actividades)|mi d[ií]a/i.test(lower)) {
+    const todayTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === todayStr)
     if (todayTasks.length === 0) {
       return {
-        reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) no tienes tareas pendientes registradas en tu calendario. ¿Quieres que programemos alguna sesión de estudio, gym o proyecto?`,
+        reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) no tienes actividades ni tareas registradas en tu calendario. ¿Quieres que programemos alguna?`,
         actions: [],
       }
     }
-    const list = todayTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})`).join('\n')
+    const list = todayTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
     return {
-      reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) tienes ${todayTasks.length} tarea(s) pendiente(s):\n\n${list}\n\n¿Quieres que modifique la hora de alguna o marque alguna como completada?`,
+      reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) tienes ${todayTasks.length} actividad(es):\n\n${list}\n\n¿Quieres que modifique la hora de alguna o marque alguna como completada?`,
       actions: [],
     }
   }
 
   // 4. Consulta de mañana
-  if (/qu[eé] tengo ma[ñn]ana|tareas de ma[ñn]ana|agenda de ma[ñn]ana/i.test(lower)) {
+  if (/(?:qu[eé]\s+(?:actividades|eventos|tareas|planes|cosas)?\s*(?:hay|tengo|tenemos|programad[ao]s?|previst[ao]s?)|actividades|eventos|tareas|planes|agenda|horario)\s*(?:para|de|en)?\s*ma[ñn]ana|ma[ñn]ana\s*(?:qu[eé]\s+(?:hay|tengo)|qu[eé]\s+actividades)/i.test(lower) && !/pasado\s*ma[ñn]ana/i.test(lower)) {
     const tomorrowStr = addDays(todayStr, 1)
-    const tomorrowTasks = (currentTasks || []).filter(t => t.date === tomorrowStr && !t.completed)
+    const tomorrowTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === tomorrowStr)
     if (tomorrowTasks.length === 0) {
       return {
-        reply: `Mañana (${tomorrowStr}) no tienes tareas pendientes asignadas. ¿Quieres que programemos alguna?`,
+        reply: `Mañana (${tomorrowStr}) no tienes actividades ni tareas pendientes registradas. ¿Quieres que programemos alguna sesión de estudio, evento o proyecto?`,
         actions: [],
       }
     }
-    const list = tomorrowTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title}`).join('\n')
+    const list = tomorrowTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
     return {
-      reply: `Para mañana tienes ${tomorrowTasks.length} tarea(s):\n\n${list}`,
+      reply: `Para mañana (${tomorrowStr}) tienes ${tomorrowTasks.length} actividad(es):\n\n${list}`,
+      actions: [],
+    }
+  }
+
+  // 4b. Consulta de pasado mañana
+  if (/(?:qu[eé]\s+(?:actividades|eventos|tareas|planes|cosas)?\s*(?:hay|tengo|tenemos)?|actividades|eventos|tareas|planes|agenda)\s*(?:para|de|en)?\s*pasado\s*ma[ñn]ana/i.test(lower)) {
+    const afterTomorrowStr = addDays(todayStr, 2)
+    const afterTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === afterTomorrowStr)
+    if (afterTasks.length === 0) {
+      return {
+        reply: `Pasado mañana (${afterTomorrowStr}) no tienes actividades registradas. ¿Quieres que añadamos alguna?`,
+        actions: [],
+      }
+    }
+    const list = afterTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
+    return {
+      reply: `Para pasado mañana (${afterTomorrowStr}) tienes ${afterTasks.length} actividad(es):\n\n${list}`,
+      actions: [],
+    }
+  }
+
+  // 4c. Consulta de esta semana
+  if (/(?:qu[eé]\s+(?:actividades|eventos|tareas|planes|cosas)?\s*(?:hay|tengo|tenemos)?|actividades|eventos|tareas|planes|agenda|resumen)\s*(?:para|de|en)?\s*(?:esta\s+semana|la\s+semana)/i.test(lower)) {
+    const next7Days = Array.from({ length: 7 }, (_, i) => addDays(todayStr, i))
+    const weekTasks = (currentTasks || []).filter(t => next7Days.includes((t.date || '').slice(0, 10)))
+    if (weekTasks.length === 0) {
+      return {
+        reply: `Para esta semana no tienes actividades registradas. ¿Quieres que planifiquemos tus sesiones de estudio o entrenamientos?`,
+        actions: [],
+      }
+    }
+    const list = weekTasks.map(t => `• ${t.date} (${t.time || 'Todo el día'}): ${t.title} [${t.calendarName || t.context || 'General'}]${t.completed ? ' [Completada]' : ''}`).join('\n')
+    return {
+      reply: `Esta semana tienes ${weekTasks.length} actividad(es) programadas:\n\n${list}`,
       actions: [],
     }
   }
@@ -820,18 +854,32 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
 export async function chatWithAICopilot({ userMessage, currentTasks = [], currentCalendars = [], chatHistory = [] }) {
   const calRef = getCalendarReference()
   const todayStr = calRef.todayYmd
+  const tomorrowStr = addDays(todayStr, 1)
+  const afterTomorrowStr = addDays(todayStr, 2)
 
   const calendarsList = (Array.isArray(currentCalendars) && currentCalendars.length > 0)
     ? currentCalendars
     : getUserCalendars(getCurrentUser())
 
-  // Contexto conciso y optimizado en tokens con identificación precisa de calendarios y roles
-  const tasksSummary = (currentTasks || []).slice(0, 35).map(t => {
+  // Priorizar tareas próximas (hoy, mañana, próximos días) para que nunca se queden fuera del prompt
+  const sortedTasks = [...(currentTasks || [])].sort((a, b) => {
+    const da = (a.date || '').slice(0, 10)
+    const db = (b.date || '').slice(0, 10)
+    if (da === db) return (a.time || '').localeCompare(b.time || '')
+    if (da === todayStr && db !== todayStr) return -1
+    if (db === todayStr && da !== todayStr) return 1
+    if (da === tomorrowStr && db !== tomorrowStr) return -1
+    if (db === tomorrowStr && da !== tomorrowStr) return 1
+    return da.localeCompare(db)
+  })
+
+  // Contexto ampliado a 120 tareas con identificación precisa de calendarios y roles
+  const tasksSummary = sortedTasks.slice(0, 120).map(t => {
     const cal = (calendarsList || []).find(c => String(c.id) === String(t.calendarId)) || {}
     return {
       id: t.id,
       title: t.title,
-      date: t.date,
+      date: (t.date || '').slice(0, 10),
       time: t.time,
       effort: t.effort,
       context: t.context,
@@ -844,6 +892,17 @@ export async function chatWithAICopilot({ userMessage, currentTasks = [], curren
 
   const systemPrompt = `Eres el Asistente Inteligente de Productividad integrado en StudentHub con CONTROL TOTAL sobre los calendarios, roles y tareas del usuario.
 ${calRef.calendarTableText}
+
+REFERENCIA TEMPORAL EXACTA Y OBLIGATORIA:
+- HOY es: ${calRef.dayOfWeek}, ${todayStr} (formato ISO YYYY-MM-DD)
+- MAÑANA es: ${tomorrowStr}
+- PASADO MAÑANA es: ${afterTomorrowStr}
+- Hora actual aproximada: ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+
+REGLAS DE BÚSQUEDA Y RESPUESTA:
+- Cuando el usuario pregunte por actividades, eventos, tareas o planes de "mañana", "hoy", "esta semana" o cualquier fecha, busca en la lista de Tareas y Eventos filtrando por el campo 'date' (por ejemplo para mañana: ${tomorrowStr}).
+- Si hay actividades para esa fecha, NÚMERALAS y descríbelas todas indicando su hora, título y rol/calendario. No omitas ninguna.
+- Si están completadas, indícalo claramente. No digas que no hay nada si existen elementos en la lista con esa fecha.
 
 Calendarios y Roles disponibles del usuario en el sistema:
 ${JSON.stringify((calendarsList || []).map(c => ({ id: c.id, name: c.name, color: c.color })), null, 2)}

@@ -20,6 +20,7 @@ import {
   pruneOrphanImportedRoles,
   ROLE_PRESET_COLORS,
   ROLE_PRESET_ICONS,
+  isEventFinished,
 } from '../services/sharedRoles'
 import { getAppTheme, getAppThemeTokens } from '../services/appTheme'
 import {
@@ -1760,7 +1761,7 @@ export default function AutoOrganizerPage() {
                             <span className="font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded shrink-0">
                               {t.time || '10:00'}
                             </span>
-                            <span className={`text-xs font-medium text-slate-900 dark:text-white truncate ${t.completed ? 'line-through' : ''}`}>
+                            <span className={`text-xs font-medium text-slate-900 dark:text-white truncate ${t.completed || isEventFinished(t) ? 'line-through opacity-50' : ''}`}>
                               {t.title}
                             </span>
                           </div>
@@ -2984,16 +2985,26 @@ export default function AutoOrganizerPage() {
                       </span>
                     </div>
 
-                    {roles.length > 1 && (
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => setRoleToDelete(r)}
-                        className="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center transition-colors cursor-pointer"
-                        title="Eliminar este rol"
+                        onClick={() => setRoleToEdit({ ...r, name: r.label || r.name, hex: r.hex || r.color || '#3b82f6' })}
+                        className="w-6 h-6 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Editar este rol"
                       >
-                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
                       </button>
-                    )}
+                      {roles.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setRoleToDelete(r)}
+                          className="w-6 h-6 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center justify-center transition-colors cursor-pointer"
+                          title="Eliminar este rol"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">delete</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -3020,9 +3031,12 @@ export default function AutoOrganizerPage() {
 
               {/* Selector de Color */}
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Color asignado
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                    Color asignado
+                  </label>
+                  <span className="text-[10px] font-mono text-slate-500">{newRoleColor}</span>
+                </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {ROLE_PRESET_COLORS.map((pc) => (
                     <button
@@ -3036,6 +3050,27 @@ export default function AutoOrganizerPage() {
                       title={pc.name}
                     />
                   ))}
+
+                  {/* Selector de color personalizado RGB / Rueda Arcoíris (SIEMPRE ÚLTIMA OPCIÓN) */}
+                  <label
+                    className={`relative w-6 h-6 rounded-full cursor-pointer overflow-hidden border border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-2xs hover:scale-110 transition-all ${
+                      !ROLE_PRESET_COLORS.some((p) => p.hex === newRoleColor) ? 'ring-2 ring-primary ring-offset-2 scale-110' : ''
+                    }`}
+                    title="Seleccionar color RGB personalizado"
+                    style={{
+                      background: 'conic-gradient(from 180deg at 50% 50%, #ff0000 0deg, #ff8800 60deg, #ffff00 120deg, #00ff00 180deg, #00ffff 240deg, #0000ff 300deg, #ff00ff 360deg)'
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={newRoleColor?.startsWith('#') && newRoleColor.length === 7 ? newRoleColor : '#3b82f6'}
+                      onChange={(e) => setNewRoleColor(e.target.value)}
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                    />
+                    <span className="material-symbols-outlined text-[12px] text-white drop-shadow pointer-events-none">
+                      palette
+                    </span>
+                  </label>
                 </div>
               </div>
 
@@ -3249,6 +3284,27 @@ export default function AutoOrganizerPage() {
                       title={pal.name}
                     />
                   ))}
+
+                  {/* Selector de color personalizado RGB / Rueda Arcoíris (SIEMPRE ÚLTIMA OPCIÓN) */}
+                  <label
+                    className={`relative w-6 h-6 rounded-full cursor-pointer overflow-hidden border border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-2xs hover:scale-110 transition-all ${
+                      !ROLE_PRESET_COLORS.some((p) => p.hex === roleToEdit.hex) ? 'ring-2 ring-primary ring-offset-2 scale-110' : ''
+                    }`}
+                    title="Seleccionar color RGB personalizado"
+                    style={{
+                      background: 'conic-gradient(from 180deg at 50% 50%, #ff0000 0deg, #ff8800 60deg, #ffff00 120deg, #00ff00 180deg, #00ffff 240deg, #0000ff 300deg, #ff00ff 360deg)'
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={roleToEdit.hex?.startsWith('#') && roleToEdit.hex.length === 7 ? roleToEdit.hex : '#3b82f6'}
+                      onChange={(e) => setRoleToEdit({ ...roleToEdit, hex: e.target.value })}
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                    />
+                    <span className="material-symbols-outlined text-[12px] text-white drop-shadow pointer-events-none">
+                      palette
+                    </span>
+                  </label>
                 </div>
               </div>
 
@@ -3593,6 +3649,8 @@ export default function AutoOrganizerPage() {
 // Componente Tarjeta de Tarea Individual Adaptado Radicalmente al Diseño Visual Seleccionado
 function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme }) {
   const currentTheme = appTheme || 'clasica'
+  const isFinished = isEventFinished(task)
+  const isDoneOrFinished = task.completed || isFinished
 
   // --- 1. ROSA PASTEL & BLANCO (BORDES SUAVES & ICONOS ESTÁNDAR) ---
   if (currentTheme === 'aura') {
@@ -3652,7 +3710,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
               )}
             </div>
 
-            <h4 className={`font-semibold text-sm text-pink-950 dark:text-pink-50 leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+            <h4 className={`font-semibold text-sm text-pink-950 dark:text-pink-50 leading-snug truncate ${isDoneOrFinished ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
               {task.title}
             </h4>
 
@@ -3758,7 +3816,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
               )}
             </div>
 
-            <h4 className={`font-semibold text-sm text-slate-900 dark:text-white leading-snug truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
+            <h4 className={`font-semibold text-sm text-slate-900 dark:text-white leading-snug truncate ${isDoneOrFinished ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
               {task.title}
             </h4>
 
@@ -3812,7 +3870,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
     return (
       <div
         className={`p-3 sm:p-3.5 rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff] transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 group ${
-          task.completed ? 'opacity-50 line-through bg-slate-100 dark:bg-slate-900' : ''
+          task.completed || isDoneOrFinished ? 'opacity-50 line-through bg-slate-100 dark:bg-slate-900' : ''
         }`}
       >
         <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -3976,7 +4034,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
 
           <h4
             className={`font-semibold text-xs sm:text-sm text-on-surface leading-snug truncate ${
-              task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''
+              isDoneOrFinished ? 'line-through text-slate-400 dark:text-slate-500' : ''
             }`}
           >
             {task.title}
