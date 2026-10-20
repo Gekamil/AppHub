@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
 import android.widget.RemoteViews;
 
@@ -29,6 +30,18 @@ public class WeeklyPlanWidgetProvider extends AppWidgetProvider {
     public static void updateWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_weekly_plan);
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        // Read calendar accent color
+        String calColorHex = prefs.getString("calendar_color", null);
+        int accentColor = context.getResources().getColor(R.color.widget_accent_default);
+        boolean hasCalendarColor = false;
+        if (calColorHex != null && !calColorHex.trim().isEmpty()) {
+            try {
+                accentColor = Color.parseColor(calColorHex.trim());
+                hasCalendarColor = true;
+            } catch (Exception ignored) {
+            }
+        }
 
         // Format week range subtitle
         Calendar cal = Calendar.getInstance();
@@ -59,20 +72,32 @@ public class WeeklyPlanWidgetProvider extends AppWidgetProvider {
         String monthName = sdfMonth.format(cal.getTime());
         views.setTextViewText(R.id.tv_wp_subtitle, startDay + " - " + endDay + " " + monthName + " • Vista Semanal");
 
-        // Populate weekly plan counts
+        // Populate weekly plan counts & pending badge
         String weeklyPlanJson = prefs.getString("weekly_plan_distribution", "[]");
         int totalPending = prefs.getInt("pending_tasks_count", 0);
         views.setTextViewText(R.id.tv_wp_pending_badge, totalPending + (totalPending == 1 ? " tarea" : " tareas"));
+
+        if (hasCalendarColor) {
+            views.setInt(R.id.tv_wp_pending_badge, "setBackgroundColor", accentColor);
+        } else {
+            views.setInt(R.id.tv_wp_pending_badge, "setBackgroundResource", R.drawable.widget_pill_active);
+        }
+
+        int mutedColor = context.getResources().getColor(R.color.widget_text_muted);
+        int activeCountColor = accentColor;
 
         try {
             JSONArray countsArray = new JSONArray(weeklyPlanJson);
             for (int i = 0; i < 7 && i < countsArray.length(); i++) {
                 int count = countsArray.optInt(i, 0);
                 views.setTextViewText(countIds[i], String.valueOf(count));
-                views.setTextColor(countIds[i], count > 0 ? 0xFF0071E3 : 0xFF94A3B8);
+                views.setTextColor(countIds[i], count > 0 ? activeCountColor : mutedColor);
             }
         } catch (Exception ignored) {
         }
+
+        // Tint footer button text
+        views.setTextColor(R.id.tv_wp_btn_open_tasks, accentColor);
 
         // Connect RemoteViewsService to ListView
         Intent serviceIntent = new Intent(context, WeeklyPlanWidgetService.class);

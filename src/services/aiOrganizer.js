@@ -711,7 +711,9 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
   }
 
   // 3. Consulta de tareas de hoy / resumen
-  if (/(?:qu[eé]\s+(?:actividades|eventos|tareas|planes|cosas)?\s*(?:hay|tengo|tenemos|programad[ao]s?|previst[ao]s?)|actividades|eventos|tareas|planes|agenda|horario)\s*(?:para|de|en)?\s*hoy|hoy\s*(?:qu[eé]\s+(?:hay|tengo)|qu[eé]\s+actividades)|mi d[ií]a/i.test(lower)) {
+  const isAskingToday = (lower.includes('hoy') || lower.includes('mi día') || lower.includes('mi dia')) &&
+    /(?:qu[eé]|c[uú]al|hay|tengo|tenemos|dime|muestra|ver|actividades|eventos|tareas|planes|agenda|horario|resumen|programad|cosas|algo)/i.test(lower)
+  if (isAskingToday) {
     const todayTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === todayStr)
     if (todayTasks.length === 0) {
       return {
@@ -726,25 +728,10 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     }
   }
 
-  // 4. Consulta de mañana
-  if (/(?:qu[eé]\s+(?:actividades|eventos|tareas|planes|cosas)?\s*(?:hay|tengo|tenemos|programad[ao]s?|previst[ao]s?)|actividades|eventos|tareas|planes|agenda|horario)\s*(?:para|de|en)?\s*ma[ñn]ana|ma[ñn]ana\s*(?:qu[eé]\s+(?:hay|tengo)|qu[eé]\s+actividades)/i.test(lower) && !/pasado\s*ma[ñn]ana/i.test(lower)) {
-    const tomorrowStr = addDays(todayStr, 1)
-    const tomorrowTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === tomorrowStr)
-    if (tomorrowTasks.length === 0) {
-      return {
-        reply: `Mañana (${tomorrowStr}) no tienes actividades ni tareas pendientes registradas. ¿Quieres que programemos alguna sesión de estudio, evento o proyecto?`,
-        actions: [],
-      }
-    }
-    const list = tomorrowTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
-    return {
-      reply: `Para mañana (${tomorrowStr}) tienes ${tomorrowTasks.length} actividad(es):\n\n${list}`,
-      actions: [],
-    }
-  }
-
-  // 4b. Consulta de pasado mañana
-  if (/(?:qu[eé]\s+(?:actividades|eventos|tareas|planes|cosas)?\s*(?:hay|tengo|tenemos)?|actividades|eventos|tareas|planes|agenda)\s*(?:para|de|en)?\s*pasado\s*ma[ñn]ana/i.test(lower)) {
+  // 4b. Consulta de pasado mañana (evaluada antes de mañana para evitar falsos positivos)
+  const isAskingAfterTomorrow = (lower.includes('pasado mañana') || lower.includes('pasado manana')) &&
+    /(?:qu[eé]|c[uú]al|hay|tengo|tenemos|dime|muestra|ver|actividades|eventos|tareas|planes|agenda|horario|resumen|programad|cosas|algo)/i.test(lower)
+  if (isAskingAfterTomorrow) {
     const afterTomorrowStr = addDays(todayStr, 2)
     const afterTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === afterTomorrowStr)
     if (afterTasks.length === 0) {
@@ -756,6 +743,26 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     const list = afterTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
     return {
       reply: `Para pasado mañana (${afterTomorrowStr}) tienes ${afterTasks.length} actividad(es):\n\n${list}`,
+      actions: [],
+    }
+  }
+
+  // 4. Consulta de mañana
+  const isAskingTomorrow = (lower.includes('mañana') || lower.includes('manana')) &&
+    !lower.includes('pasado') &&
+    /(?:qu[eé]|c[uú]al|hay|tengo|tenemos|dime|muestra|ver|actividades|eventos|tareas|planes|agenda|horario|resumen|programad|cosas|algo)/i.test(lower)
+  if (isAskingTomorrow) {
+    const tomorrowStr = addDays(todayStr, 1)
+    const tomorrowTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === tomorrowStr)
+    if (tomorrowTasks.length === 0) {
+      return {
+        reply: `Mañana (${tomorrowStr}) no tienes actividades ni tareas pendientes registradas. ¿Quieres que programemos alguna sesión de estudio, evento o proyecto?`,
+        actions: [],
+      }
+    }
+    const list = tomorrowTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
+    return {
+      reply: `Para mañana (${tomorrowStr}) tienes ${tomorrowTasks.length} actividad(es):\n\n${list}`,
       actions: [],
     }
   }

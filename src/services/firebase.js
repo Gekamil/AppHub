@@ -3,7 +3,7 @@
 // Con deduplicación automática, unificación estricta de cuentas por correo y preservación de tareas
 
 import { db } from './firebaseConfig'
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
 
 const ACCOUNTS_DB_KEY = 'studenthub_accounts_database'
 const ACTIVE_USER_KEY = 'studenthub_active_user'
@@ -757,28 +757,18 @@ export const loadUserDataFromCloud = async () => {
       const docId = getAccountDocId(current.email)
       const snap = await getDoc(doc(db, 'shared_calendars', docId))
       if (snap.exists()) {
-        const cloudData = snap.data()
+        const cloudData = snap.data() || {}
         if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
           localStorage.setItem('app_global_tasks', JSON.stringify(cloudData.tasks))
           localStorage.setItem(`studenthub_tasks_${current.uid}`, JSON.stringify(cloudData.tasks))
         }
-        if (cloudData.calendars && Array.isArray(cloudData.calendars)) {
-          // Fusionar con los calendarios locales para NUNCA borrar creaciones locales
-          const localCals = getUserCalendars(current)
-          const mergedCalsMap = new Map()
-          localCals.forEach((c) => { if (c && c.id) mergedCalsMap.set(c.id, c) })
-          cloudData.calendars.forEach((c) => {
-            if (c && c.id) {
-              if (!mergedCalsMap.has(c.id)) {
-                mergedCalsMap.set(c.id, c)
-              } else {
-                mergedCalsMap.set(c.id, { ...c, ...mergedCalsMap.get(c.id) })
-              }
-            }
-          })
-          const mergedCals = Array.from(mergedCalsMap.values())
-          localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(mergedCals))
-          cloudData.calendars = mergedCals
+        if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
+          // Si la nube ya contiene calendarios reales del usuario, esa es la fuente de verdad directa
+          // Evita contaminar con plantillas vacías por defecto
+          localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(cloudData.calendars))
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
+          }
         }
         return {
           tasks: cloudData.tasks || null,
@@ -800,6 +790,45 @@ export const loadUserDataFromCloud = async () => {
     console.warn('Error cargando datos de usuario desde la nube:', e)
   }
   return null
+}
+
+// Suscripción en tiempo real a cambios de Firestore en cualquier dispositivo (Web <-> Móvil <-> Desktop)
+export const subscribeToUserCloudData = (user, onUpdate) => {
+  if (!db || !user || isGuestUser(user) || !user.email) return () => {}
+  try {
+    const docId = getAccountDocId(user.email)
+    const unsub = onSnapshot(
+      doc(db, 'shared_calendars', docId),
+      (snap) => {
+        if (snap.exists()) {
+          const cloudData = snap.data() || {}
+          if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
+            localStorage.setItem('app_global_tasks', JSON.stringify(cloudData.tasks))
+            localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(cloudData.tasks))
+          }
+          if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
+            localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(cloudData.calendars))
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
+            }
+          }
+          if (typeof onUpdate === 'function') {
+            onUpdate({
+              tasks: cloudData.tasks || null,
+              calendars: cloudData.calendars || null,
+            })
+          }
+        }
+      },
+      (err) => {
+        console.warn('[subscribeToUserCloudData] onSnapshot error:', err)
+      }
+    )
+    return unsub
+  } catch (err) {
+    console.warn('[subscribeToUserCloudData] error:', err)
+    return () => {}
+  }
 }
 
 // Auto-migración en segundo plano: sube a Firestore cualquier cuenta que estuviera guardada previamente solo en este dispositivo

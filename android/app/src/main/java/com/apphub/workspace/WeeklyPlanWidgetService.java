@@ -3,6 +3,10 @@ package com.apphub.workspace;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.StrikethroughSpan;
 import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
@@ -25,6 +29,8 @@ class WeeklyPlanRemoteViewsFactory implements RemoteViewsService.RemoteViewsFact
 
     private final Context context;
     private final List<JSONObject> items = new ArrayList<>();
+    private int accentColor;
+    private boolean hasCalendarColor = false;
 
     public WeeklyPlanRemoteViewsFactory(Context context) {
         this.context = context;
@@ -50,6 +56,17 @@ class WeeklyPlanRemoteViewsFactory implements RemoteViewsService.RemoteViewsFact
                 items.add(arr.getJSONObject(i));
             }
         } catch (Exception ignored) {
+        }
+
+        String calColorHex = prefs.getString("calendar_color", null);
+        accentColor = context.getResources().getColor(R.color.widget_accent_default);
+        hasCalendarColor = false;
+        if (calColorHex != null && !calColorHex.trim().isEmpty()) {
+            try {
+                accentColor = Color.parseColor(calColorHex.trim());
+                hasCalendarColor = true;
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -82,6 +99,14 @@ class WeeklyPlanRemoteViewsFactory implements RemoteViewsService.RemoteViewsFact
             rv.setTextViewText(R.id.tv_header_count, count);
             rv.setViewVisibility(R.id.tv_header_today_badge, isToday ? View.VISIBLE : View.GONE);
 
+            if (isToday) {
+                if (hasCalendarColor) {
+                    rv.setInt(R.id.tv_header_today_badge, "setBackgroundColor", accentColor);
+                } else {
+                    rv.setInt(R.id.tv_header_today_badge, "setBackgroundResource", R.drawable.widget_pill_active);
+                }
+            }
+
             Intent fillInIntent = new Intent();
             fillInIntent.putExtra("route", "/auto-organizer");
             rv.setOnClickFillInIntent(R.id.item_header_root, fillInIntent);
@@ -100,16 +125,31 @@ class WeeklyPlanRemoteViewsFactory implements RemoteViewsService.RemoteViewsFact
             String time = item.optString("time", "Todo el día");
             String title = item.optString("title", "Tarea");
             String tag = item.optString("tag", "General");
-            boolean completed = item.optBoolean("completed", false);
+            boolean completed = item.optBoolean("completed", false) || item.optBoolean("isFinished", false);
 
             rv.setTextViewText(R.id.tv_item_time, time.isEmpty() ? "Todo el día" : time);
-            rv.setTextViewText(R.id.tv_item_title, title);
             rv.setTextViewText(R.id.tv_item_tag, tag);
 
+            int mutedColor = context.getResources().getColor(R.color.widget_text_muted);
+            int primaryTextColor = context.getResources().getColor(R.color.widget_text_primary);
+            int secondaryTextColor = context.getResources().getColor(R.color.widget_text_secondary);
+            int eventAccent = hasCalendarColor ? accentColor : context.getResources().getColor(R.color.widget_accent_default);
+
             if (completed) {
-                rv.setTextColor(R.id.tv_item_title, 0xFF94A3B8);
+                SpannableString spannableTitle = new SpannableString(title);
+                spannableTitle.setSpan(new StrikethroughSpan(), 0, spannableTitle.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                rv.setTextViewText(R.id.tv_item_title, spannableTitle);
+
+                rv.setTextColor(R.id.tv_item_title, mutedColor);
+                rv.setTextColor(R.id.tv_item_time, mutedColor);
+                rv.setTextColor(R.id.tv_item_tag, mutedColor);
+                rv.setInt(R.id.iv_item_bar, "setBackgroundColor", mutedColor);
             } else {
-                rv.setTextColor(R.id.tv_item_title, 0xFF0F172A);
+                rv.setTextViewText(R.id.tv_item_title, title);
+                rv.setTextColor(R.id.tv_item_title, primaryTextColor);
+                rv.setTextColor(R.id.tv_item_time, eventAccent);
+                rv.setTextColor(R.id.tv_item_tag, secondaryTextColor);
+                rv.setInt(R.id.iv_item_bar, "setBackgroundColor", eventAccent);
             }
 
             Intent fillInIntent = new Intent();

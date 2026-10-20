@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { isEventFinished } from './sharedRoles';
 
 const WidgetBridge = registerPlugin('WidgetBridge');
 
@@ -21,7 +22,7 @@ function formatDateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
-export async function syncWidgetData({ tasks = [], calendars = [] } = {}) {
+export async function syncWidgetData({ tasks = [], calendars = [], calendarColor = '#0071E3' } = {}) {
   try {
     const today = new Date();
     const todayKey = formatDateKey(today);
@@ -30,23 +31,36 @@ export async function syncWidgetData({ tasks = [], calendars = [] } = {}) {
 
     const pendingTasks = tasks.filter(t => !t.completed && !t.done);
 
-    // 1. Today events
-    let todayTasks = tasks.filter(t => {
+    // 1. All Today's events with dynamic finish status and complete information
+    const allTodayRawTasks = tasks.filter(t => {
       if (!t.date) return false;
       return t.date === todayKey || t.date.startsWith(todayKey);
     }).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
-    if (todayTasks.length === 0) {
-      // Fallback: pick the first 3 pending tasks
-      todayTasks = pendingTasks.slice(0, 3);
-    }
+    const todayEventsFull = allTodayRawTasks.map(t => {
+      const finished = isEventFinished(t, today);
+      return {
+        id: t.id,
+        time: t.time || 'Todo el día',
+        title: t.title || 'Evento',
+        tag: t.role || t.context || t.calendarName || 'General',
+        isFinished: finished,
+        completed: Boolean(t.completed || t.done || finished),
+      };
+    });
 
-    const todayEvents = todayTasks.slice(0, 4).map(t => ({
-      time: t.time || 'Hoy',
-      title: t.title || 'Tarea',
-      tag: t.role || t.context || t.calendarName || 'General',
-      completed: !!(t.completed || t.done),
-    }));
+    let todayEvents = todayEventsFull.slice(0, 5);
+    if (todayEvents.length === 0) {
+      // Fallback: pick the first 3 pending tasks
+      todayEvents = pendingTasks.slice(0, 3).map(t => ({
+        id: t.id,
+        time: t.time || 'Hoy',
+        title: t.title || 'Tarea',
+        tag: t.role || t.context || t.calendarName || 'General',
+        isFinished: false,
+        completed: false,
+      }));
+    }
 
     // 2. Weekly Distribution and Complete Events by Day (Lun -> Dom)
     const monday = getStartOfWeek(today);
@@ -153,10 +167,12 @@ export async function syncWidgetData({ tasks = [], calendars = [] } = {}) {
 
     const payload = {
       todayEvents: JSON.stringify(todayEvents),
+      todayEventsFull: JSON.stringify(todayEventsFull),
       weeklyDistribution: JSON.stringify(weeklyDistribution),
       weeklyEvents: JSON.stringify(weeklyEvents),
       weeklyEventsFlat: JSON.stringify(weeklyEventsFlat),
       monthEventsMap: JSON.stringify(monthEventsMap),
+      calendarColor: calendarColor || '#0071E3',
       focusTaskTitle,
       focusTaskSub,
       pendingCount: pendingTasks.length,
@@ -169,10 +185,12 @@ export async function syncWidgetData({ tasks = [], calendars = [] } = {}) {
     localStorage.setItem('studenthub_widgets_data', JSON.stringify({
       ...payload,
       todayEventsList: todayEvents,
+      todayEventsFullList: todayEventsFull,
       weeklyDistributionList: weeklyDistribution,
       weeklyEventsList: weeklyEvents,
       weeklyEventsFlatList: weeklyEventsFlat,
       monthEventsMapping: monthEventsMap,
+      calendarThemeColor: calendarColor,
       lastUpdated: new Date().toISOString(),
     }));
 

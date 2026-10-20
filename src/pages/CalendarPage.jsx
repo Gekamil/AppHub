@@ -640,82 +640,7 @@ export default function CalendarPage() {
     }).catch(() => {})
   }, [])
 
-  // Auto-recuperación de calendarios huérfanos a partir de tareas existentes en globalTasks
-  // Si existen eventos cuyo calendarId no está en la lista de calendarios, los reconstruye automáticamente
-  useEffect(() => {
-    if (!globalTasks || globalTasks.length === 0) return
-    const knownCalIds = new Set(calendars.map((c) => c.id))
-    const orphanTasksByCalId = new Map()
 
-    for (const task of globalTasks) {
-      const cId = task.calendarId
-      if (cId && cId !== 'cal-default' && !knownCalIds.has(cId)) {
-        if (!orphanTasksByCalId.has(cId)) {
-          orphanTasksByCalId.set(cId, [])
-        }
-        orphanTasksByCalId.get(cId).push(task)
-      }
-    }
-
-    if (orphanTasksByCalId.size > 0) {
-      setCalendars((prev) => {
-        const updated = [...prev]
-        let addedCount = 0
-
-        for (const [cId, tasks] of orphanTasksByCalId.entries()) {
-          if (updated.some((c) => c.id === cId)) continue
-
-          const sample = tasks[0] || {}
-          let calName = sample.calendarName || ''
-          let calColor = sample.color && sample.color.startsWith('#') ? sample.color : null
-
-          if (!calName) {
-            const ctx = sample.context || ''
-            const hasUni = tasks.some(
-              (t) =>
-                (t.title || '').includes('@uma.es') ||
-                (t.description || '').includes('@uma.es') ||
-                (t.context || '').toLowerCase().includes('uni')
-            )
-            if (hasUni || ctx.toLowerCase().includes('uni') || cId.includes('uni')) {
-              calName = 'Universidad & Estudios'
-              calColor = calColor || '#8b5cf6'
-            } else if (ctx.toLowerCase().includes('health') || ctx.toLowerCase().includes('gym') || cId.includes('health')) {
-              calName = 'Salud & Deporte'
-              calColor = calColor || '#10b981'
-            } else if (ctx.toLowerCase().includes('project') || ctx.toLowerCase().includes('work') || cId.includes('work')) {
-              calName = 'Trabajo & Proyectos'
-              calColor = calColor || '#f59e0b'
-            } else {
-              calName = ctx ? `${ctx}` : `Calendario ${cId.replace(/^cal-/, '')}`
-              calColor = calColor || '#6366f1'
-            }
-          }
-
-          const recoveredCal = {
-            id: cId,
-            name: calName,
-            color: calColor || '#8b5cf6',
-            dot: 'bg-primary',
-            sharedFrom: [],
-            syncUrl: sample.syncUrl || '',
-            isShared: false,
-            shareCode: '',
-            sharedRole: 'owner',
-          }
-          updated.push(recoveredCal)
-          addedCount++
-        }
-
-        if (addedCount > 0) {
-          const curUser = getCurrentUser()
-          saveUserCalendars(updated, curUser)
-          syncCalendarsToCloud(updated).catch(() => {})
-        }
-        return updated
-      })
-    }
-  }, [globalTasks, calendars])
 
   const handleReorderCalendars = (fromIdx, toIdx) => {
     if (fromIdx === null || toIdx === null || fromIdx === toIdx) return
@@ -2196,25 +2121,14 @@ export default function CalendarPage() {
                           </span>
                         )}
                       </div>
-                      <div className="absolute right-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 flex items-center gap-0.5 z-20">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleStartEditEvent(task)
-                          }}
-                          className="hover:text-primary w-3 h-3 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer p-0 shrink-0"
-                          title="Editar evento"
-                        >
-                          <span className="material-symbols-outlined text-[12px]">edit</span>
-                        </button>
+                      <div className="absolute right-0.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 flex items-center z-20">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             deleteTask(task.id)
                           }}
-                          className="hover:text-error w-3 h-3 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer p-0 shrink-0"
+                          className="hover:text-error w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all cursor-pointer p-0 shrink-0"
                           title="Eliminar evento"
                         >
                           <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
@@ -2326,18 +2240,7 @@ export default function CalendarPage() {
                         >
                           <div className="flex items-center justify-between gap-1 min-w-0">
                             <span className="font-semibold text-xs truncate leading-snug">{task.title}</span>
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleStartEditEvent(task)
-                                }}
-                                className="opacity-0 group-hover:opacity-100 hover:text-primary w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all shrink-0 cursor-pointer p-0"
-                                title="Editar evento"
-                              >
-                                <span className="material-symbols-outlined text-[13px]">edit</span>
-                              </button>
+                            <div className="flex items-center shrink-0">
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -2522,18 +2425,7 @@ export default function CalendarPage() {
                               <span className={`w-1.5 h-1.5 rounded-full ${scheme.dot} shrink-0`}></span>
                               <span className={`font-label-sm text-xs font-semibold truncate ${scheme.text}`}>{task.title}</span>
                             </div>
-                            <div className="flex items-center gap-0.5 shrink-0 z-20">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleStartEditEvent(task)
-                                }}
-                                className="opacity-0 group-hover:opacity-100 hover:text-primary w-3.5 h-3.5 rounded flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer p-0"
-                                title="Editar evento"
-                              >
-                                <span className="material-symbols-outlined text-[13px]">edit</span>
-                              </button>
+                            <div className="flex items-center shrink-0 z-20">
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -2672,18 +2564,7 @@ export default function CalendarPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleOpenEditTask(task)
-                          }}
-                          className="p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 text-secondary hover:text-on-surface transition-colors cursor-pointer"
-                          title="Editar evento"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">edit</span>
-                        </button>
+                      <div className="flex items-center shrink-0">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -2793,18 +2674,7 @@ export default function CalendarPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0 z-20">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleStartEditEvent(task)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 text-secondary hover:text-on-surface transition-colors cursor-pointer"
-                      title="Editar evento"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">edit</span>
-                    </button>
+                  <div className="flex items-center shrink-0 z-20">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -4711,38 +4581,38 @@ export default function CalendarPage() {
                 <p className="text-secondary text-xs italic">Sin notas adicionales.</p>
               )}
 
-              {/* Mensaje de ayuda para editar o marcar como completado */}
+              {/* Mensaje de ayuda para editar */}
               <div className="p-3 rounded-2xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/40 flex items-start gap-2.5 text-xs text-blue-900 dark:text-blue-300">
                 <span className="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">info</span>
                 <p className="leading-snug">
-                  Si quieres editar o marcar como completada esta tarea, habla con la <strong>IA</strong> o ve a la pestaña de <strong>Tareas</strong>.
+                  Haz clic en Editar evento para modificar los detalles de esta tarea.
                 </p>
               </div>
 
               {/* Botones de acción */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 mt-1 gap-2 flex-wrap">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 mt-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => deleteTask(selectedDetailTask.id)}
-                  className="px-3.5 py-2 rounded-2xl text-error hover:bg-error/10 text-label-sm font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto justify-center px-3 sm:px-4 py-2.5 rounded-2xl text-error hover:bg-error/10 text-xs sm:text-label-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <span className="material-symbols-outlined text-[16px]">delete</span>
-                  <span>Eliminar</span>
+                  <span className="material-symbols-outlined text-[16px] shrink-0">delete</span>
+                  <span className="whitespace-nowrap">Eliminar evento</span>
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => handleStartEditEvent(selectedDetailTask)}
-                    className="px-4 py-2 rounded-2xl bg-primary-container text-on-primary hover:bg-primary text-label-sm font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                    className="flex-1 sm:flex-none justify-center px-3 sm:px-4 py-2.5 rounded-2xl bg-primary text-white hover:bg-primary/90 text-xs sm:text-label-sm font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm whitespace-nowrap shrink-0"
                   >
-                    <span className="material-symbols-outlined text-[15px]">edit</span>
-                    <span>Editar evento</span>
+                    <span className="material-symbols-outlined text-[15px] shrink-0">edit</span>
+                    <span className="whitespace-nowrap">Editar evento</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSelectedDetailTask(null)}
-                    className="px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-on-surface text-label-sm font-medium transition-colors cursor-pointer"
+                    className="flex-1 sm:flex-none justify-center px-3 sm:px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-on-surface text-xs sm:text-label-sm font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0"
                   >
                     Cerrar
                   </button>
@@ -5665,19 +5535,19 @@ export default function CalendarPage() {
               </div>
 
               {/* Botones de acción */}
-              <div className="flex items-center justify-between p-4 px-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#141824]/50 shrink-0 gap-2">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between p-3.5 sm:p-4 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#141824]/50 shrink-0 gap-3">
                 {editingCalendarId && calendars.some((c) => c.id === editingCalendarId) ? (
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => handleDeleteCalendar(editingCalendarId)}
                       disabled={calendars.length <= 1}
-                      className={`px-3.5 py-2 rounded-2xl text-error hover:bg-error/10 text-label-sm font-semibold transition-colors flex items-center gap-1 ${
+                      className={`w-full sm:w-auto px-3.5 py-2.5 rounded-2xl text-error hover:bg-error/10 text-xs sm:text-label-sm font-semibold transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${
                         calendars.length <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'
                       }`}
                       title={calendars.length <= 1 ? 'No puedes eliminar el único calendario activo' : 'Eliminar este calendario'}
                     >
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                      <span className="material-symbols-outlined text-[16px] shrink-0">delete</span>
                       <span>Eliminar calendario</span>
                     </button>
 
@@ -5692,10 +5562,10 @@ export default function CalendarPage() {
                         <button
                           type="button"
                           onClick={() => handleClearExternalFromCal(editingCalendarId)}
-                          className="px-3 py-2 rounded-2xl text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 text-label-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                          className="w-full sm:w-auto px-3 py-2.5 rounded-2xl text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 text-xs sm:text-label-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                           title="Eliminar eventos importados por feed externo de este calendario"
                         >
-                          <span className="material-symbols-outlined text-[16px]">mop</span>
+                          <span className="material-symbols-outlined text-[16px] shrink-0">mop</span>
                           <span>Limpiar {extCount} importados</span>
                         </button>
                       )
@@ -5704,17 +5574,17 @@ export default function CalendarPage() {
                 ) : (
                   <div></div>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={handleCloseCalendarModal}
-                    className="px-4 py-2.5 rounded-2xl text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 text-label-md font-medium transition-colors cursor-pointer"
+                    className="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-2xl text-secondary hover:bg-slate-100 dark:hover:bg-slate-800 text-xs sm:text-label-md font-medium transition-colors cursor-pointer whitespace-nowrap"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-2xl bg-primary-container hover:bg-primary text-on-primary font-label-md font-semibold shadow-sm transition-all active:scale-95 cursor-pointer"
+                    className="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-2xl bg-primary text-white hover:bg-primary/90 text-xs sm:text-label-md font-semibold shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                   >
                     {editingCalendarId ? 'Guardar Cambios' : 'Crear Calendario'}
                   </button>

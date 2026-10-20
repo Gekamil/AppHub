@@ -7,6 +7,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.StrikethroughSpan;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -76,6 +80,18 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
 
         String currentMode = prefs.getString("calendar_mode", "MONTH");
 
+        // Dynamic Accent Color
+        String calColorHex = prefs.getString("calendar_color", null);
+        int accentColor = context.getResources().getColor(R.color.widget_accent_default);
+        boolean hasCalendarColor = false;
+        if (calColorHex != null && !calColorHex.trim().isEmpty()) {
+            try {
+                accentColor = Color.parseColor(calColorHex.trim());
+                hasCalendarColor = true;
+            } catch (Exception ignored) {
+            }
+        }
+
         // Format today's date in Spanish for title/subtitle
         SimpleDateFormat sdfMonth = new SimpleDateFormat("MMMM yyyy", new Locale("es", "ES"));
         String monthString = sdfMonth.format(Calendar.getInstance().getTime());
@@ -85,20 +101,47 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.tv_calendar_header_subtitle, monthString);
 
         // Configure mode tabs
-        views.setInt(R.id.btn_mode_month, "setBackgroundResource",
-                "MONTH".equalsIgnoreCase(currentMode) ? R.drawable.widget_pill_active : R.drawable.widget_pill_inactive);
-        views.setTextColor(R.id.btn_mode_month,
-                "MONTH".equalsIgnoreCase(currentMode) ? 0xFFFFFFFF : 0xFF334155);
+        int inactiveTabBg = R.drawable.widget_pill_inactive;
+        int inactiveTextColor = context.getResources().getColor(R.color.widget_pill_inactive_text);
 
-        views.setInt(R.id.btn_mode_week, "setBackgroundResource",
-                "WEEK".equalsIgnoreCase(currentMode) ? R.drawable.widget_pill_active : R.drawable.widget_pill_inactive);
-        views.setTextColor(R.id.btn_mode_week,
-                "WEEK".equalsIgnoreCase(currentMode) ? 0xFFFFFFFF : 0xFF334155);
+        // Month tab
+        if ("MONTH".equalsIgnoreCase(currentMode)) {
+            if (hasCalendarColor) {
+                views.setInt(R.id.btn_mode_month, "setBackgroundColor", accentColor);
+            } else {
+                views.setInt(R.id.btn_mode_month, "setBackgroundResource", R.drawable.widget_pill_active);
+            }
+            views.setTextColor(R.id.btn_mode_month, 0xFFFFFFFF);
+        } else {
+            views.setInt(R.id.btn_mode_month, "setBackgroundResource", inactiveTabBg);
+            views.setTextColor(R.id.btn_mode_month, inactiveTextColor);
+        }
 
-        views.setInt(R.id.btn_mode_day, "setBackgroundResource",
-                "DAY".equalsIgnoreCase(currentMode) ? R.drawable.widget_pill_active : R.drawable.widget_pill_inactive);
-        views.setTextColor(R.id.btn_mode_day,
-                "DAY".equalsIgnoreCase(currentMode) ? 0xFFFFFFFF : 0xFF334155);
+        // Week tab
+        if ("WEEK".equalsIgnoreCase(currentMode)) {
+            if (hasCalendarColor) {
+                views.setInt(R.id.btn_mode_week, "setBackgroundColor", accentColor);
+            } else {
+                views.setInt(R.id.btn_mode_week, "setBackgroundResource", R.drawable.widget_pill_active);
+            }
+            views.setTextColor(R.id.btn_mode_week, 0xFFFFFFFF);
+        } else {
+            views.setInt(R.id.btn_mode_week, "setBackgroundResource", inactiveTabBg);
+            views.setTextColor(R.id.btn_mode_week, inactiveTextColor);
+        }
+
+        // Day tab
+        if ("DAY".equalsIgnoreCase(currentMode)) {
+            if (hasCalendarColor) {
+                views.setInt(R.id.btn_mode_day, "setBackgroundColor", accentColor);
+            } else {
+                views.setInt(R.id.btn_mode_day, "setBackgroundResource", R.drawable.widget_pill_active);
+            }
+            views.setTextColor(R.id.btn_mode_day, 0xFFFFFFFF);
+        } else {
+            views.setInt(R.id.btn_mode_day, "setBackgroundResource", inactiveTabBg);
+            views.setTextColor(R.id.btn_mode_day, inactiveTextColor);
+        }
 
         // Toggle Views visibility
         views.setViewVisibility(R.id.layout_month_view, "MONTH".equalsIgnoreCase(currentMode) ? View.VISIBLE : View.GONE);
@@ -106,9 +149,9 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         views.setViewVisibility(R.id.layout_day_view, "DAY".equalsIgnoreCase(currentMode) ? View.VISIBLE : View.GONE);
 
         // Bind data
-        bindMonthData(views, prefs);
+        bindMonthData(views, prefs, context, accentColor);
         bindWeekData(views, prefs);
-        bindDayData(views, prefs);
+        bindDayData(views, prefs, context, accentColor);
 
         // Setup PendingIntents for Day / Week / Month tab clicks
         views.setOnClickPendingIntent(R.id.btn_mode_month, createModePendingIntent(context, "MONTH", 103));
@@ -125,6 +168,9 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         );
         views.setOnClickPendingIntent(R.id.btn_open_calendar_app, openAppPendingIntent);
 
+        // Dynamic footer link text tinting
+        views.setTextColor(R.id.tv_btn_open_calendar, accentColor);
+
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }
 
@@ -138,7 +184,7 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         );
     }
 
-    private static void bindMonthData(RemoteViews views, SharedPreferences prefs) {
+    private static void bindMonthData(RemoteViews views, SharedPreferences prefs, Context context, int accentColor) {
         Calendar cal = Calendar.getInstance();
         int currentMonth = cal.get(Calendar.MONTH);
         int currentYear = cal.get(Calendar.YEAR);
@@ -168,6 +214,8 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         }
 
         boolean row6Needed = false;
+        int primaryTextColor = context.getResources().getColor(R.color.widget_text_primary);
+        int trailingTextColor = context.getResources().getColor(R.color.widget_text_trailing);
 
         for (int i = 0; i < 42; i++) {
             int dayNum;
@@ -193,11 +241,12 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
 
             if (isCurrentMonth) {
                 if (dayNum == todayDay) {
-                    views.setInt(CELL_TEXT_IDS[i], "setBackgroundResource", R.drawable.widget_day_today_bg);
+                    views.setInt(CELL_TEXT_IDS[i], "setBackgroundColor", accentColor);
                     views.setTextColor(CELL_TEXT_IDS[i], 0xFFFFFFFF);
                 } else {
+                    views.setInt(CELL_TEXT_IDS[i], "setBackgroundColor", Color.TRANSPARENT);
                     views.setInt(CELL_TEXT_IDS[i], "setBackgroundResource", 0);
-                    views.setTextColor(CELL_TEXT_IDS[i], 0xFF0F172A);
+                    views.setTextColor(CELL_TEXT_IDS[i], primaryTextColor);
                 }
 
                 // Check if day has events
@@ -208,13 +257,15 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
                 }
 
                 if (eventCount > 0) {
+                    views.setTextColor(CELL_DOT_IDS[i], accentColor);
                     views.setViewVisibility(CELL_DOT_IDS[i], View.VISIBLE);
                 } else {
                     views.setViewVisibility(CELL_DOT_IDS[i], View.INVISIBLE);
                 }
             } else {
+                views.setInt(CELL_TEXT_IDS[i], "setBackgroundColor", Color.TRANSPARENT);
                 views.setInt(CELL_TEXT_IDS[i], "setBackgroundResource", 0);
-                views.setTextColor(CELL_TEXT_IDS[i], 0xFFCBD5E1);
+                views.setTextColor(CELL_TEXT_IDS[i], trailingTextColor);
                 views.setViewVisibility(CELL_DOT_IDS[i], View.INVISIBLE);
             }
         }
@@ -225,7 +276,11 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         SimpleDateFormat sdfShort = new SimpleDateFormat("d MMM", new Locale("es", "ES"));
         String todayShortStr = sdfShort.format(cal.getTime());
 
-        String todayEventsJson = prefs.getString("today_events", "[]");
+        String todayEventsJson = prefs.getString("today_events_full", null);
+        if (todayEventsJson == null || todayEventsJson.isEmpty() || "[]".equals(todayEventsJson)) {
+            todayEventsJson = prefs.getString("today_events", "[]");
+        }
+
         try {
             JSONArray todayArr = new JSONArray(todayEventsJson);
             if (todayArr.length() > 0) {
@@ -270,57 +325,107 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.tv_week_summary, summary);
     }
 
-    private static void bindDayData(RemoteViews views, SharedPreferences prefs) {
-        String eventsJson = prefs.getString("today_events", "[]");
+    private static void bindDayData(RemoteViews views, SharedPreferences prefs, Context context, int accentColor) {
+        int[] itemIds = { R.id.item_day_1, R.id.item_day_2, R.id.item_day_3, R.id.item_day_4 };
+        int[] timeIds = { R.id.tv_day_time_1, R.id.tv_day_time_2, R.id.tv_day_time_3, R.id.tv_day_time_4 };
+        int[] barIds = { R.id.iv_day_bar_1, R.id.iv_day_bar_2, R.id.iv_day_bar_3, R.id.iv_day_bar_4 };
+        int[] titleIds = { R.id.tv_day_title_1, R.id.tv_day_title_2, R.id.tv_day_title_3, R.id.tv_day_title_4 };
+        int[] tagIds = { R.id.tv_day_tag_1, R.id.tv_day_tag_2, R.id.tv_day_tag_3, R.id.tv_day_tag_4 };
+        int[] statusIds = { R.id.tv_day_status_1, R.id.tv_day_status_2, R.id.tv_day_status_3, R.id.tv_day_status_4 };
+
+        String eventsJson = prefs.getString("today_events_full", null);
+        if (eventsJson == null || eventsJson.isEmpty() || "[]".equals(eventsJson)) {
+            eventsJson = prefs.getString("today_events", "[]");
+        }
+
         try {
             JSONArray array = new JSONArray(eventsJson);
             if (array.length() == 0) {
                 views.setViewVisibility(R.id.tv_day_empty, View.VISIBLE);
-                views.setViewVisibility(R.id.item_day_1, View.GONE);
-                views.setViewVisibility(R.id.item_day_2, View.GONE);
-                views.setViewVisibility(R.id.item_day_3, View.GONE);
+                for (int itemId : itemIds) {
+                    views.setViewVisibility(itemId, View.GONE);
+                }
                 return;
             }
 
             views.setViewVisibility(R.id.tv_day_empty, View.GONE);
 
-            // Item 1
-            if (array.length() > 0) {
-                JSONObject obj1 = array.getJSONObject(0);
-                views.setViewVisibility(R.id.item_day_1, View.VISIBLE);
-                views.setTextViewText(R.id.tv_day_time_1, obj1.optString("time", "Todo el día"));
-                views.setTextViewText(R.id.tv_day_title_1, obj1.optString("title", "Evento"));
-                views.setTextViewText(R.id.tv_day_tag_1, obj1.optString("tag", "General"));
-            } else {
-                views.setViewVisibility(R.id.item_day_1, View.GONE);
-            }
+            Calendar now = Calendar.getInstance();
+            int currentMinutesOfDay = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
 
-            // Item 2
-            if (array.length() > 1) {
-                JSONObject obj2 = array.getJSONObject(1);
-                views.setViewVisibility(R.id.item_day_2, View.VISIBLE);
-                views.setTextViewText(R.id.tv_day_time_2, obj2.optString("time", "Todo el día"));
-                views.setTextViewText(R.id.tv_day_title_2, obj2.optString("title", "Evento"));
-                views.setTextViewText(R.id.tv_day_tag_2, obj2.optString("tag", "General"));
-            } else {
-                views.setViewVisibility(R.id.item_day_2, View.GONE);
-            }
+            int primaryTextColor = context.getResources().getColor(R.color.widget_text_primary);
+            int secondaryTextColor = context.getResources().getColor(R.color.widget_text_secondary);
+            int mutedColor = context.getResources().getColor(R.color.widget_text_muted);
+            int doneGreenColor = Color.parseColor("#10B981");
 
-            // Item 3
-            if (array.length() > 2) {
-                JSONObject obj3 = array.getJSONObject(2);
-                views.setViewVisibility(R.id.item_day_3, View.VISIBLE);
-                views.setTextViewText(R.id.tv_day_time_3, obj3.optString("time", "Todo el día"));
-                views.setTextViewText(R.id.tv_day_title_3, obj3.optString("title", "Evento"));
-                views.setTextViewText(R.id.tv_day_tag_3, obj3.optString("tag", "General"));
-            } else {
-                views.setViewVisibility(R.id.item_day_3, View.GONE);
+            for (int i = 0; i < itemIds.length; i++) {
+                if (i < array.length()) {
+                    JSONObject obj = array.getJSONObject(i);
+                    views.setViewVisibility(itemIds[i], View.VISIBLE);
+
+                    String time = obj.optString("time", "Todo el día");
+                    String title = obj.optString("title", "Evento");
+                    String tag = obj.optString("tag", "General");
+                    boolean isFinished = obj.optBoolean("isFinished", false) || obj.optBoolean("completed", false);
+
+                    views.setTextViewText(timeIds[i], time);
+                    views.setTextViewText(tagIds[i], tag);
+
+                    if (isFinished) {
+                        SpannableString span = new SpannableString(title);
+                        span.setSpan(new StrikethroughSpan(), 0, span.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        views.setTextViewText(titleIds[i], span);
+
+                        views.setTextViewText(statusIds[i], "Hecho");
+                        views.setTextColor(statusIds[i], doneGreenColor);
+
+                        views.setTextColor(titleIds[i], mutedColor);
+                        views.setTextColor(timeIds[i], mutedColor);
+                        views.setTextColor(tagIds[i], mutedColor);
+                        views.setInt(barIds[i], "setBackgroundColor", mutedColor);
+                    } else {
+                        views.setTextViewText(titleIds[i], title);
+                        views.setTextColor(titleIds[i], primaryTextColor);
+                        views.setTextColor(tagIds[i], secondaryTextColor);
+                        views.setTextColor(timeIds[i], accentColor);
+                        views.setInt(barIds[i], "setBackgroundColor", accentColor);
+
+                        // Check if ongoing (time started) vs upcoming
+                        boolean hasStarted = false;
+                        if (time != null && time.contains(":")) {
+                            try {
+                                String[] parts = time.trim().split("[-–]");
+                                String startPart = parts[0].trim();
+                                String[] timePieces = startPart.split(":");
+                                if (timePieces.length >= 2) {
+                                    int startH = Integer.parseInt(timePieces[0].replaceAll("[^0-9]", ""));
+                                    int startM = Integer.parseInt(timePieces[1].replaceAll("[^0-9]", ""));
+                                    int eventStartMinutes = startH * 60 + startM;
+                                    if (currentMinutesOfDay >= eventStartMinutes) {
+                                        hasStarted = true;
+                                    }
+                                }
+                            } catch (Exception ignored) {
+                            }
+                        }
+
+                        if (hasStarted) {
+                            views.setTextViewText(statusIds[i], "En curso");
+                            views.setTextColor(statusIds[i], accentColor);
+                        } else {
+                            views.setTextViewText(statusIds[i], "Pendiente");
+                            views.setTextColor(statusIds[i], mutedColor);
+                        }
+                    }
+                } else {
+                    views.setViewVisibility(itemIds[i], View.GONE);
+                }
             }
         } catch (Exception e) {
             views.setViewVisibility(R.id.tv_day_empty, View.VISIBLE);
-            views.setViewVisibility(R.id.item_day_1, View.GONE);
-            views.setViewVisibility(R.id.item_day_2, View.GONE);
-            views.setViewVisibility(R.id.item_day_3, View.GONE);
+            for (int itemId : itemIds) {
+                views.setViewVisibility(itemId, View.GONE);
+            }
         }
     }
 }

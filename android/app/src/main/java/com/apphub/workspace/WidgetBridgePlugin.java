@@ -55,6 +55,16 @@ public class WidgetBridgePlugin extends Plugin {
             editor.putString("today_events", todayEvents);
         }
 
+        String todayEventsFull = call.getString("todayEventsFull");
+        if (todayEventsFull != null) {
+            editor.putString("today_events_full", todayEventsFull);
+        }
+
+        String calendarColor = call.getString("calendarColor");
+        if (calendarColor != null) {
+            editor.putString("calendar_color", calendarColor);
+        }
+
         String weeklyDistribution = call.getString("weeklyDistribution");
         if (weeklyDistribution != null) {
             editor.putString("weekly_plan_distribution", weeklyDistribution);

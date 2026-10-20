@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="10dp">
+    android:padding="14dp">
 
     <!-- Header -->
     <LinearLayout
@@ -25,8 +25,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Plan Semanal"
-                android:textColor="#0F172A"
-                android:textSize="13sp"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -34,8 +34,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Lunes a Domingo • StudentHub"
-                android:textColor="#64748B"
-                android:textSize="10sp" />
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <TextView
@@ -43,22 +43,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_pill_active"
-            android:paddingLeft="8dp"
-            android:paddingTop="2dp"
-            android:paddingRight="8dp"
-            android:paddingBottom="2dp"
+            android:paddingLeft="10dp"
+            android:paddingTop="4dp"
+            android:paddingRight="10dp"
+            android:paddingBottom="4dp"
             android:text="4 tareas"
             android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
 
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="6dp"
-        android:background="#E2E8F0"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@color/widget_divider"
         android:contentDescription="@null" />
 
     <!-- 7-Day Header Strip -->
@@ -77,10 +77,10 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="2dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lun" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_lun_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="19" android:textColor="#0F172A" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_lun_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="#0071E3" android:textSize="10sp" android:textStyle="bold" />
+            android:padding="4dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Lun" android:textColor="@color/widget_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_lun_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="19" android:textColor="@color/widget_text_primary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_lun_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="@color/widget_accent_default" android:textSize="12sp" android:textStyle="bold" />
         </LinearLayout>
 
         <!-- Martes -->
@@ -91,10 +91,10 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="2dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mar" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_mar_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="20" android:textColor="#0F172A" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_mar_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="#0071E3" android:textSize="10sp" android:textStyle="bold" />
+            android:padding="4dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mar" android:textColor="@color/widget_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_mar_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="20" android:textColor="@color/widget_text_primary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_mar_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="@color/widget_accent_default" android:textSize="12sp" android:textStyle="bold" />
         </LinearLayout>
 
         <!-- Miercoles -->
@@ -105,10 +105,10 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="2dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mié" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_mie_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="21" android:textColor="#0F172A" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_mie_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="#0071E3" android:textSize="10sp" android:textStyle="bold" />
+            android:padding="4dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mié" android:textColor="@color/widget_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_mie_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="21" android:textColor="@color/widget_text_primary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_mie_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="@color/widget_accent_default" android:textSize="12sp" android:textStyle="bold" />
         </LinearLayout>
 
         <!-- Jueves -->
@@ -119,10 +119,10 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="2dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Jue" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_jue_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="22" android:textColor="#0F172A" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_jue_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#94A3B8" android:textSize="10sp" />
+            android:padding="4dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Jue" android:textColor="@color/widget_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_jue_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="22" android:textColor="@color/widget_text_primary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_jue_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/widget_text_muted" android:textSize="12sp" />
         </LinearLayout>
 
         <!-- Viernes -->
@@ -133,10 +133,10 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="2dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Vie" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_vie_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="23" android:textColor="#0F172A" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_vie_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="#0071E3" android:textSize="10sp" android:textStyle="bold" />
+            android:padding="4dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Vie" android:textColor="@color/widget_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_vie_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="23" android:textColor="@color/widget_text_primary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_vie_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="@color/widget_accent_default" android:textSize="12sp" android:textStyle="bold" />
         </LinearLayout>
 
         <!-- Sabado -->
@@ -147,10 +147,10 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="2dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sáb" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_sab_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="24" android:textColor="#0F172A" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_sab_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#94A3B8" android:textSize="10sp" />
+            android:padding="4dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sáb" android:textColor="@color/widget_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_sab_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="24" android:textColor="@color/widget_text_primary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_sab_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="@color/widget_text_muted" android:textSize="12sp" />
         </LinearLayout>
 
         <!-- Domingo -->
@@ -161,19 +161,19 @@
             android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="2dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dom" android:textColor="#64748B" android:textSize="9sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_dom_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="25" android:textColor="#0F172A" android:textSize="10sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_wp_day_dom_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="#0071E3" android:textSize="10sp" android:textStyle="bold" />
+            android:padding="4dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dom" android:textColor="@color/widget_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_dom_num" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="25" android:textColor="@color/widget_text_primary" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_wp_day_dom_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="@color/widget_accent_default" android:textSize="12sp" android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="4dp"
-        android:background="#E2E8F0"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp"
+        android:background="@color/widget_divider"
         android:contentDescription="@null" />
 
     <!-- List of All Events of Every Day of the Week -->
@@ -196,8 +196,8 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:text="No hay tareas programadas para esta semana"
-            android:textColor="#94A3B8"
-            android:textSize="11sp"
+            android:textColor="@color/widget_text_muted"
+            android:textSize="13sp"
             android:visibility="gone" />
     </FrameLayout>
 
@@ -206,16 +206,17 @@
         android:id="@+id/btn_open_tasks_app"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="6dp"
         android:gravity="right|center_vertical"
         android:orientation="horizontal">
 
         <TextView
+            android:id="@+id/tv_wp_btn_open_tasks"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Abrir Auto-Organizador ->"
-            android:textColor="#0071E3"
-            android:textSize="11sp"
+            android:textColor="@color/widget_accent_default"
+            android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

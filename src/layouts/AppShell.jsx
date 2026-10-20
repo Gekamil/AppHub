@@ -10,6 +10,9 @@ import {
   getUserTasks,
   saveUserTasks,
   syncTasksToCloud,
+  getUserCalendars,
+  loadUserDataFromCloud,
+  subscribeToUserCloudData,
 } from '../services/firebase'
 import {
   getBaileysRecentTasks,
@@ -187,11 +190,54 @@ export default function AppShell() {
     return getUserTasks(user)
   })
 
+  // Sincronización en tiempo real bidireccional con Firestore Cloud (Web <-> Móvil <-> Escritorio)
+  useEffect(() => {
+    const curUser = getCurrentUser()
+    if (!curUser || isGuestUser(curUser)) return
+
+    let isMounted = true
+
+    // 1. Carga inicial inmediata desde la nube para que el móvil tenga siempre los datos reales de la web
+    loadUserDataFromCloud().then((data) => {
+      if (!isMounted || !data || !Array.isArray(data.tasks)) return
+      isRemoteSyncRef.current = true
+      setGlobalTasks((prev) => {
+        const prevJson = JSON.stringify(prev || [])
+        const remoteJson = JSON.stringify(data.tasks)
+        return prevJson === remoteJson ? prev : data.tasks
+      })
+    }).catch(() => {})
+
+    // 2. Suscripción viva a Firestore onSnapshot
+    const unsub = subscribeToUserCloudData(curUser, (data) => {
+      if (!isMounted || !data || !Array.isArray(data.tasks)) return
+      isRemoteSyncRef.current = true
+      setGlobalTasks((prev) => {
+        const prevJson = JSON.stringify(prev || [])
+        const remoteJson = JSON.stringify(data.tasks)
+        return prevJson === remoteJson ? prev : data.tasks
+      })
+    })
+
+    return () => {
+      isMounted = false
+      if (typeof unsub === 'function') unsub()
+    }
+  }, [])
+
   // Escuchar cambios de autenticación (login, logout, cambio de usuario)
   useEffect(() => {
     const handleAuthChange = () => {
       const user = getCurrentUser()
       setGlobalTasks(getUserTasks(user))
+      if (user && !isGuestUser(user)) {
+        loadUserDataFromCloud().then((data) => {
+          if (data && Array.isArray(data.tasks)) {
+            isRemoteSyncRef.current = true
+            setGlobalTasks(data.tasks)
+          }
+        }).catch(() => {})
+      }
     }
     window.addEventListener('studenthub_auth_changed', handleAuthChange)
     return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
@@ -214,7 +260,24 @@ export default function AppShell() {
   useEffect(() => {
     const curUser = getCurrentUser()
     saveUserTasks(globalTasks, curUser)
-    syncWidgetData({ tasks: globalTasks })
+
+    // Obtener paleta de color del calendario para temas de widgets
+    const userCals = getUserCalendars(curUser)
+    let primaryColor = '#0071E3'
+    try {
+      const activeCalId = localStorage.getItem('app_active_calendar_id')
+      const activeCal = (userCals || []).find((c) => c.id === activeCalId) || userCals[0]
+      if (activeCal && activeCal.color) {
+        primaryColor = activeCal.color
+      }
+    } catch (e) {}
+    syncWidgetData({ tasks: globalTasks, calendars: userCals, calendarColor: primaryColor })
+
+    // Si la actualización procedió de una sincronización remota (Firestore o SSE), no rebotar hacia la nube
+    if (isRemoteSyncRef.current) {
+      isRemoteSyncRef.current = false
+      return
+    }
 
     // Si el usuario está en modo invitado (sin sesión iniciada), NO sincronizar hacia la nube ni Baileys
     if (isGuestUser(curUser)) {
@@ -222,12 +285,6 @@ export default function AppShell() {
     }
 
     syncTasksToCloud(globalTasks)
-
-    // Si la actualización procedió de una sincronización remota (SSE o poll), no rebotar hacia el servidor
-    if (isRemoteSyncRef.current) {
-      isRemoteSyncRef.current = false
-      return
-    }
 
     const currentJson = JSON.stringify(globalTasks)
     if (lastPushedTasksJsonRef.current === currentJson) return

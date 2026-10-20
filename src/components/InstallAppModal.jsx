@@ -175,14 +175,22 @@ export default function InstallAppModal({ isOpen, onClose }) {
                 </div>
               </div>
 
+              {/* Aviso de widgets nativos */}
+              <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 flex items-start gap-2.5 text-[11px] text-amber-900 dark:text-amber-300">
+                <span className="material-symbols-outlined text-[16px] text-amber-500 shrink-0 mt-0.5">info</span>
+                <p className="leading-snug">
+                  <strong>Importante:</strong> Los widgets de calendario y planificacion semanal solo funcionan con la <strong>APK nativa</strong> descargada desde el boton de arriba. Si instalas desde el navegador (menu del navegador &gt; Instalar aplicacion), se instalara una version web ligera sin widgets.
+                </p>
+              </div>
+
               {/* Opcion Secundaria: PWA Ligera */}
               {isInstallable && (
                 <div className="p-3 rounded-2xl bg-surface-pure border border-outline-variant/30 flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="material-symbols-outlined text-slate-400 text-[18px]">web</span>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-semibold text-on-surface truncate">Alternativa: Acceso Web</span>
-                      <span className="text-[10px] text-secondary">Anadir acceso rapido en navegador</span>
+                      <span className="font-semibold text-on-surface truncate">Alternativa: Acceso Web (sin widgets)</span>
+                      <span className="text-[10px] text-secondary">Solo acceso rapido por navegador, sin widgets nativos</span>
                     </div>
                   </div>
                   <button
