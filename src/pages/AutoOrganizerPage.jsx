@@ -1405,36 +1405,25 @@ export default function AutoOrganizerPage() {
                 </span>
               </div>
 
-              {/* Tarjeta de Próxima Actividad con Lanzador de Focus Directo */}
+              {/* Tarjeta de Próxima Actividad */}
               {nextTaskToday ? (
-                <div className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">
-                      <span className="material-symbols-outlined text-[20px]">{nextTaskToday.icon || 'play_circle'}</span>
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                          Próxima actividad
-                        </span>
-                        <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
-                          {nextTaskToday.time || '10:00'}
-                        </span>
-                      </div>
-                      <span className="text-xs font-semibold text-slate-900 dark:text-white truncate pt-0.5">
-                        {nextTaskToday.title}
+                <div className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">
+                    <span className="material-symbols-outlined text-[20px]">{nextTaskToday.icon || 'event'}</span>
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                        Próxima actividad
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                        {nextTaskToday.time || '10:00'}
                       </span>
                     </div>
+                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate pt-0.5">
+                      {nextTaskToday.title}
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => startFocusTimer(nextTaskToday)}
-                    className="h-8 px-3 rounded-lg bg-primary hover:bg-primary/90 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs shrink-0 cursor-pointer active:scale-95"
-                    title="Iniciar temporizador Focus Pomodoro para esta tarea"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">play_arrow</span>
-                    <span>Focus</span>
-                  </button>
                 </div>
               ) : (
                 <div className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex items-center gap-2.5 text-xs text-slate-500">
@@ -2249,60 +2238,128 @@ export default function AutoOrganizerPage() {
           </div>
         )}
 
-        {/* 4. Lista de Tareas (Un solo selector limpio de estado: Todas | Pendientes | Hechas) */}
+        {/* 4. Lista de Tareas (Buscador rápido + selector de estado: Todas | Pendientes | Hechas) */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <h2 className="text-base sm:text-lg text-slate-900 dark:text-white font-bold tracking-tight">
                 Tareas
               </h2>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono font-semibold">
                 {filteredTasks.length}
               </span>
             </div>
 
-            {/* UN ÚNICO SELECTOR LIMPIO: Todas | Pendientes | Hechas */}
-            <div className="relative inline-flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
-              <div
-                className="absolute top-0.5 bottom-0.5 rounded-lg bg-white dark:bg-[#161b26] shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
-                style={{
-                  width: 'calc((100% - 4px) / 3)',
-                  left: '2px',
-                  transform: `translateX(${
-                    filterStatus === 'all' ? '0%' : filterStatus === 'pending' ? '100%' : '200%'
-                  })`,
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setFilterStatus('all')}
-                className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
-                  filterStatus === 'all' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
-                }`}
-              >
-                Todas
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterStatus('pending')}
-                className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
-                  filterStatus === 'pending' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
-                }`}
-              >
-                Pendientes
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterStatus('completed')}
-                className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
-                  filterStatus === 'completed' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
-                }`}
-              >
-                Hechas
-              </button>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-xl sm:ml-auto">
+              {/* Buscador de tareas por nombre o contexto */}
+              <div className="relative flex-1">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-slate-400">
+                  search
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar tareas por nombre o contexto..."
+                  className="w-full h-9 pl-9 pr-8 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-100/90 focus:bg-white dark:focus:bg-[#161b26] rounded-xl text-xs sm:text-body-sm text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-200 flex items-center justify-center text-[10px] hover:bg-slate-400 cursor-pointer"
+                    title="Limpiar búsqueda"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* UN ÚNICO SELECTOR LIMPIO: Todas | Pendientes | Hechas */}
+              <div className="relative inline-flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start sm:self-auto">
+                <div
+                  className="absolute top-0.5 bottom-0.5 rounded-lg bg-white dark:bg-[#161b26] shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                  style={{
+                    width: 'calc((100% - 4px) / 3)',
+                    left: '2px',
+                    transform: `translateX(${
+                      filterStatus === 'all' ? '0%' : filterStatus === 'pending' ? '100%' : '200%'
+                    })`,
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('all')}
+                  className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
+                    filterStatus === 'all' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
+                  }`}
+                >
+                  Todas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('pending')}
+                  className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
+                    filterStatus === 'pending' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
+                  }`}
+                >
+                  Pendientes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('completed')}
+                  className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
+                    filterStatus === 'completed' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
+                  }`}
+                >
+                  Hechas
+                </button>
+              </div>
             </div>
           </div>
 
+          {searchQuery.trim() ? (
+            /* Vista de Resultados Filtrados por Búsqueda con Acciones Completas */
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-primary">search</span>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
+                    Resultados para "{searchQuery}" • {filteredTasks.length} {filteredTasks.length === 1 ? 'tarea encontrada' : 'tareas encontradas'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                >
+                  Limpiar búsqueda
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                {filteredTasks.map((task) => (
+                  <TaskCardItem
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTaskCompleted}
+                    onEdit={handleOpenEditModal}
+                    onDelete={handleDeleteTask}
+                    onStartFocus={startFocusTimer}
+                    appTheme={appTheme}
+                  />
+                ))}
+                {filteredTasks.length === 0 && (
+                  <div className="p-8 bg-white/60 dark:bg-[#161b26]/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                    <span className="material-symbols-outlined text-[32px] text-slate-400 mb-1">search_off</span>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">No se encontraron tareas</p>
+                    <p className="text-xs text-secondary mt-0.5">No hay tareas que coincidan con tu búsqueda. Prueba con otro término.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
           {/* Bloque 1: Tareas de Hoy */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
@@ -2417,6 +2474,8 @@ export default function AutoOrganizerPage() {
                 </button>
               ) : null}
             </div>
+          )}
+            </>
           )}
 
         </section>

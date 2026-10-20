@@ -1012,6 +1012,42 @@ Devuelve ÚNICAMENTE un JSON con esta estructura exacta, sin texto adicional:
         })
       }
 
+      // Garantizar ejecución determinística para mover eventos entre calendarios y roles
+      const lowerMsg = (userMessage || '').toLowerCase()
+      const moveAllMatch = lowerMsg.match(
+        /(?:mete|pasa|mueve|cambia|asigna|pon|coloca)\s+(?:todos\s+los\s+eventos|todas\s+las\s+tareas|todo)\s+(?:de\s+mi\s+calendario|del\s+calendario|de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|la\s+categor[ií]a|rol|calendario)?\s*(.*)/i
+      )
+      if (moveAllMatch && !actions.some((a) => a.type === 'move_calendar_events' || a.type === 'reassign_calendar_events')) {
+        const rawSource = moveAllMatch[1].replace(/mi calendario|calendario|rol|categoría/gi, '').trim()
+        const rawTarget = moveAllMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
+        const targetCal = calendarsList.find((c) => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
+        actions.push({
+          type: 'move_calendar_events',
+          sourceCalendarName: rawSource,
+          targetCalendarName: targetCal ? targetCal.name : rawTarget,
+          targetCalendarId: targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-')),
+          targetContext: targetCal ? targetCal.name : rawTarget,
+        })
+      }
+
+      const moveSingleMatch = lowerMsg.match(
+        /(?:mete|pasa|mueve|cambia|asigna|pon|coloca)\s+(?:el\s+evento|la\s+tarea)\s+(?:de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|rol|calendario)?\s*(.*)/i
+      )
+      if (moveSingleMatch && !actions.some((a) => a.type === 'update_task')) {
+        const rawTask = moveSingleMatch[1].trim()
+        const rawTarget = moveSingleMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
+        const targetCal = calendarsList.find((c) => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
+        actions.push({
+          type: 'update_task',
+          targetTitle: rawTask,
+          updates: {
+            calendarId: targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-')),
+            calendarName: targetCal ? targetCal.name : rawTarget,
+            context: targetCal ? targetCal.name : rawTarget,
+          },
+        })
+      }
+
       if (parsed.reply || actions.length > 0) {
         return {
           reply: parsed.reply || 'He procesado tu petición correctamente.',

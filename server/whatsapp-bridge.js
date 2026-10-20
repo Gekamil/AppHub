@@ -534,12 +534,12 @@ export async function transcribeAudioWithWhisper(audioBuffer, mimetype = 'audio/
   }
 }
 
-// Formatear resumen de agenda para el prompt de la IA (ordenado cronológicamente)
+// Formatear resumen de agenda para el prompt de la IA (ordenado cronológicamente con calendario y rol explícito)
 function formatTasksSummary(tasks) {
   const activeTasks = (tasks || []).filter((t) => !t._deleted)
   if (activeTasks.length === 0) return 'No hay tareas registradas en este momento.'
   return activeTasks
-    .slice(0, 50)
+    .slice(0, 200)
     .sort((a, b) => {
       const dateCmp = (a.date || '').localeCompare(b.date || '')
       if (dateCmp !== 0) return dateCmp
@@ -548,7 +548,9 @@ function formatTasksSummary(tasks) {
     .map((t) => {
       const descPart = t.description ? ` • Nota: "${t.description}"` : ''
       const estPart = t.est ? ` • Duración: ${t.est}` : ''
-      return `- [ID:${t.id} | ${t.date || '2026-10-14'} ${t.time || '10:00'}] "${t.title}" (${t.context || 'General'} • Esfuerzo ${t.effort || 'Medio'}${estPart}${descPart} • ${t.completed ? 'Hecha' : 'Pendiente'})`
+      const cal = currentKnownCalendars.find((c) => String(c.id) === String(t.calendarId))
+      const calName = cal ? cal.name : (t.calendarName || 'Principal')
+      return `- [ID:${t.id} | ${t.date || '2026-10-20'} ${t.time || '10:00'}] "${t.title}" (Calendario: "${calName}" [${t.calendarId || 'cal-default'}] • Rol/Contexto: "${t.context || 'General'}" • Esfuerzo: ${t.effort || 'Medio'}${estPart}${descPart} • ${t.completed ? 'Hecha' : 'Pendiente'})`
     })
     .join('\n')
 }
@@ -756,6 +758,56 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
         currentKnownTasks[idx] = updated
         modified.push(updated)
       }
+    } else if (act.type === 'move_calendar_events' || act.type === 'reassign_calendar_events') {
+      const sourceCalendarId = act.sourceCalendarId || ''
+      const sourceCalendarName = act.sourceCalendarName || ''
+      const targetCalendarId = act.targetCalendarId || ''
+      const targetCalendarName = act.targetCalendarName || ''
+      const targetContext = act.targetContext || targetCalendarName || ''
+
+      const sName = sourceCalendarName.toLowerCase().trim()
+      const sId = sourceCalendarId.toLowerCase().trim()
+
+      const targetCal = currentKnownCalendars.find(
+        (c) =>
+          (targetCalendarId && String(c.id).toLowerCase() === String(targetCalendarId).toLowerCase()) ||
+          (targetCalendarName && c.name.toLowerCase().includes(targetCalendarName.toLowerCase())) ||
+          (targetContext && c.name.toLowerCase().includes(targetContext.toLowerCase()))
+      )
+      const finalCalId =
+        targetCalendarId ||
+        (targetCal ? targetCal.id : ('cal-' + (targetCalendarName || targetContext || 'default').toLowerCase().replace(/\s+/g, '-')))
+      const finalCalName = targetCalendarName || (targetCal ? targetCal.name : targetContext || 'General')
+      const finalContext = targetContext || finalCalName
+
+      let countMoved = 0
+      currentKnownTasks = currentKnownTasks.map((t) => {
+        if (t._deleted) return t
+        const matchId = sId && String(t.calendarId || '').toLowerCase() === sId
+        const matchName =
+          sName &&
+          ((t.calendarName && t.calendarName.toLowerCase().includes(sName)) ||
+            (t.context && t.context.toLowerCase().includes(sName)) ||
+            (t.calendarId && String(t.calendarId).toLowerCase().includes(sName)))
+
+        const sourceCalObj = currentKnownCalendars.find((c) => sName && c.name.toLowerCase().includes(sName))
+        const matchSourceCalObj = sourceCalObj && String(t.calendarId) === String(sourceCalObj.id)
+
+        if (matchId || matchName || matchSourceCalObj) {
+          countMoved++
+          return {
+            ...t,
+            calendarId: finalCalId,
+            calendarName: finalCalName,
+            context: finalContext,
+            updatedAt: Date.now(),
+          }
+        }
+        return t
+      })
+      if (countMoved > 0) {
+        modified.push({ type: 'move_calendar_events', count: countMoved, targetCalendarName: finalCalName })
+      }
     } else if (act.type === 'delete_task' || act.type === 'delete_all_tasks') {
       const targetId = act.targetId
       let targetTitle = (act.targetTitle || '').trim().toLowerCase()
@@ -928,147 +980,109 @@ ${tasksSummary}
 
 REGLAS DE ACTUACIÓN, PERSONALIDAD Y FORMATO (ESTRICTAS):
 
-1. PERSONALIDAD DE ASISTENTE ATENTO, CERCANO Y EDUCADO:
-   Jorge quiere sentir que habla con un verdadero asistente personal cercano, eficiente y amable, no con una máquina telegráfica fría.
-   - Abre y confirma tus respuestas con comentarios amables y naturales que le gusten, por ejemplo:
+1. PERSONALIDAD DE ASISTENTE ATENTO, CERCANO Y EDUCADO (MAYORDOMO DIGITAL):
+   Jorge quiere sentir que habla con un verdadero asistente personal cercano, eficiente y de confianza, con PODER ABSOLUTO para organizar su vida, estudios y trabajo.
+   - Abre y confirma tus respuestas con comentarios amables, naturales y resolutivos:
      "¡Claro, Jorge! Aquí tienes tu planning organizado para hoy:"
      "¡Por supuesto! Ya he añadido la actividad a tu agenda."
-     "¡Hecho, Jorge! He eliminado las tareas que me pediste de tu calendario."
+     "¡Hecho, Jorge! He movido todos los eventos al rol solicitado."
      "¡Anotado! He corregido la hora del evento a las 18:00."
      "¡Hola, Jorge! ¿En qué puedo ayudarte hoy a organizarte?"
-   - EQUILIBRIO PERFECTO DE LONGITUD:
-     NO seas un robot telegráfico frío de 2 palabras (eso le disgusta), pero TAMPOCO escribas cartas interminables que ocupen toda la pantalla del móvil.
-     La estructura ideal es: 1 frase amable de inicio/confirmación + la lista o datos estructurados con viñetas + 1 frase corta de cierre o consejo útil.
+   - EQUILIBRIO PERFECTO:
+     NO seas un robot frío telegráfico ni uses frases forzadas. Responde con la calidez y precisión de un mayordomo inteligente de primer nivel.
 
-2. BARRAS DIVISORIAS OBLIGATORIAS:
-   TODA respuesta tuya debe comenzar y terminar EXACTAMENTE con la barra:
-   - - - - - - - - - - - - - - - - - - - -
-   (NO uses líneas continuas tipo ━━━━━━━, usa estrictamente guiones espaciados: - - - - - - - - - - - - - - - - - - - -).
+2. FORMATO NATURAL, ELEGANTE Y DIRECTO (SIN BARRAS NI LÍNEAS ARTIFICIALES):
+   Escribe como un mayordomo y asistente ejecutivo digital en un chat real de WhatsApp.
+   NUNCA comiences ni termines con barras divisorias tipo - - - - - - - - - - - - - - - - - - - - ni ━━━━━━━.
+   Escribe tu respuesta con fluidez humana: una apertura educada y atenta, información clara con viñetas (-) y tipografía de WhatsApp (*negrita*), y un cierre útil o confirmación.
 
-3. CAPACIDAD TOTAL DE GESTIÓN (IGUAL QUE EN LA APP WEB):
+3. PODER ABSOLUTO Y CONTROL TOTAL SOBRE LA AGENDA (IGUAL QUE EN LA APP WEB):
 
-   A) CONSULTAR AGENDA Y PLANNING:
+   A) MOVER O REASIGNAR TODOS LOS EVENTOS DE UN CALENDARIO O ROL A OTRO ("move_calendar_events"):
+      Cuando Jorge diga cosas como:
+      - "mira todos los eventos de todo el calendario de Universidad & Estudios y los pongas todos en el rol University"
+      - "mete todos los eventos del calendario X en el rol Y"
+      - "mueve todas las tareas de X a Y"
+      - "pasa todo de X a Y"
+      DEBES EMITIR OBLIGATORIAMENTE en el array "actions" la acción "move_calendar_events":
+      {
+        "type": "move_calendar_events",
+        "sourceCalendarName": "nombre del calendario o rol origen (ej: Universidad & Estudios)",
+        "sourceCalendarId": "id de origen si se conoce",
+        "targetCalendarName": "nombre del rol o calendario destino (ej: University)",
+        "targetCalendarId": "id del destino si existe o cal-destino",
+        "targetContext": "University"
+      }
+      En tu respuesta, confirma de forma educada y brillante que has revisado los eventos y que han sido reasignados al nuevo rol/calendario.
+
+   B) CONSULTAR AGENDA Y PLANNING:
       Si Jorge te pide ver el calendario, qué tiene que hacer o el planning:
       - Agrupa los eventos por DÍA en mayúsculas (ej. *MIÉRCOLES 14 OCTUBRE*).
       - Dentro de cada día, ordena las actividades ESTRICTAMENTE DE MENOR A MAYOR HORA.
       - Pon la hora y la duración entre backticks \`HH:MM\` y \`(XXm)\` para tipografía monoespaciada en WhatsApp.
-      Ejemplo:
-      - - - - - - - - - - - - - - - - - - - -
-      ¡Claro, Jorge! Aquí tienes tu planning para hoy:
-
-      *MIÉRCOLES 14 OCTUBRE*
-      - Review AI exam notes \`09:30\` \`(90m)\`
-      - Finish React project layout \`12:00\` \`(45m)\`
-      - Gym - Upper Body session \`16:30\` \`(60m)\`
-
-      ¡Que tengas un día muy productivo!
-      - - - - - - - - - - - - - - - - - - - -
       ("actions": [], "isNewTask": false)
 
-   B) ELIMINACIÓN Y BORRADO DE TAREAS ("delete_task"):
-      Si Jorge te dice:
-      - "borra los 3 eventos falsos que has creado"
-      - "elimina la tarea de pádel"
-      - "borra el examen de redes"
-      - "borra todas las tareas" / "limpia la agenda"
-      - "borra los eventos que creaste"
-      DEBES EMITIR la acción "delete_task" para CADA evento que deba ser eliminado en el array "actions".
-      Si pide borrar eventos falsos o de prueba, revisa la AGENDA ACTUAL arriba y emite "delete_task" con los títulos de esas tareas (o con targetTitle: "falso" o targetTitle: "todos" si pide borrar todo).
-      Responde amablemente:
-      - - - - - - - - - - - - - - - - - - - -
-      ¡Hecho, Jorge! He eliminado las tareas que me pediste de tu agenda.
-      - - - - - - - - - - - - - - - - - - - -
+   C) ELIMINACIÓN Y BORRADO DE TAREAS ("delete_task"):
+      Si Jorge te pide borrar tareas, emite "delete_task" con su targetTitle o "todos".
 
-   C) AÑADIR TAREAS Y SELECCIÓN DE CALENDARIO ("add_task"):
-      - Si pide añadir actividades directamente ("añade X mañana a las 18:00", "apúntame pádel el jueves a las 19"): emite la acción "add_task".
-      - Si en mensajes previos te estuvo contando cosas que tiene que hacer (ej. "tengo que estudiar redes, luego ir al gym, después reunión...") sin pedirte agendarlas, y luego dice "añádelas al calendario" o "apúntamelas todas":
-        REVISA TODO EL HISTORIAL y rescata TODAS las actividades mencionadas, creando una acción "add_task" individual para CADA UNA sin dejarte ninguna.
-      - Si se indica duración (ej. "dura 1 hora"), pon est: "60m" y description: "Duración estimada: 1 hora. Bloque reservado en planning.".
-      - Si el modo es INTERACTIVO:
-        En tu mensaje de confirmación, añade al final de forma limpia y atractiva la pregunta de a qué calendario asignarlo con los botones numéricos:
-        ¿En qué calendario quieres guardarlo?
-        [1] Personal & General
-        [2] Universidad & Estudios
-        [3] Salud & Deporte
-        [4] Trabajo & Proyectos
-        (Responde con el número [1, 2, 3...], el nombre del calendario o 'modo auto')
-      - Si el modo es AUTOMÁTICO:
-        Asigna directamente en el campo "calendarId" el calendario más adecuado según el tema (ej: pádel/gym -> cal-health, uni/examen -> cal-university, trabajo -> cal-work, ocio/personal -> cal-default). En tu respuesta confirma en qué calendario quedó guardado.
+   D) AÑADIR TAREAS Y SELECCIÓN DE CALENDARIO ("add_task"):
+      - Si pide añadir actividades directamente: emite la acción "add_task".
+      - Si en mensajes previos te estuvo contando cosas que tiene que hacer y luego dice "añádelas", rescata TODAS las actividades del historial.
+      - En modo AUTOMÁTICO, asigna tú de forma autónoma el calendario más apropiado.
 
-   D) MODIFICAR, RENOMBRAR O MARCAR COMO HECHA ("update_task"):
-      - Renombrar: "cambia el nombre de X por Y" -> { "type": "update_task", "targetTitle": "X", "updates": { "title": "Y" } }.
-      - Rectificar hora: "no, me he equivocado es a las 20:30" -> { "type": "update_task", "updates": { "time": "20:30" } }.
-      - Marcar completada: "marca como hecha la tarea de gym" -> { "type": "update_task", "targetTitle": "gym", "updates": { "completed": true } }.
-      - Responde amablemente confirmando la actualización.
+   E) MODIFICAR, RENOMBRAR O MARCAR COMO HECHA ("update_task"):
+      - Permite editar cualquier evento: título, hora, fecha, esfuerzo, duración o calendario.
+      - Para mover una sola tarea a otro rol/calendario: emite "update_task" actualizando calendarId, calendarName y context.
 
-   E) CONVERSACIÓN GENERAL:
-      - Si Jorge te saluda o te hace preguntas libres, responde como un asistente inteligente, empático y conversacional, siempre dentro de las barras.
+   F) CONVERSACIÓN GENERAL:
+      - Si Jorge te saluda o hace preguntas libres, responde de forma inteligente, empática y servicial.
 
-   F) PROCESAMIENTO DE NOTAS DE VOZ Y AUDIOS CITADOS O MENSAJES CITADOS:
-      Si el usuario cita una nota de voz o mensaje (verás el bloque "[Audio / Nota de voz citada transcrita]: ..."), o si te pide "añade los eventos de este audio", "escucha este audio", "añade esto", etc.:
-      - Extrae con máxima precisión TODOS los compromisos, reuniones, partidos, citas, entrenamientos, entregas, viajes, exámenes o tareas que se mencionen en el audio o mensaje citado.
-      - Para cada actividad extraída, genera una acción "add_task" individual con su fecha (YYYY-MM-DD), hora (HH:MM), contexto y duración estimada adecuada.
-      - En tu respuesta amigable, confirma qué actividades has extraído del audio y añadido a su calendario.
+   G) PROCESAMIENTO DE NOTAS DE VOZ Y AUDIOS CITADOS:
+      - Extrae con precisión todas las tareas mencionadas y agéndalas.
 
-   G) CAMBIAR MODO DE ASIGNACIÓN O REGLAS EN LENGUAJE NATURAL:
-      - Si Jorge pide "activa modo automático" / "modo predeterminado" / "asigna tú directamente":
-        Emite acción { "type": "set_bot_mode", "mode": "auto" } y confirma amablemente.
-      - Si Jorge pide "modo interactivo" / "pregúntame siempre":
-        Emite acción { "type": "set_bot_mode", "mode": "interactive" } y confirma amablemente.
-      - Si Jorge te dice reglas como "quiero que las cosas de deporte vayan a Salud & Deporte y las quedadas a Personal":
-        Emite acciones { "type": "set_routing_rule", "keyword": "deporte", "calendarId": "cal-health" } y confirma amablemente.
+   H) CAMBIAR MODO DE ASIGNACIÓN:
+      - Permite cambiar entre modo "auto" e "interactive".
 
 ESTRUCTURA JSON OBLIGATORIA DE RETORNO:
 {
-  "reply": "- - - - - - - - - - - - - - - - - - - -\\n¡Claro, Jorge! ...\\n- - - - - - - - - - - - - - - - - - - -",
+  "reply": "Respuesta en español explicando con claridad y amabilidad los cambios realizados o respondiendo a la pregunta",
   "actions": [
+    {
+      "type": "move_calendar_events",
+      "sourceCalendarName": "Universidad & Estudios",
+      "targetCalendarName": "University",
+      "targetContext": "University"
+    },
     {
       "type": "add_task",
       "task": {
-        "title": "Nombre descriptivo de la tarea",
+        "title": "Nombre de la tarea",
         "date": "YYYY-MM-DD",
         "time": "HH:MM",
         "effort": "Low" | "Medium" | "High",
         "context": "University" | "Projects" | "Personal" | "Health & Gym",
-        "est": "30m" | "45m" | "60m" | "90m" | "120m",
+        "est": "45m",
         "description": "...",
-        "calendarId": "cal-default" | "cal-university" | "cal-health" | "cal-work",
-        "recurrence": "none" | "daily" | "weekly"
+        "calendarId": "cal-university"
       }
     },
     {
       "type": "update_task",
-      "targetTitle": "Título a coincidir (o vacío)",
-      "targetId": null,
+      "targetTitle": "Título a coincidir",
       "updates": {
-        "title": "Nuevo título",
-        "time": "HH:MM",
-        "date": "YYYY-MM-DD",
-        "est": "60m",
-        "calendarId": "...",
-        "completed": true/false,
-        "description": "..."
+        "calendarName": "University",
+        "context": "University"
       }
     },
     {
       "type": "delete_task",
-      "targetTitle": "Título o parte del título a eliminar (o 'todos')",
-      "targetId": null
-    },
-    {
-      "type": "set_bot_mode",
-      "mode": "auto" | "interactive"
-    },
-    {
-      "type": "set_routing_rule",
-      "keyword": "deporte",
-      "calendarId": "cal-health"
+      "targetTitle": "Título a eliminar"
     }
   ],
-  "isNewTask": true/false
+  "isNewTask": false
 }
 IMPORTANTE: Tu respuesta DEBE ser un único objeto JSON que comience con { y termine con }.
-NO imprimas barras ni texto fuera del JSON; las barras - - - - - - - - - - - - - - - - - - - - deben estar DENTRO del valor string de la propiedad "reply".
+NO incluyas barras divisorias tipo - - - - en el texto de "reply".
 Las claves del JSON deben ser obligatoriamente: "reply", "actions", "isNewTask".`
 
   // Historial conversacional previo (retener hasta 20 turnos para captar listas de cosas contadas)
@@ -1106,6 +1120,27 @@ Las claves del JSON deben ser obligatoriamente: "reply", "actions", "isNewTask".
       .filter((a) => a.type === 'add_task' && a.task)
       .map((a) => a.task)
 
+    // Garantizar ejecución de movimiento de eventos si Jorge lo solicitó
+    const lowerUserText = (userText || '').toLowerCase()
+    const moveMatch = lowerUserText.match(
+      /(?:mete|pasa|mueve|cambia|asigna|pon|coloca)\s+(?:todos\s+los\s+eventos|todas\s+las\s+tareas|todo)\s+(?:de\s+mi\s+calendario|del\s+calendario|de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|la\s+categor[ií]a|rol|calendario)?\s*(.*)/i
+    )
+    if (moveMatch && !actions.some((a) => a.type === 'move_calendar_events' || a.type === 'reassign_calendar_events')) {
+      const rawSource = moveMatch[1].replace(/mi calendario|calendario|rol|categoría/gi, '').trim()
+      const rawTarget = moveMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
+      const targetCal = currentKnownCalendars.find((c) => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
+      const targetCalId = targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-'))
+      const targetCalName = targetCal ? targetCal.name : rawTarget
+
+      actions.push({
+        type: 'move_calendar_events',
+        sourceCalendarName: rawSource,
+        targetCalendarName: targetCalName,
+        targetCalendarId: targetCalId,
+        targetContext: targetCalName,
+      })
+    }
+
     // Guardar en historial conversacional
     history.push({ role: 'user', content: userText })
     history.push({ role: 'assistant', content: reply })
@@ -1120,9 +1155,31 @@ Las claves del JSON deben ser obligatoriamente: "reply", "actions", "isNewTask".
     }
   } catch (err) {
     console.error('[Baileys AI Error]:', err.message)
+    const fallbackActions = []
+    const lowerUserText = (userText || '').toLowerCase()
+    const moveMatch = lowerUserText.match(
+      /(?:mete|pasa|mueve|cambia|asigna|pon|coloca)\s+(?:todos\s+los\s+eventos|todas\s+las\s+tareas|todo)\s+(?:de\s+mi\s+calendario|del\s+calendario|de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|la\s+categor[ií]a|rol|calendario)?\s*(.*)/i
+    )
+    let fallbackReply = '¡Hola, Jorge! He recibido tu mensaje. ¿Deseas consultar tu agenda o agregar alguna actividad?'
+    if (moveMatch) {
+      const rawSource = moveMatch[1].replace(/mi calendario|calendario|rol|categoría/gi, '').trim()
+      const rawTarget = moveMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
+      const targetCal = currentKnownCalendars.find((c) => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
+      const targetCalId = targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-'))
+      const targetCalName = targetCal ? targetCal.name : rawTarget
+      fallbackActions.push({
+        type: 'move_calendar_events',
+        sourceCalendarName: rawSource,
+        targetCalendarName: targetCalName,
+        targetCalendarId: targetCalId,
+        targetContext: targetCalName,
+      })
+      fallbackReply = `¡Entendido, Jorge! He movido los eventos de "${rawSource}" al rol "${targetCalName}" correctamente.`
+    }
+
     return {
-      reply: `${DIVIDER}\n*ASISTENTE*\nHe recibido tu mensaje. ¿Deseas consultar tu agenda o agregar alguna actividad?\n${DIVIDER}`,
-      actions: [],
+      reply: fallbackReply,
+      actions: fallbackActions,
       isNewTask: false,
       newTasks: [],
     }
@@ -1174,13 +1231,11 @@ Escribe una breve estrategia de organización en 2 frases contundentes para que 
     console.error('[Baileys Midnight Briefing Strategy Error]:', e.message)
   }
 
-  const messageText = `${DIVIDER}
-*DÍA ${dayName.toUpperCase()} (${todayStr})*
+  const messageText = `*DÍA ${dayName.toUpperCase()} (${todayStr})*
 ${taskListFormatted}
 
 *ESTRATEGIA RECOMENDADA*
-${aiStrategy}
-${DIVIDER}`
+${aiStrategy}`
 
   if (!sock || currentStatus.status !== 'connected') {
     return {
@@ -1565,7 +1620,7 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
 
         // 4.1. COMANDO /help o ayuda
         if (/^(\/|!|\.)?(help|ayuda)$/i.test(cleanInstruction) || lowerInstruction === 'ayuda' || lowerInstruction === 'help') {
-          const helpReply = `${DIVIDER}\n${getHelpMessage()}\n${DIVIDER}`
+          const helpReply = getHelpMessage()
           try {
             const sent = await sock.sendMessage(from, { text: helpReply }, { quoted: msg })
             if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
@@ -1577,7 +1632,7 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
 
         // 4.2. COMANDO /calendarios
         if (/^(\/|!|\.)?(calendarios|calendars)$/i.test(cleanInstruction)) {
-          const calsReply = `${DIVIDER}\n${getCalendarsSummaryMessage()}\n${DIVIDER}`
+          const calsReply = getCalendarsSummaryMessage()
           try {
             const sent = await sock.sendMessage(from, { text: calsReply }, { quoted: msg })
             if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
@@ -1598,7 +1653,7 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
         ) {
           botSettings.mode = 'auto'
           saveBotSettings(botSettings)
-          const modeReply = `${DIVIDER}\n¡Entendido, Jorge! He activado el *Modo Automático*.\nA partir de ahora clasificaré y asignaré cada nuevo evento al calendario más apropiado (deporte, uni, personal, trabajo...) de forma autónoma sin preguntarte para ahorrar tiempo.\n${DIVIDER}`
+          const modeReply = `¡Entendido, Jorge! He activado el *Modo Automático*.\nA partir de ahora clasificaré y asignaré cada nuevo evento al calendario más apropiado (deporte, uni, personal, trabajo...) de forma autónoma sin preguntarte para ahorrar tiempo.`
           try {
             const sent = await sock.sendMessage(from, { text: modeReply }, { quoted: msg })
             if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
@@ -1617,7 +1672,7 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
         ) {
           botSettings.mode = 'interactive'
           saveBotSettings(botSettings)
-          const modeReply = `${DIVIDER}\n¡Hecho, Jorge! He activado el *Modo Interactivo*.\nCada vez que detecte una nueva cita o evento te preguntaré con opciones rápidas [1, 2, 3...] a qué calendario deseas asignarlo.\n${DIVIDER}`
+          const modeReply = `¡Hecho, Jorge! He activado el *Modo Interactivo*.\nCada vez que detecte una nueva cita o evento te preguntaré con opciones rápidas [1, 2, 3...] a qué calendario deseas asignarlo.`
           try {
             const sent = await sock.sendMessage(from, { text: modeReply }, { quoted: msg })
             if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
@@ -1660,7 +1715,7 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
             botSettings.pendingSelection = null
             saveBotSettings(botSettings)
 
-            const chosenReply = `${DIVIDER}\n¡Perfecto, Jorge! He guardado "*${pending.taskTitle}*" en tu calendario de *${chosenCal.name}*.\n${DIVIDER}`
+            const chosenReply = `¡Perfecto, Jorge! He guardado "*${pending.taskTitle}*" en tu calendario de *${chosenCal.name}*.`
             try {
               const sent = await sock.sendMessage(from, { text: chosenReply }, { quoted: msg })
               if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
@@ -1717,13 +1772,13 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
           )
         }
 
-        // Formatear respuesta para el usuario (SIN prefijo de transcripción)
+        // Formatear respuesta para el usuario (Limpia y natural sin barras artificiales)
         let replyToSend = (aiResult.reply || 'Recibido.').trim()
 
-        // Limpiar cualquier barra divisoria previa para evitar duplicados
+        // Limpiar cualquier barra divisoria previa o residuos
         replyToSend = replyToSend
-          .replace(/^(- - - - - - - - - - - - - - - - - - - -|\*{5,}|━{5,}|─{5,}|-{5,})\s*/i, '')
-          .replace(/\s*(- - - - - - - - - - - - - - - - - - - -|\*{5,}|━{5,}|─{5,}|-{5,})$/i, '')
+          .replace(/^(- - - - - - - - - - - - - - - - - - - -|\*{5,}|━{5,}|─{5,}|-{5,})\s*/gi, '')
+          .replace(/\s*(- - - - - - - - - - - - - - - - - - - -|\*{5,}|━{5,}|─{5,}|-{5,})$/gi, '')
           .trim()
 
         // Si se añadió una tarea en modo interactivo y la respuesta no contiene aún los botones numéricos, añadirlos
@@ -1732,9 +1787,6 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
             replyToSend += `\n\n${formatCalendarOptionsText(addedTaskRef.title)}`
           }
         }
-
-        // Garantizar barras de guiones espaciados exactamente arriba y abajo
-        replyToSend = `${DIVIDER}\n${replyToSend}\n${DIVIDER}`
 
         // Responder por WhatsApp al chat de origen citando el mensaje original para mayor claridad
         if (replyToSend) {
