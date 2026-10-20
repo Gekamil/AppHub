@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark Mode Widget Palette -->
-    <color name="widget_background">#0F1523</color>
-    <color name="widget_card_bg">#172033</color>
-    <color name="widget_stroke">#25324C</color>
-    <color name="widget_divider">#25324C</color>
-    <color name="widget_text_primary">#F8FAFC</color>
-    <color name="widget_text_secondary">#94A3B8</color>
-    <color name="widget_text_muted">#64748B</color>
-    <color name="widget_text_trailing">#334155</color>
-    <color name="widget_pill_inactive_bg">#1E293B</color>
-    <color name="widget_pill_inactive_text">#CBD5E1</color>
+    <!-- True Dark Mode Widget Palette (Neutral Deep Black / Charcoal, OLED-Friendly, Zero Blue Cast) -->
+    <color name="widget_background">#09090B</color>
+    <color name="widget_card_bg">#141416</color>
+    <color name="widget_stroke">#27272A</color>
+    <color name="widget_divider">#27272A</color>
+    <color name="widget_text_primary">#FAFAFA</color>
+    <color name="widget_text_secondary">#A1A1AA</color>
+    <color name="widget_text_muted">#71717A</color>
+    <color name="widget_text_trailing">#3F3F46</color>
+    <color name="widget_pill_inactive_bg">#18181B</color>
+    <color name="widget_pill_inactive_text">#D4D4D8</color>
     <color name="widget_accent_default">#38BDF8</color>
 </resources>

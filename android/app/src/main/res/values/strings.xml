@@ -10,4 +10,6 @@
     <string name="widget_weekly_plan_desc">Vista rápida de tus tareas y planificación de toda la semana</string>
     <string name="widget_app_hub_name">StudentHub: Widgets de la App</string>
     <string name="widget_app_hub_desc">Acceso rápido a Temporizador Focus, notas, tareas y widgets activos</string>
+    <string name="widget_voice_copilot_name">StudentHub: Copiloto de Voz IA</string>
+    <string name="widget_voice_copilot_desc">Habla por voz o mantén pulsado para consultar y organizar tareas con IA</string>
 </resources>

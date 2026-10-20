@@ -48,6 +48,18 @@ const formatYMD = (date) => {
 
 const TODAY_YMD = formatYMD(new Date())
 
+// Ordenar actividades de un día: primero las de todo el día, y después en orden temporal ascendente (el más temprano más arriba)
+export const sortDayTasks = (tasks = []) => {
+  return [...tasks].sort((a, b) => {
+    const aAllDay = !a.time || a.time.toLowerCase().includes('todo el d') || a.isAllDay
+    const bAllDay = !b.time || b.time.toLowerCase().includes('todo el d') || b.isAllDay
+    if (aAllDay && !bAllDay) return -1
+    if (!aAllDay && bAllDay) return 1
+    if (aAllDay && bAllDay) return (a.title || '').localeCompare(b.title || '')
+    return (a.time || '').localeCompare(b.time || '')
+  })
+}
+
 const getMonday = (d) => {
   let date
   if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
@@ -963,6 +975,7 @@ export default function CalendarPage() {
     icon: 'event',
     description: '',
     calendarId: 'cal-default',
+    hasAlarm: false,
   })
 
   // Nueva categoría form y edición
@@ -1080,6 +1093,7 @@ export default function CalendarPage() {
       icon: 'event',
       description: '',
       calendarId: calId,
+      hasAlarm: false,
     })
     setIsIconPickerOpen(false)
     setIsCalSelectDropdownOpen(false)
@@ -1170,6 +1184,7 @@ export default function CalendarPage() {
       icon: task.icon || 'event',
       description: task.description || '',
       calendarId: task.calendarId || activeCalendarId,
+      hasAlarm: !!task.hasAlarm,
     })
     setIsIconPickerOpen(false)
     setIsCalSelectDropdownOpen(false)
@@ -1212,6 +1227,7 @@ export default function CalendarPage() {
                 context: eventForm.context,
                 icon: eventForm.icon || 'event',
                 calendarId: targetCalId,
+                hasAlarm: Boolean(eventForm.hasAlarm),
                 recurrence: eventForm.recurrence,
                 recurrenceGroupId: eventForm.recurrence !== 'none' ? groupId : null,
               }
@@ -1241,6 +1257,7 @@ export default function CalendarPage() {
             context: eventForm.context,
             icon: eventForm.icon || 'event',
             calendarId: targetCalId,
+            hasAlarm: Boolean(eventForm.hasAlarm),
             recurrence: eventForm.recurrence,
             recurrenceGroupId: groupId,
           }
@@ -1271,6 +1288,7 @@ export default function CalendarPage() {
       effort: eventForm.effort,
       context: eventForm.context,
       icon: eventForm.icon || 'event',
+      hasAlarm: Boolean(eventForm.hasAlarm),
       recurrence: eventForm.recurrence,
       recurrenceGroupId: eventForm.recurrence !== 'none' ? groupId : null,
       calendarId: targetCalId,
@@ -2039,7 +2057,7 @@ export default function CalendarPage() {
         {getMonthDays(currentDate).map((cell) => {
           const isToday = cell.ymd === TODAY_YMD
           const isSelected = cell.ymd === formatYMD(currentDate)
-          const cellTasks = tasksToDisplay.filter((t) => t.date === cell.ymd)
+          const cellTasks = sortDayTasks(tasksToDisplay.filter((t) => t.date === cell.ymd))
 
           return (
             <div
@@ -2184,7 +2202,7 @@ export default function CalendarPage() {
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80 min-h-[360px]">
           {getWeekDays(currentDate).map((day) => {
             const isToday = day.ymd === TODAY_YMD
-            const dayTasks = tasksToDisplay.filter((t) => t.date === day.ymd)
+            const dayTasks = sortDayTasks(tasksToDisplay.filter((t) => t.date === day.ymd))
 
             return (
               <div
@@ -2462,7 +2480,7 @@ export default function CalendarPage() {
 
   // 3. Vista de Día
   const renderDayView = (tasksToDisplay, calObj) => {
-    const dayTasks = tasksToDisplay.filter((t) => t.date === formatYMD(currentDate))
+    const dayTasks = sortDayTasks(tasksToDisplay.filter((t) => t.date === formatYMD(currentDate)))
     const timedTasks = dayTasks.filter((t) => t.time && !t.isAllDay)
     const allDayTasks = dayTasks.filter((t) => !t.time || t.isAllDay)
 
@@ -2862,46 +2880,66 @@ export default function CalendarPage() {
     </div>
   )
 
-  // Widget 3: Entregas Pendientes
-  const renderDeadlinesWidget = () => (
-    <div className="flex flex-col gap-space-md">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-secondary uppercase tracking-wider">
-          {pendingTasks.length} pendientes
-        </span>
-      </div>
-      <div className="flex flex-col gap-space-sm">
-        {pendingTasks.slice(0, 4).map((item) => (
-          <div
-            key={item.id}
-            onClick={() => setSelectedDetailTask(item)}
-            className="p-space-sm rounded-xl bg-surface-subtle hover:bg-surface-muted transition-colors flex flex-col gap-1 cursor-pointer"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <span className="font-headline-sm text-body-sm text-on-surface font-semibold leading-tight truncate">
-                {item.title}
-              </span>
-              <span className="px-1.5 py-0.5 rounded-md font-code-sm text-[10px] uppercase font-bold shrink-0 bg-tag-urgent-bg text-tag-urgent-text">
-                {item.effort || 'Task'}
-              </span>
+  // Widget 3: Próximas Entregas (Solo eventos futuros o de hoy que no hayan finalizado)
+  const renderDeadlinesWidget = () => {
+    const upcomingDeadlines = currentCalendarTasks
+      .filter((t) => {
+        if (t.completed || t.done) return false
+        if (!t.date) return false
+        const taskYmd = String(t.date).slice(0, 10)
+        // Ignorar eventos de fechas pasadas
+        if (taskYmd < TODAY_YMD) return false
+        // Si es de hoy, comprobar que no haya finalizado ya
+        if (taskYmd === TODAY_YMD && isEventFinished(t, nowTicker)) return false
+        return true
+      })
+      .sort((a, b) => {
+        const da = String(a.date).slice(0, 10)
+        const db = String(b.date).slice(0, 10)
+        if (da !== db) return da.localeCompare(db)
+        return (a.time || '').localeCompare(b.time || '')
+      })
+
+    return (
+      <div className="flex flex-col gap-space-md">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-secondary uppercase tracking-wider">
+            {upcomingDeadlines.length} próximas
+          </span>
+        </div>
+        <div className="flex flex-col gap-space-sm">
+          {upcomingDeadlines.slice(0, 4).map((item) => (
+            <div
+              key={item.id}
+              onClick={() => setSelectedDetailTask(item)}
+              className="p-space-sm rounded-xl bg-surface-subtle hover:bg-surface-muted transition-colors flex flex-col gap-1 cursor-pointer"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-headline-sm text-body-sm text-on-surface font-semibold leading-tight truncate">
+                  {item.title}
+                </span>
+                <span className="px-1.5 py-0.5 rounded-md font-code-sm text-[10px] uppercase font-bold shrink-0 bg-tag-urgent-bg text-tag-urgent-text">
+                  {item.effort || 'Task'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-secondary font-label-sm text-label-sm">
+                <span className="flex items-center gap-1 text-on-surface-variant font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  {item.date === TODAY_YMD ? 'Hoy' : item.date} · {item.time || 'Todo el día'}
+                </span>
+                <span className="font-code-sm text-code-sm">{item.context}</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-secondary font-label-sm text-label-sm">
-              <span className="flex items-center gap-1 text-on-surface-variant font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                {item.date} · {item.time || 'Todo el día'}
-              </span>
-              <span className="font-code-sm text-code-sm">{item.context}</span>
-            </div>
-          </div>
-        ))}
-        {pendingTasks.length === 0 && (
-          <p className="text-secondary font-body-sm text-body-sm text-center py-2">
-            ¡Todas las tareas completadas!
-          </p>
-        )}
+          ))}
+          {upcomingDeadlines.length === 0 && (
+            <p className="text-secondary font-body-sm text-body-sm text-center py-2">
+              ¡Sin entregas pendientes próximas! Todo al día.
+            </p>
+          )}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   // Widget 0: Reloj en Vivo (Analógico / Digital) & Cuenta Atrás de Eventos de Hoy
   const renderClockWidget = () => (
@@ -2915,7 +2953,7 @@ export default function CalendarPage() {
     />
   )
 
-  // Widget 4: Distribución de Horas y Gráfica Proporcional Dinámica
+  // Widget 4: Distribución de Horas y Gráfica Proporcional Dinámica (Semanal)
   const renderAllocationWidget = () => {
     const getTaskHours = (task) => {
       if (task.durationHours && !isNaN(task.durationHours)) return Number(task.durationHours)
@@ -2933,8 +2971,27 @@ export default function CalendarPage() {
       return 1.5
     }
 
+    // Filtrar estrictamente las actividades de la semana activa (Lunes a Domingo)
+    const baseDate = currentDate || new Date()
+    const d = new Date(baseDate)
+    const dayOfWeek = d.getDay()
+    const diffToMonday = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+    const monday = new Date(d.setDate(diffToMonday))
+    monday.setHours(0, 0, 0, 0)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    sunday.setHours(23, 59, 59, 999)
+
+    const mondayYmd = formatYMD(monday)
+    const sundayYmd = formatYMD(sunday)
+
+    const weeklyTasks = currentCalendarTasks.filter((t) => {
+      const taskYmd = (t.date || '').slice(0, 10)
+      return taskYmd >= mondayYmd && taskYmd <= sundayYmd
+    })
+
     const catStats = categories.map((cat) => {
-      const catTasks = currentCalendarTasks.filter((t) => t.context === cat.name)
+      const catTasks = weeklyTasks.filter((t) => t.context === cat.name)
       const hours = catTasks.reduce((acc, t) => acc + getTaskHours(t), 0)
       return {
         ...cat,
@@ -2944,7 +3001,7 @@ export default function CalendarPage() {
     })
 
     const totalHours = Math.round(catStats.reduce((acc, c) => acc + c.hours, 0) * 10) / 10
-    const totalCount = currentCalendarTasks.length
+    const totalCount = weeklyTasks.length
     const maxCatHours = Math.max(...catStats.map((c) => c.hours), 0.1)
 
     return (
@@ -2957,11 +3014,11 @@ export default function CalendarPage() {
             </span>
             <span className="font-code-sm text-xs text-tertiary flex items-center gap-1 font-medium">
               <span className="material-symbols-outlined text-[14px]">trending_up</span>
-              {totalCount} actividades programadas
+              {totalCount} actividades esta semana
             </span>
           </div>
           <span className="px-2 py-1 rounded-xl bg-primary/10 text-primary text-[11px] font-code-sm font-semibold">
-            Semana activa
+            Semana activa ({monday.getDate()}/{monday.getMonth() + 1} - {sunday.getDate()}/{sunday.getMonth() + 1})
           </span>
         </div>
 
@@ -4136,6 +4193,25 @@ export default function CalendarPage() {
                       })}
                     </div>
                   </div>
+
+                  {/* Alarma sonora opcional */}
+                  <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined text-[18px] ${eventForm.hasAlarm ? 'text-amber-500' : 'text-secondary'}`}>
+                        {eventForm.hasAlarm ? 'notifications_active' : 'notifications'}
+                      </span>
+                      <span className="text-xs font-medium text-on-surface">Alarma sonora al empezar el evento</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!eventForm.hasAlarm}
+                        onChange={(e) => setEventForm({ ...eventForm, hasAlarm: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-8 h-4.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-500 shadow-xs"></div>
+                    </label>
+                  </div>
                 </div>
               ) : (
                 /* Modo Avanzado: Organizado en 2 columnas para no desbordar */
@@ -4210,17 +4286,37 @@ export default function CalendarPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 h-10 mt-auto">
-                      <span className="font-label-sm text-xs text-on-surface font-semibold">¿Todo el día?</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={eventForm.isAllDay}
-                          onChange={(e) => setEventForm({ ...eventForm, isAllDay: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-xs"></div>
-                      </label>
+                    <div className="grid grid-cols-2 gap-2 mt-auto">
+                      <div className="flex items-center justify-between px-2.5 sm:px-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 h-10">
+                        <span className="font-label-sm text-[11px] sm:text-xs text-on-surface font-semibold">Todo el día</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={eventForm.isAllDay}
+                            onChange={(e) => setEventForm({ ...eventForm, isAllDay: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary shadow-xs"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between px-2.5 sm:px-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 h-10">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className={`material-symbols-outlined text-[16px] ${eventForm.hasAlarm ? 'text-amber-500' : 'text-secondary'}`}>
+                            {eventForm.hasAlarm ? 'notifications_active' : 'notifications'}
+                          </span>
+                          <span className="font-label-sm text-[11px] sm:text-xs text-on-surface font-semibold truncate">Alarma</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!eventForm.hasAlarm}
+                            onChange={(e) => setEventForm({ ...eventForm, hasAlarm: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-500 shadow-xs"></div>
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -4566,6 +4662,12 @@ export default function CalendarPage() {
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[18px]">bolt</span>
                     <span>Esfuerzo: <strong>{selectedDetailTask.effort}</strong></span>
+                  </div>
+                )}
+                {selectedDetailTask.hasAlarm && (
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-medium">
+                    <span className="material-symbols-outlined text-[18px]">notifications_active</span>
+                    <span>Alarma sonora activada al empezar</span>
                   </div>
                 )}
               </div>

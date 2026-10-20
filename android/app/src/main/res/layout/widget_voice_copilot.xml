@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_voice_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="10dp"
+    android:background="@drawable/widget_background">
+
+    <!-- Tarjeta Izquierda (Respuesta Rápida y Estado de la IA) -->
+    <LinearLayout
+        android:id="@+id/card_voice_info"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginEnd="10dp"
+        android:padding="8dp"
+        android:background="@drawable/widget_voice_card_bg">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="3dp">
+
+            <TextView
+                android:id="@+id/tv_voice_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="StudentHub IA"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_accent_default" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" • Voz"
+                android:textSize="11sp"
+                android:textColor="@color/widget_text_secondary" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_voice_response"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pulsa para hablar con el Asistente IA"
+            android:textSize="13sp"
+            android:textColor="@color/widget_text_primary"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp" />
+    </LinearLayout>
+
+    <!-- Botón de Micrófono Derecho -->
+    <ImageView
+        android:id="@+id/btn_voice_record"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/widget_circle_mic_bg"
+        android:src="@drawable/ic_voice_mic"
+        android:padding="10dp"
+        android:contentDescription="Grabar voz para IA"
+        android:scaleType="centerInside" />
+
+</LinearLayout>

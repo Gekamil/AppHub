@@ -4,6 +4,12 @@ import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import FloatingAICopilot from '../components/FloatingAICopilot'
 import UpdateNotification from '../components/UpdateNotification'
+import AlarmRingingOverlay from '../components/AlarmRingingOverlay'
+import VoiceCopilotWidget from '../components/VoiceCopilotWidget'
+import {
+  requestNotificationPermission,
+  checkUpcomingTasksAlarms,
+} from '../services/notificationAlarmService'
 import {
   getCurrentUser,
   isGuestUser,
@@ -256,19 +262,63 @@ export default function AppShell() {
     }
   }, [navigate])
 
+  const [isVoiceCopilotOpen, setIsVoiceCopilotOpen] = useState(false)
+
+  // Escuchar apertura directa del Asistente de Voz Copiloto (desde widget o acción)
+  useEffect(() => {
+    const checkVoiceParam = () => {
+      const search = window.location.search || ''
+      if (search.includes('action=voice_copilot') || search.includes('action=voice')) {
+        setIsVoiceCopilotOpen(true)
+      }
+    }
+    checkVoiceParam()
+    const handleOpenVoice = () => setIsVoiceCopilotOpen(true)
+    window.addEventListener('studenthub_open_voice_copilot', handleOpenVoice)
+    return () => window.removeEventListener('studenthub_open_voice_copilot', handleOpenVoice)
+  }, [location.search])
+
+  // Escuchar cambios de color de acento de widgets desde Ajustes para refrescar al instante
+  useEffect(() => {
+    const handleWidgetAccentChange = (e) => {
+      const hex = e.detail
+      if (!hex) return
+      const curUser = getCurrentUser()
+      const userCals = getUserCalendars(curUser)
+      syncWidgetData({ tasks: globalTasks, calendars: userCals, calendarColor: hex }).catch(() => {})
+    }
+    window.addEventListener('studenthub_widget_accent_changed', handleWidgetAccentChange)
+    return () => window.removeEventListener('studenthub_widget_accent_changed', handleWidgetAccentChange)
+  }, [globalTasks])
+
+  // Comprobador en vivo de Alarmas Sonoras y Notificaciones de inicio de eventos
+  useEffect(() => {
+    requestNotificationPermission().catch(() => {})
+    checkUpcomingTasksAlarms(globalTasks)
+    const timer = setInterval(() => {
+      checkUpcomingTasksAlarms(globalTasks)
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [globalTasks])
+
   // Sincronizar tareas persistentemente con el espacio privado de la cuenta activa y los widgets del sistema
   useEffect(() => {
     const curUser = getCurrentUser()
     saveUserTasks(globalTasks, curUser)
 
-    // Obtener paleta de color del calendario para temas de widgets
+    // Obtener paleta de color del widget: prioridad al color personalizado de Ajustes, o al calendario activo
     const userCals = getUserCalendars(curUser)
     let primaryColor = '#0071E3'
     try {
-      const activeCalId = localStorage.getItem('app_active_calendar_id')
-      const activeCal = (userCals || []).find((c) => c.id === activeCalId) || userCals[0]
-      if (activeCal && activeCal.color) {
-        primaryColor = activeCal.color
+      const customWidgetAccent = localStorage.getItem('studenthub_widget_accent_color')
+      if (customWidgetAccent) {
+        primaryColor = customWidgetAccent
+      } else {
+        const activeCalId = localStorage.getItem('app_active_calendar_id')
+        const activeCal = (userCals || []).find((c) => c.id === activeCalId) || userCals[0]
+        if (activeCal && activeCal.color) {
+          primaryColor = activeCal.color
+        }
       }
     } catch (e) {}
     syncWidgetData({ tasks: globalTasks, calendars: userCals, calendarColor: primaryColor })
@@ -542,6 +592,48 @@ export default function AppShell() {
         {aiAssistantMode === 'floating' && (
           <FloatingAICopilot globalTasks={globalTasks} setGlobalTasks={setGlobalTasks} />
         )}
+
+        {/* Modal / Widget Desplegable de Voz con IA */}
+        {isVoiceCopilotOpen && (
+          <div
+            onClick={() => setIsVoiceCopilotOpen(false)}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/40 animate-in fade-in duration-150 cursor-pointer"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg cursor-default flex flex-col gap-2 mb-2 sm:mb-0"
+            >
+              <div className="flex items-center justify-between px-2 text-white text-xs font-semibold drop-shadow-md">
+                <span className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-primary">graphic_eq</span>
+                  <span>Copiloto de Voz IA</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsVoiceCopilotOpen(false)}
+                  className="p-1 rounded-full hover:bg-white/20 text-white/80 hover:text-white cursor-pointer"
+                  title="Cerrar"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+              <VoiceCopilotWidget
+                globalTasks={globalTasks}
+                setGlobalTasks={setGlobalTasks}
+                className="shadow-2xl"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Notificaciones y Alarmas Sonoras en Vivo */}
+        <AlarmRingingOverlay
+          onTaskCompleted={(taskId) => {
+            setGlobalTasks((prev) =>
+              (prev || []).map((t) => (t.id === taskId ? { ...t, completed: true } : t))
+            )
+          }}
+        />
         <UpdateNotification />
       </div>
     </div>

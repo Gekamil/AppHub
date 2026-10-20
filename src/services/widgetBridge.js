@@ -22,8 +22,15 @@ function formatDateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
-export async function syncWidgetData({ tasks = [], calendars = [], calendarColor = '#0071E3' } = {}) {
+export async function syncWidgetData({ tasks = [], calendars = [], calendarColor = '#0071E3', voiceResponse = '' } = {}) {
   try {
+    if (voiceResponse) {
+      try {
+        localStorage.setItem('studenthub_last_ai_voice_response', voiceResponse);
+      } catch {}
+    }
+    const storedVoice = typeof localStorage !== 'undefined' ? (localStorage.getItem('studenthub_last_ai_voice_response') || '') : '';
+    const resolvedVoice = voiceResponse || storedVoice || 'Pulsa para hablar con el Asistente IA de StudentHub';
     const today = new Date();
     const todayKey = formatDateKey(today);
     const currentMonth = today.getMonth();
@@ -173,6 +180,7 @@ export async function syncWidgetData({ tasks = [], calendars = [], calendarColor
       weeklyEventsFlat: JSON.stringify(weeklyEventsFlat),
       monthEventsMap: JSON.stringify(monthEventsMap),
       calendarColor: calendarColor || '#0071E3',
+      voiceResponse: resolvedVoice,
       focusTaskTitle,
       focusTaskSub,
       pendingCount: pendingTasks.length,

@@ -115,6 +115,11 @@ public class WidgetBridgePlugin extends Plugin {
             editor.putString("month_highlights", monthHighlights);
         }
 
+        String voiceResponse = call.getString("voiceResponse");
+        if (voiceResponse != null) {
+            editor.putString("voice_copilot_response", voiceResponse);
+        }
+
         editor.apply();
 
         // Refresh all widgets
@@ -139,11 +144,18 @@ public class WidgetBridgePlugin extends Plugin {
             AppWidgetsProvider.updateWidget(context, manager, id);
         }
 
+        ComponentName vcComponent = new ComponentName(context, VoiceCopilotWidgetProvider.class);
+        int[] vcIds = manager.getAppWidgetIds(vcComponent);
+        for (int id : vcIds) {
+            VoiceCopilotWidgetProvider.updateWidget(context, manager, id);
+        }
+
         JSObject ret = new JSObject();
         ret.put("success", true);
         ret.put("calendarWidgetsUpdated", calIds.length);
         ret.put("weeklyWidgetsUpdated", wpIds.length);
         ret.put("hubWidgetsUpdated", hubIds.length);
+        ret.put("voiceWidgetsUpdated", vcIds.length);
         call.resolve(ret);
     }
 
@@ -159,12 +171,14 @@ public class WidgetBridgePlugin extends Plugin {
         int[] calIds = manager.getAppWidgetIds(new ComponentName(context, CalendarWidgetProvider.class));
         int[] wpIds = manager.getAppWidgetIds(new ComponentName(context, WeeklyPlanWidgetProvider.class));
         int[] hubIds = manager.getAppWidgetIds(new ComponentName(context, AppWidgetsProvider.class));
+        int[] vcIds = manager.getAppWidgetIds(new ComponentName(context, VoiceCopilotWidgetProvider.class));
 
         JSObject ret = new JSObject();
         ret.put("isAvailable", true);
         ret.put("calendarWidgetsCount", calIds.length);
         ret.put("weeklyWidgetsCount", wpIds.length);
         ret.put("hubWidgetsCount", hubIds.length);
+        ret.put("voiceWidgetsCount", vcIds.length);
         call.resolve(ret);
     }
 }

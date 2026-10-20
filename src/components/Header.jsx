@@ -108,6 +108,16 @@ export default function Header({
 
   const activeThemeObj = APP_THEMES.find((t) => t.id === currentAppTheme) || APP_THEMES[0]
 
+  const [widgetAccentColor, setWidgetAccentColor] = useState(() => {
+    return localStorage.getItem('studenthub_widget_accent_color') || '#0071E3'
+  })
+
+  const handleSelectWidgetAccent = (hex) => {
+    setWidgetAccentColor(hex)
+    localStorage.setItem('studenthub_widget_accent_color', hex)
+    window.dispatchEvent(new CustomEvent('studenthub_widget_accent_changed', { detail: hex }))
+  }
+
   const handleSelectThemeStyle = (themeId) => {
     setAppTheme(themeId)
     setCurrentAppTheme(themeId)
@@ -761,6 +771,78 @@ export default function Header({
                       <span className="material-symbols-outlined text-[18px]">dark_mode</span>
                       <span>{language === 'es' ? 'Oscuro' : 'Dark'}</span>
                     </button>
+                  </div>
+                </div>
+
+                {/* Selector de Color de Acento de los Widgets */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">
+                      {language === 'es' ? 'Color de los Widgets' : 'Widget Accent Color'}
+                    </label>
+                    <span className="font-mono text-[10px] text-secondary font-bold uppercase">
+                      {widgetAccentColor}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-surface-subtle rounded-xl border border-outline-variant/30 flex-wrap">
+                    {[
+                      { name: 'Azul', hex: '#0071E3' },
+                      { name: 'Esmeralda', hex: '#10B981' },
+                      { name: 'Morado', hex: '#8B5CF6' },
+                      { name: 'Rosa', hex: '#EC4899' },
+                      { name: 'Naranja', hex: '#F97316' },
+                      { name: 'Ámbar', hex: '#F59E0B' },
+                      { name: 'Cian', hex: '#06B6D4' },
+                      { name: 'Rojo', hex: '#EF4444' },
+                    ].map((col) => {
+                      const isSelected = widgetAccentColor.toLowerCase() === col.hex.toLowerCase()
+                      return (
+                        <button
+                          key={col.hex}
+                          type="button"
+                          onClick={() => handleSelectWidgetAccent(col.hex)}
+                          className={`w-7 h-7 rounded-full transition-transform cursor-pointer relative shadow-xs flex items-center justify-center ${
+                            isSelected ? 'scale-110 ring-2 ring-primary ring-offset-2 ring-offset-surface-pure' : 'hover:scale-105 opacity-80 hover:opacity-100'
+                          }`}
+                          style={{ backgroundColor: col.hex }}
+                          title={col.name}
+                        >
+                          {isSelected && (
+                            <span className="material-symbols-outlined text-[14px] text-white font-bold drop-shadow-xs">
+                              check
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                    {/* Selector RGB Personalizado */}
+                    <label
+                      className={`relative w-7 h-7 rounded-full cursor-pointer flex items-center justify-center border border-dashed border-outline hover:border-primary transition-all overflow-hidden ${
+                        ![
+                          '#0071e3', '#10b981', '#8b5cf6', '#ec4899', '#f97316', '#f59e0b', '#06b6d4', '#ef4444'
+                        ].includes(widgetAccentColor.toLowerCase())
+                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-pure'
+                          : ''
+                      }`}
+                      title={language === 'es' ? 'Selector RGB Personalizado' : 'Custom RGB Picker'}
+                      style={{
+                        backgroundColor: ![
+                          '#0071e3', '#10b981', '#8b5cf6', '#ec4899', '#f97316', '#f59e0b', '#06b6d4', '#ef4444'
+                        ].includes(widgetAccentColor.toLowerCase())
+                          ? widgetAccentColor
+                          : 'transparent',
+                      }}
+                    >
+                      <input
+                        type="color"
+                        value={widgetAccentColor}
+                        onChange={(e) => handleSelectWidgetAccent(e.target.value)}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                      <span className="material-symbols-outlined text-[14px] text-secondary pointer-events-none">
+                        palette
+                      </span>
+                    </label>
                   </div>
                 </div>
 
