@@ -1,100 +1,172 @@
-/* Estilos y Animaciones de la Landing Page de StudentHub (Fusión Raycast + Webflow) */
+/* ==========================================================================
+   StudentHub Landing Page - Refero & Linear Modern Dark SaaS Design System
+   ========================================================================== */
 
 .landing-root,
 .landing-root main,
 .landing-main {
-  background-color: #040506 !important;
-  color: #ffffff !important;
+  background-color: #030712 !important;
+  color: #f3f4f6 !important;
   color-scheme: dark !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Sombra Táctil Inset Estilo Tecla Mecánica (Raycast Keyboard Key Shadow) */
-.raycast-key-card {
-  background-color: #07080a !important;
-  border: 1px solid #27272a !important;
-  box-shadow: rgba(255, 255, 255, 0.05) 0px 1px 0px 0px inset,
-              rgba(255, 255, 255, 0.18) 0px 0px 0px 1px,
-              rgba(0, 0, 0, 0.35) 0px -1px 0px 0px inset !important;
+/* Fondo con patrón sutil de cuadrícula técnica (Estilo Refero & Linear) */
+.refero-bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 100%);
 }
 
-.raycast-key-card:hover {
-  border-color: #363739 !important;
-  box-shadow: rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset,
-              rgba(255, 255, 255, 0.25) 0px 0px 0px 1px,
-              rgba(0, 0, 0, 0.45) 0px -1px 0px 0px inset !important;
+/* Esferas de luz ambiental volumétrica */
+.refero-glow-top {
+  position: absolute;
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 480px;
+  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.18) 0%, rgba(59, 130, 246, 0.10) 45%, transparent 70%);
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Botón de Acción Neutral Mist (Raycast Signature CTA) */
-.raycast-mist-btn {
-  background-color: #e6e6e6 !important;
-  color: #1b1c1e !important;
-  border-radius: 8px !important;
+.refero-glow-coral {
+  position: absolute;
+  top: 35%;
+  right: -100px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(255, 99, 99, 0.10) 0%, transparent 65%);
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.refero-glow-cyan {
+  position: absolute;
+  top: 60%;
+  left: -150px;
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 65%);
+  filter: blur(130px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Tarjetas con profundidad de capas y reflejo superior (Estilo Refero Cards) */
+.refero-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%), #090d16 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.refero-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+
+/* Botón Primario con Destello y Sombra Gradiente (High-Conversion Hero CTA) */
+.refero-btn-primary {
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 24px -4px rgba(255, 255, 255, 0.3),
+              0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.refero-btn-primary:hover {
+  background: #ffffff !important;
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 0 32px -2px rgba(255, 255, 255, 0.45),
+              0 6px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+.refero-btn-primary:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Botón Secundario de Cristal Templado */
+.refero-btn-secondary {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 10px !important;
   font-weight: 500 !important;
-  letter-spacing: -0.01em !important;
-  box-shadow: rgba(0, 0, 0, 0.03) 0px 7px 3px 0px, rgba(0, 0, 0, 0.25) 0px 4px 4px 0px !important;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  backdrop-filter: blur(12px) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.raycast-mist-btn:hover {
-  background-color: #ffffff !important;
-  transform: translateY(-1px) !important;
+.refero-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
 }
 
-/* Scroll & Reveal Animations */
+/* Contenedores de Icono con Pozo Luminoso */
+.refero-icon-well {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Animaciones y entrada suave */
+.hero-enter {
+  opacity: 0;
+  transform: translateY(24px) scale(0.98);
+  animation: referoFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes referoFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hero-delay-1 { animation-delay: 0.05s; }
+.hero-delay-2 { animation-delay: 0.15s; }
+.hero-delay-3 { animation-delay: 0.25s; }
+.hero-delay-4 { animation-delay: 0.35s; }
+.hero-delay-5 { animation-delay: 0.45s; }
+
+/* Flotación suave para elementos destacados */
+@keyframes referoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.refero-floating {
+  animation: referoFloat 6s ease-in-out infinite;
+}
+
 .reveal-elem {
   opacity: 0;
-  transform: translateY(28px) scale(0.97);
-  filter: blur(6px);
-  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), 
-              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), 
-              filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform, filter;
+  transform: translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
 .reveal-elem.revealed {
   opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0px);
-}
-
-/* Staggered Initial Hero Entrance */
-.hero-enter {
-  opacity: 0;
-  transform: translateY(32px) scale(0.96);
-  filter: blur(8px);
-  animation: heroFadeUp 1.05s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes heroFadeUp {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0px);
-  }
-}
-
-.hero-delay-1 { animation-delay: 0.1s; }
-.hero-delay-2 { animation-delay: 0.25s; }
-.hero-delay-3 { animation-delay: 0.4s; }
-.hero-delay-4 { animation-delay: 0.55s; }
-.hero-delay-5 { animation-delay: 0.7s; }
-
-/* Gentle Floating Card Idle Effect */
-@keyframes softFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-7px); }
-}
-
-.float-card-1 { animation: softFloat 5.2s ease-in-out infinite; }
-.float-card-2 { animation: softFloat 5.8s ease-in-out infinite 0.7s; }
-.float-card-3 { animation: softFloat 5.4s ease-in-out infinite 1.4s; }
-
-/* 3D Mockup Perspective */
-.mockup-3d-wrap {
-  perspective: 1200px;
-}
-
-.mockup-3d-card {
-  transform-style: preserve-3d;
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease;
+  transform: translateY(0);
 }
