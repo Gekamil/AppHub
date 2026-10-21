@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './LandingPage.css'
 
@@ -8,7 +8,12 @@ export default function LandingPage() {
   const [isIosModalOpen, setIsIosModalOpen] = useState(false)
   const [currentTimeStr, setCurrentTimeStr] = useState('16:03:07')
 
-  // Reloj de precisión Madrid
+  // Refs para orbes atmosféricos con Parallax 3D mediante RAF pasivo
+  const orb1Ref = useRef(null)
+  const orb2Ref = useRef(null)
+  const orb3Ref = useRef(null)
+
+  // Reloj de precisión Madrid para demo en vivo
   useEffect(() => {
     const updateTime = () => {
       const now = new Date()
@@ -27,7 +32,7 @@ export default function LandingPage() {
     return () => clearInterval(timer)
   }, [])
 
-  // IntersectionObserver para transiciones suaves
+  // IntersectionObserver para reveal progresivo escalonado
   useEffect(() => {
     const elements = document.querySelectorAll('.reveal-elem')
     const observer = new IntersectionObserver(
@@ -39,28 +44,62 @@ export default function LandingPage() {
           }
         })
       },
-      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.05, rootMargin: '0px 0px -20px 0px' }
     )
 
     elements.forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [])
 
+  // Parallax 3D ultra-fluido en GPU sin re-renderizados de React (60+ FPS)
+  useEffect(() => {
+    let ticking = false
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const y = window.scrollY
+          if (orb1Ref.current) {
+            orb1Ref.current.style.transform = `translate3d(-50%, ${y * 0.12}px, 0)`
+          }
+          if (orb2Ref.current) {
+            orb2Ref.current.style.transform = `translate3d(0, ${y * -0.07}px, 0)`
+          }
+          if (orb3Ref.current) {
+            orb3Ref.current.style.transform = `translate3d(0, ${y * -0.10}px, 0)`
+          }
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
     <div className="landing-root bg-black text-[#f5f5f7] min-h-screen relative overflow-x-hidden selection:bg-[#0071e3]/40 selection:text-white">
-      {/* Luz ambiental cinematográfica superior */}
-      <div className="apple-hero-glow" />
+      {/* Luces atmosféricas cinematográficas GPU con Parallax 3D */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        {/* Orbe 1: Hero superior (Azul Apple / Índigo) */}
+        <div ref={orb1Ref} className="apple-orb apple-orb-hero" />
+        {/* Orbe 2: Bento medio (Cyan / Púrpura sutil) */}
+        <div ref={orb2Ref} className="apple-orb apple-orb-mid" />
+        {/* Orbe 3: Descargas inferior (Índigo / Esmeralda sutil) */}
+        <div ref={orb3Ref} className="apple-orb apple-orb-bottom" />
+      </div>
 
-      {/* 1. NAVEGACIÓN SUPERIOR ESTILO APPLE */}
+      {/* 1. NAVEGACIÓN SUPERIOR ESTILO APPLE CON CRISTAL ESMERILADO */}
       <header className="fixed top-0 inset-x-0 z-50 px-4 pt-4 pointer-events-none">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-6 rounded-full bg-[#161617]/85 backdrop-blur-2xl border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.8)] pointer-events-auto">
-          {/* Logo oficial de StudentHub */}
+        <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-6 rounded-full apple-navbar pointer-events-auto">
+          {/* Logo oficial de StudentHub de alta definición */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-xl bg-[#242426] border border-white/10 flex items-center justify-center p-1 shadow-inner group-hover:border-white/30 transition-all">
+            <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center p-0.5 shadow-md group-hover:border-white/40 group-hover:scale-105 transition-all overflow-hidden">
               <img
                 src="/logo.png"
                 alt="StudentHub Logo"
-                className="w-full h-full object-contain filter invert opacity-95 group-hover:scale-105 transition-transform"
+                className="w-full h-full object-contain transition-transform"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -93,12 +132,12 @@ export default function LandingPage() {
             </a>
           </nav>
 
-          {/* Botón de Entrada Rápida */}
+          {/* Botón de Entrada Rápida con micro-interacción Apple Sheen */}
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => navigate('/app')}
-              className="apple-btn-blue text-xs py-2 px-4 flex items-center gap-1.5 cursor-pointer"
+              className="apple-btn-blue apple-btn-sheen text-xs py-2 px-4 flex items-center gap-1.5 cursor-pointer"
             >
               <span>Abrir Web App</span>
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -109,29 +148,29 @@ export default function LandingPage() {
 
       {/* CUERPO PRINCIPAL */}
       <main className="landing-main relative z-10 w-full pt-32 pb-24">
-        {/* 2. HERO PRINCIPAL CINEMATOGRÁFICO (Estilo Apple Keynote) */}
+        {/* 2. HERO PRINCIPAL CINEMATOGRÁFICO CON REVELADO PROGRESIVO */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 flex flex-col items-center text-center">
           {/* Eyebrow de Versión */}
-          <span className="text-xs sm:text-sm font-semibold tracking-widest text-[#86868b] uppercase mb-4">
+          <span className="reveal-elem text-xs sm:text-sm font-semibold tracking-widest text-[#86868b] uppercase mb-4">
             StudentHub 0.0.8 • Multiplataforma
           </span>
 
           {/* Titular Monumental en Blanco Puro */}
-          <h1 className="text-5xl sm:text-7xl lg:text-[84px] font-semibold tracking-tight text-white max-w-4xl leading-[1.04] mb-6">
+          <h1 className="reveal-elem stagger-1 text-5xl sm:text-7xl lg:text-[84px] font-semibold tracking-tight text-white max-w-4xl leading-[1.04] mb-6">
             Tu semestre.{' '}
             <span className="text-[#86868b] block sm:inline">Bajo control absoluto.</span>
           </h1>
 
           {/* Subtítulo sobrio y elegante */}
-          <p className="text-lg sm:text-2xl text-[#86868b] max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+          <p className="reveal-elem stagger-2 text-lg sm:text-2xl text-[#86868b] max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
             El primer centro de mando académico que combina radar inteligente de exámenes, calendario de alta densidad y tu propio mayordomo en WhatsApp.
           </p>
 
-          {/* Botones de Acción */}
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-14 w-full max-w-md">
+          {/* Botones de Acción con Sheen y Feedback Táctil */}
+          <div className="reveal-elem stagger-3 flex flex-wrap items-center justify-center gap-4 mb-14 w-full max-w-md">
             <a
               href="#descargas"
-              className="apple-btn-blue flex-1 min-w-[190px] text-center flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              className="apple-btn-blue apple-btn-sheen flex-1 min-w-[190px] text-center flex items-center justify-center gap-2 cursor-pointer shadow-lg"
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
               <span>Descargar Gratis</span>
@@ -147,7 +186,7 @@ export default function LandingPage() {
           </div>
 
           {/* Franja de Disponibilidad de Hardware */}
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#86868b]">
+          <div className="reveal-elem stagger-4 flex flex-wrap items-center justify-center gap-4 text-xs text-[#86868b]">
             <span className="flex items-center gap-1.5 text-slate-300">
               <span className="material-symbols-outlined text-[15px]">desktop_windows</span> Windows 10 & 11
             </span>
@@ -175,8 +214,8 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Marco de Pantalla Hardware */}
-          <div className="reveal-elem relative apple-device-frame p-3 sm:p-4 bg-[#161617] max-w-5xl mx-auto">
+          {/* Marco de Pantalla Hardware con Frosted Glass y Reflejo Superior */}
+          <div className="reveal-elem stagger-1 relative apple-device-frame p-3 sm:p-4 max-w-5xl mx-auto">
             {/* Barra de ventana macOS */}
             <div className="flex items-center justify-between px-3 py-2 text-xs text-[#86868b] border-b border-white/5 mb-3 font-mono">
               <div className="flex items-center gap-2">
@@ -188,12 +227,12 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* Selector de Vistas de la App */}
-              <div className="flex items-center p-1 rounded-lg bg-black/40 border border-white/10">
+              {/* Selector de Vistas de la App con Feedback Táctil */}
+              <div className="flex items-center p-1 rounded-lg bg-black/50 border border-white/10">
                 <button
                   type="button"
                   onClick={() => setActiveTab('semanal')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all active:scale-95 cursor-pointer ${
                     activeTab === 'semanal' ? 'bg-[#0071e3] text-white shadow-sm' : 'text-[#86868b] hover:text-white'
                   }`}
                 >
@@ -202,7 +241,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('mensual')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all active:scale-95 cursor-pointer ${
                     activeTab === 'mensual' ? 'bg-[#0071e3] text-white shadow-sm' : 'text-[#86868b] hover:text-white'
                   }`}
                 >
@@ -211,7 +250,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab('radar')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all active:scale-95 cursor-pointer ${
                     activeTab === 'radar' ? 'bg-[#0071e3] text-white shadow-sm' : 'text-[#86868b] hover:text-white'
                   }`}
                 >
@@ -225,10 +264,10 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Interfaz Interior en Modo Oscuro Puro */}
-            <div className="rounded-xl bg-[#0c0c0e] border border-white/5 p-4 sm:p-6 min-h-[460px] flex flex-col justify-between">
+            {/* Interfaz Interior en Modo Oscuro con Altura Estable (CLS = 0) */}
+            <div className="rounded-xl bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/5 p-4 sm:p-6 min-h-[480px] flex flex-col justify-between">
               {activeTab === 'semanal' && (
-                <div className="space-y-4">
+                <div key="semanal" className="tab-pane-animate space-y-4">
                   {/* Cabecera del día */}
                   <div className="flex items-center justify-between pb-3 border-b border-white/5">
                     <div>
@@ -245,7 +284,7 @@ export default function LandingPage() {
                   {/* Grid de eventos del día */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
                     {/* Tarjeta Evento 1 */}
-                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#2997ff] font-semibold">09:30 - 11:30</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2997ff]/20 text-[#2997ff] font-medium">
@@ -261,7 +300,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Tarjeta Evento 2 */}
-                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#30d158] font-semibold">12:30 - 13:30</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#30d158]/20 text-[#30d158] font-medium">
@@ -277,7 +316,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Tarjeta Evento 3 */}
-                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#bf5af2] font-semibold">16:30 - 17:45</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#bf5af2]/20 text-[#bf5af2] font-medium">
@@ -293,7 +332,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Tarjeta Evento 4 */}
-                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#ff9f0a] font-semibold">20:30</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff9f0a]/20 text-[#ff9f0a] font-medium">
@@ -312,7 +351,7 @@ export default function LandingPage() {
               )}
 
               {activeTab === 'mensual' && (
-                <div className="space-y-4">
+                <div key="mensual" className="tab-pane-animate space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-white/5">
                     <h3 className="text-base font-semibold text-white">Octubre 2026 • Calendario Integrado</h3>
                     <span className="text-xs text-[#86868b]">Compatible con Google Calendar y Apple Calendar (iCal)</span>
@@ -336,7 +375,7 @@ export default function LandingPage() {
                               ? 'bg-[#0071e3]/20 border-[#0071e3] text-white'
                               : hasExam
                               ? 'bg-[#ff453a]/15 border-[#ff453a]/40 text-white'
-                              : 'bg-[#161617] border-white/5 text-slate-300'
+                              : 'bg-white/[0.04] border-white/5 text-slate-300'
                           }`}
                         >
                           <span className={`text-[11px] font-mono ${isToday ? 'font-bold text-[#2997ff]' : 'text-[#86868b]'}`}>
@@ -360,7 +399,7 @@ export default function LandingPage() {
               )}
 
               {activeTab === 'radar' && (
-                <div className="space-y-4">
+                <div key="radar" className="tab-pane-animate space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-white/5">
                     <div>
                       <h3 className="text-base font-semibold text-white">Radar Predictivo de Exámenes</h3>
@@ -372,7 +411,7 @@ export default function LandingPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-white">Seguridad de Sistemas Operativos</h4>
                         <span className="text-xs text-[#ff453a] font-semibold">En 2 días (Lunes)</span>
@@ -386,7 +425,7 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-white">Redes y Comunicaciones</h4>
                         <span className="text-xs text-[#ff9f0a] font-semibold">En 8 días (Martes)</span>
@@ -432,7 +471,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Bento 1: Radar Proactivo */}
-            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-1 p-8 sm:p-10 flex flex-col justify-between">
               <div>
                 <span className="text-xs font-semibold tracking-wider text-[#ff453a] uppercase">01 • Radar de Exámenes</span>
                 <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
@@ -456,7 +495,7 @@ export default function LandingPage() {
             </div>
 
             {/* Bento 2: WhatsApp Bot */}
-            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-2 p-8 sm:p-10 flex flex-col justify-between">
               <div>
                 <span className="text-xs font-semibold tracking-wider text-[#30d158] uppercase">02 • Mayordomo en WhatsApp</span>
                 <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
@@ -483,7 +522,7 @@ export default function LandingPage() {
             </div>
 
             {/* Bento 3: Widgets Móviles */}
-            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-3 p-8 sm:p-10 flex flex-col justify-between">
               <div>
                 <span className="text-xs font-semibold tracking-wider text-[#2997ff] uppercase">03 • Widgets Nativos</span>
                 <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
@@ -513,7 +552,7 @@ export default function LandingPage() {
             </div>
 
             {/* Bento 4: Privacidad y Local-First */}
-            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-4 p-8 sm:p-10 flex flex-col justify-between">
               <div>
                 <span className="text-xs font-semibold tracking-wider text-[#bf5af2] uppercase">04 • Privacidad Absoluta</span>
                 <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
@@ -542,7 +581,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 5. SECCIÓN DE DESCARGAS (Estilo Tarjetas Apple) */}
+        {/* 5. SECCIÓN DE DESCARGAS (Estilo Tarjetas Apple con Efecto Frosted Glass) */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 scroll-mt-24" id="descargas">
           <div className="reveal-elem text-center max-w-2xl mx-auto mb-14">
             <span className="text-xs font-semibold tracking-widest text-[#86868b] uppercase">
@@ -555,7 +594,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Windows */}
-            <div className="reveal-elem apple-card p-8 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-1 p-8 flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white mb-6">
                   <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
@@ -573,7 +612,7 @@ export default function LandingPage() {
                 <a
                   href="/download/StudentHub-Setup.exe"
                   download="StudentHub-Setup.exe"
-                  className="apple-btn-blue w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
+                  className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
                   <span className="material-symbols-outlined text-[17px]">download</span>
                   <span>Descargar Instalador</span>
@@ -582,7 +621,7 @@ export default function LandingPage() {
             </div>
 
             {/* Android */}
-            <div className="reveal-elem apple-card p-8 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-2 p-8 flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-[#30d158] mb-6">
                   <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
@@ -600,7 +639,7 @@ export default function LandingPage() {
                 <a
                   href="/download/StudentHub.apk"
                   download="StudentHub.apk"
-                  className="apple-btn-blue w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
+                  className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
                   <span className="material-symbols-outlined text-[17px]">download</span>
                   <span>Descargar APK Oficial</span>
@@ -609,7 +648,7 @@ export default function LandingPage() {
             </div>
 
             {/* iPhone / Web */}
-            <div className="reveal-elem apple-card p-8 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-3 p-8 flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white mb-6">
                   <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
@@ -638,11 +677,11 @@ export default function LandingPage() {
         </section>
       </main>
 
-      {/* 6. FOOTER ESTILO APPLE */}
-      <footer className="border-t border-white/10 py-10 bg-black text-[#86868b] text-xs">
+      {/* 6. FOOTER ESTILO APPLE CON LOGO NÍTIDO */}
+      <footer className="border-t border-white/10 py-10 bg-black text-[#86868b] text-xs relative z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="StudentHub" className="w-5 h-5 object-contain filter invert opacity-70" />
+            <img src="/logo.png" alt="StudentHub" className="w-6 h-6 object-contain rounded-md shadow-sm" />
             <span className="text-white font-medium">StudentHub</span>
             <span>•</span>
             <span>© 2026 Jorge. Todos los derechos reservados.</span>
@@ -671,10 +710,10 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* MODAL DE INSTALACIÓN iOS / iPHONE */}
+      {/* MODAL DE INSTALACIÓN iOS / iPHONE CON ACABADO GLASS */}
       {isIosModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="apple-card max-w-md w-full p-6 sm:p-8 bg-[#1c1c1e] text-left relative">
+          <div className="apple-card max-w-md w-full p-6 sm:p-8 text-left relative">
             <button
               type="button"
               onClick={() => setIsIosModalOpen(false)}
@@ -684,7 +723,7 @@ export default function LandingPage() {
             </button>
 
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center border border-white/10">
                 <span className="material-symbols-outlined text-[22px]">phone_iphone</span>
               </div>
               <div>
@@ -723,7 +762,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setIsIosModalOpen(false)}
-              className="apple-btn-blue w-full text-xs font-medium cursor-pointer"
+              className="apple-btn-blue apple-btn-sheen w-full text-xs font-medium cursor-pointer"
             >
               Entendido
             </button>
