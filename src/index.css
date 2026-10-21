@@ -370,12 +370,12 @@ header, aside, main, nav, footer, .theme-transition {
 }
 
 /* 2. Webflow Studio Drafting Table (Luz blanca de estudio, trazo fino Ash y tipografía Obsidian) */
-html:not(.dark) body {
+html:not(.dark):not(:has(.landing-root)) body {
   background-color: #ffffff;
   color: #080808;
 }
 
-html:not(.dark) main {
+html:not(.dark) main:not(.landing-main) {
   background-color: #fafafa;
 }
 

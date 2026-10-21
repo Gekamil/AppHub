@@ -298,7 +298,7 @@ export async function clearAuthFromFirestore() {
   } catch (e) {}
 }
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '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'
+const GROQ_API_KEY = process.env.GROQ_API_KEY || ''
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_AUDIO_ENDPOINT = 'https://api.groq.com/openai/v1/audio/transcriptions'
 const AI_MODEL = 'openai/gpt-oss-120b'
@@ -2261,6 +2261,36 @@ export function handleBaileysApiRoute(req, res) {
     return true
   }
 
+  if (pathname === '/api/ai/chat' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => {
+      body += chunk
+    })
+    req.on('end', async () => {
+      try {
+        const { messages, temperature = 0.2, max_tokens = 850, jsonMode = true } = JSON.parse(body || '{}')
+        const payload = {
+          messages,
+          temperature,
+          max_tokens,
+        }
+        if (jsonMode) {
+          payload.response_format = { type: 'json_object' }
+        }
+        const groqRes = await callGroqWithFallback(payload)
+        const text = groqRes.choices?.[0]?.message?.content || ''
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true, content: text, model: groqRes.model || 'groq-proxy' }))
+      } catch (err) {
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: false, error: err.message }))
+      }
+    })
+    return true
+  }
+
   if (pathname === '/api/baileys/trigger-midnight-briefing' && req.method === 'POST') {
     generateAndSendMidnightBriefing()
       .then((result) => {
@@ -2433,14 +2463,19 @@ async function resolveGitHubDownloadUrl(assetName) {
     return cached.url
   }
 
-  const token = process.env.GITHUB_TOKEN || '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'
+  const token = process.env.GITHUB_TOKEN || ''
+  const headers = {
+    'User-Agent': 'StudentHub-Render-Server',
+    Accept: 'application/vnd.github+json',
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const opt1 = {
     hostname: 'api.github.com',
     path: '/repos/Gekamil/AppHub/releases/tags/latest',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'User-Agent': 'StudentHub-Render-Server',
-    },
+    headers,
   }
 
   const releaseData = await new Promise((resolve, reject) => {
@@ -2458,34 +2493,46 @@ async function resolveGitHubDownloadUrl(assetName) {
   })
 
   const asset = (releaseData.assets || []).find(
-    (a) => a.name.toLowerCase() === assetName.toLowerCase()
+    (a) => a.name && a.name.toLowerCase() === assetName.toLowerCase()
   )
   if (!asset) return null
 
-  const opt2 = {
-    hostname: 'api.github.com',
-    path: `/repos/Gekamil/AppHub/releases/assets/${asset.id}`,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'User-Agent': 'StudentHub-Render-Server',
-      Accept: 'application/octet-stream',
-    },
-  }
-
-  const signedUrl = await new Promise((resolve, reject) => {
-    https.get(opt2, (res) => {
-      resolve(res.headers.location || null)
-    }).on('error', reject)
-  })
-
-  if (signedUrl) {
+  // Si el asset dispone de URL de descarga directa pública, usarla de inmediato
+  if (asset.browser_download_url) {
     downloadUrlCache.set(assetName, {
-      url: signedUrl,
+      url: asset.browser_download_url,
       expiresAt: Date.now() + 10 * 60 * 1000,
     })
+    return asset.browser_download_url
   }
 
-  return signedUrl
+  if (token && asset.id) {
+    const opt2 = {
+      hostname: 'api.github.com',
+      path: `/repos/Gekamil/AppHub/releases/assets/${asset.id}`,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'User-Agent': 'StudentHub-Render-Server',
+        Accept: 'application/octet-stream',
+      },
+    }
+
+    const signedUrl = await new Promise((resolve, reject) => {
+      https.get(opt2, (res) => {
+        resolve(res.headers.location || null)
+      }).on('error', reject)
+    })
+
+    if (signedUrl) {
+      downloadUrlCache.set(assetName, {
+        url: signedUrl,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      })
+    }
+    return signedUrl
+  }
+
+  return null
 }
 
 function handleDownloadRoute(req, res) {

@@ -2,58 +2,88 @@
 // Modelo: qwen/qwen3.8-27b
 import { getUserCalendars, getCurrentUser } from './firebase.js'
 
-const GROQ_API_KEY = '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'
+const GROQ_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GROQ_API_KEY) || ''
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
 const GROQ_MODELS = ['qwen/qwen3.8-27b', 'allam-2-7b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
 const RENDER_BACKEND_URL = 'https://freestudentapphub.onrender.com'
 
 /**
- * Llamada resiliente a la API de Groq con failover automático entre modelos
- * y fallback directo al backend de Render si la red cliente falla.
+ * Llamada resiliente a la API de Groq:
+ * 1. Si hay VITE_GROQ_API_KEY en el cliente, intenta llamar directo a Groq con failover de modelos.
+ * 2. Si no hay clave en cliente o falla, invoca de forma transparente el backend proxy en Render (/api/ai/chat).
+ * 3. Fallback final al endpoint de pruebas de Baileys (/api/baileys/chat-test).
  */
 export async function callGroqWithFallback({ messages, temperature = 0.2, max_tokens = 850, jsonMode = true }) {
   let lastError = null
 
-  // 1. Probar modelos de texto disponibles en Groq directamente
-  for (const model of GROQ_MODELS) {
-    try {
-      const body = {
-        model,
-        messages,
-        temperature,
-        max_tokens,
-      }
-      if (jsonMode) {
-        body.response_format = { type: 'json_object' }
-      }
-
-      const res = await fetch(GROQ_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        const text = data.choices?.[0]?.message?.content || ''
-        if (text && text.trim()) {
-          return { success: true, content: text, model }
+  // 1. Si hay clave configurada en el cliente, probar modelos de texto en Groq directamente
+  if (GROQ_API_KEY) {
+    for (const model of GROQ_MODELS) {
+      try {
+        const body = {
+          model,
+          messages,
+          temperature,
+          max_tokens,
         }
-      } else {
-        const errText = await res.text().catch(() => '')
-        console.warn(`[AI Failover] Modelo ${model} respondió status ${res.status}: ${errText.slice(0, 80)}`)
-        lastError = new Error(`Groq ${model} status ${res.status}`)
+        if (jsonMode) {
+          body.response_format = { type: 'json_object' }
+        }
+
+        const res = await fetch(GROQ_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          const text = data.choices?.[0]?.message?.content || ''
+          if (text && text.trim()) {
+            return { success: true, content: text, model }
+          }
+        } else {
+          const errText = await res.text().catch(() => '')
+          console.warn(`[AI Failover] Modelo ${model} respondió status ${res.status}: ${errText.slice(0, 80)}`)
+          lastError = new Error(`Groq ${model} status ${res.status}`)
+        }
+      } catch (err) {
+        console.warn(`[AI Failover] Excepción con modelo ${model}:`, err.message)
+        lastError = err
       }
-    } catch (err) {
-      console.warn(`[AI Failover] Excepción con modelo ${model}:`, err.message)
-      lastError = err
     }
   }
 
-  // 2. Fallback a endpoint de chat en backend Render
+  // 2. Proxy seguro en backend Render (/api/ai/chat) usando la clave del servidor
+  try {
+    const backendRes = await fetch(`${RENDER_BACKEND_URL}/api/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages,
+        temperature,
+        max_tokens,
+        jsonMode,
+      }),
+    })
+    if (backendRes.ok) {
+      const data = await backendRes.json()
+      if (data && data.content) {
+        return {
+          success: true,
+          content: data.content,
+          model: data.model || 'render-backend-groq',
+        }
+      }
+    }
+  } catch (backendErr) {
+    console.warn('[AI Failover] Fallback a /api/ai/chat en Render falló:', backendErr.message)
+  }
+
+  // 3. Fallback a endpoint de chat en backend Render (/api/baileys/chat-test)
   try {
     const userText = messages[messages.length - 1]?.content || ''
     const backendRes = await fetch(`${RENDER_BACKEND_URL}/api/baileys/chat-test`, {
@@ -76,10 +106,10 @@ export async function callGroqWithFallback({ messages, temperature = 0.2, max_to
       }
     }
   } catch (backendErr) {
-    console.warn('[AI Failover] Fallback a backend Render falló:', backendErr.message)
+    console.warn('[AI Failover] Fallback a /api/baileys/chat-test falló:', backendErr.message)
   }
 
-  return { success: false, error: lastError }
+  return { success: false, error: lastError || new Error('No se pudo conectar con el servicio de IA') }
 }
 
 export function getCalendarReference(targetDate = null) {

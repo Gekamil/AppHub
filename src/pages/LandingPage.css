@@ -1,7 +1,43 @@
-/* Estilos y Animaciones de la Landing Page Interactiva de AppHub */
+/* Estilos y Animaciones de la Landing Page de StudentHub (Fusión Raycast + Webflow) */
 
-.landing-root {
-  color-scheme: dark;
+.landing-root,
+.landing-root main,
+.landing-main {
+  background-color: #040506 !important;
+  color: #ffffff !important;
+  color-scheme: dark !important;
+}
+
+/* Sombra Táctil Inset Estilo Tecla Mecánica (Raycast Keyboard Key Shadow) */
+.raycast-key-card {
+  background-color: #07080a !important;
+  border: 1px solid #27272a !important;
+  box-shadow: rgba(255, 255, 255, 0.05) 0px 1px 0px 0px inset,
+              rgba(255, 255, 255, 0.18) 0px 0px 0px 1px,
+              rgba(0, 0, 0, 0.35) 0px -1px 0px 0px inset !important;
+}
+
+.raycast-key-card:hover {
+  border-color: #363739 !important;
+  box-shadow: rgba(255, 255, 255, 0.08) 0px 1px 0px 0px inset,
+              rgba(255, 255, 255, 0.25) 0px 0px 0px 1px,
+              rgba(0, 0, 0, 0.45) 0px -1px 0px 0px inset !important;
+}
+
+/* Botón de Acción Neutral Mist (Raycast Signature CTA) */
+.raycast-mist-btn {
+  background-color: #e6e6e6 !important;
+  color: #1b1c1e !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  box-shadow: rgba(0, 0, 0, 0.03) 0px 7px 3px 0px, rgba(0, 0, 0, 0.25) 0px 4px 4px 0px !important;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.raycast-mist-btn:hover {
+  background-color: #ffffff !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Scroll & Reveal Animations */
@@ -42,22 +78,6 @@
 .hero-delay-3 { animation-delay: 0.4s; }
 .hero-delay-4 { animation-delay: 0.55s; }
 .hero-delay-5 { animation-delay: 0.7s; }
-
-/* Animated Dynamic Gradient for Title */
-.live-gradient-text {
-  background: linear-gradient(135deg, #dbb8ff 0%, #00eefc 35%, #00e293 70%, #dbb8ff 100%);
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: liveGradientFlow 6s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 25px rgba(219, 184, 255, 0.45));
-}
-
-@keyframes liveGradientFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 
 /* Gentle Floating Card Idle Effect */
 @keyframes softFloat {

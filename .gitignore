@@ -27,6 +27,10 @@ dist-ssr
 .whatsapp_shared_calendars.json
 .env
 .env.local
+!.env.example
+*.keystore
+*.jks
+serviceAccountKey*.json
 *.zip
 release/
 *.apk
