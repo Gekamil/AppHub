@@ -289,7 +289,7 @@ export default function Header({
   return (
     <>
       <header
-        className={`fixed top-0 right-0 bg-surface-pure/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex flex-col justify-center px-3 sm:px-gutter-lg ${isElectron ? 'md:pr-38' : ''} transition-all duration-300 left-0 app-drag-region ${
+        className={`fixed top-0 right-0 bg-surface-pure/90 dark:bg-[#040506]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-[#27272a] shadow-[0_1px_8px_rgba(0,0,0,0.03)] dark:shadow-none z-40 flex flex-col justify-center px-3 sm:px-gutter-lg ${isElectron ? 'md:pr-38' : ''} transition-all duration-300 left-0 app-drag-region ${
           navPosition === 'sidebar' && isSidebarOpen ? 'md:left-60' : 'md:left-0'
         }`}
       >
@@ -322,9 +322,9 @@ export default function Header({
           {navPosition === 'top' && (
             <nav
               ref={navContainerRef}
-              className="hidden md:flex items-center gap-1 bg-surface-muted/70 p-1 rounded-2xl border border-outline-variant/30 shadow-2xs relative app-no-drag"
+              className="hidden md:flex items-center gap-1 bg-surface-muted/80 dark:bg-[#111214] p-1 rounded-2xl border border-slate-200/80 dark:border-[#27272a] shadow-2xs relative app-no-drag"
             >
-              {/* Pastilla Deslizante Apple */}
+              {/* Pastilla Deslizante */}
               <div
                 className="absolute top-1 bottom-1 bg-primary rounded-xl shadow-xs pointer-events-none"
                 style={{
@@ -373,7 +373,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => setIsInstallModalOpen(true)}
-                className="h-8 px-2.5 rounded-xl flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs app-no-drag"
+                className="h-8 px-3 rounded-xl flex items-center gap-1.5 bg-[#146ef5] text-white hover:bg-[#1366e2] dark:bg-[#e6e6e6] dark:text-[#1b1c1e] dark:hover:bg-white transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs app-no-drag"
                 title="Descargar o instalar StudentHub en tu móvil (Android / iOS) o PC"
               >
                 <span className="material-symbols-outlined text-[17px]">install_mobile</span>
@@ -441,7 +441,7 @@ export default function Header({
           <div className="md:hidden pb-2 pt-1 px-1 app-no-drag">
             <div
               ref={mobileNavContainerRef}
-              className="w-full bg-surface-muted/70 p-1 rounded-2xl border border-outline-variant/30 relative"
+              className="w-full bg-surface-muted/80 dark:bg-[#111214] p-1 rounded-2xl border border-slate-200/80 dark:border-[#27272a] relative"
               style={{
                 display: 'grid',
                 gridTemplateColumns: `repeat(${Math.max(currentNavItems.length, 1)}, minmax(0, 1fr))`,

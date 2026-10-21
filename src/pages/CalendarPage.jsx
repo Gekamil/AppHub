@@ -1069,15 +1069,18 @@ export default function CalendarPage() {
   // Handlers para eventos
   const handleOpenEventModal = (params = {}) => {
     const targetDate = params.date || formatYMD(currentDate) || formatYMD(new Date())
-    const targetTime = params.time || '10:00'
     const isAllDay = !!params.isAllDay
+    const targetTime = isAllDay ? '' : (params.time || '10:00')
     const calId = params.calendarId || activeCalendarId
 
     const dur = 60
-    const [sh, sm] = targetTime.split(':').map(Number)
-    const totalM = (sh * 60 + (sm || 0) + dur) % 1440
-    const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
-    const endM = String(totalM % 60).padStart(2, '0')
+    let endH = '11', endM = '00'
+    if (targetTime) {
+      const [sh, sm] = targetTime.split(':').map(Number)
+      const totalM = (sh * 60 + (sm || 0) + dur) % 1440
+      endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+      endM = String(totalM % 60).padStart(2, '0')
+    }
 
     setEditingTaskId(null)
     setEventForm({
@@ -1085,7 +1088,7 @@ export default function CalendarPage() {
       date: targetDate,
       time: targetTime,
       duration: dur,
-      endTime: `${endH}:${endM}`,
+      endTime: isAllDay ? '' : `${endH}:${endM}`,
       isAllDay,
       effort: 'Medium',
       context: categories[0]?.name || 'University',
@@ -1161,9 +1164,10 @@ export default function CalendarPage() {
 
   const handleStartEditEvent = (task) => {
     setEditingTaskId(task.id)
+    const isAllDay = !!task.isAllDay
     const dur = getEventDurationMinutes(task)
-    let endTime = task.endTime || ''
-    if (!endTime && task.time) {
+    let endTime = isAllDay ? '' : (task.endTime || '')
+    if (!endTime && task.time && !isAllDay) {
       const [sh, sm] = task.time.split(':').map(Number)
       const totalM = (sh * 60 + (sm || 0) + dur) % 1440
       const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
@@ -1174,10 +1178,10 @@ export default function CalendarPage() {
     setEventForm({
       title: task.title,
       date: task.date,
-      time: task.time || '10:00',
+      time: isAllDay ? '' : (task.time || '10:00'),
       duration: dur,
       endTime,
-      isAllDay: !!task.isAllDay,
+      isAllDay,
       effort: task.effort || 'Medium',
       context: task.context || 'University',
       recurrence: task.recurrence || 'none',
@@ -4098,21 +4102,33 @@ export default function CalendarPage() {
                           <input
                             type="checkbox"
                             checked={eventForm.isAllDay}
-                            onChange={(e) => setEventForm({ ...eventForm, isAllDay: e.target.checked })}
+                            onChange={(e) => {
+                              const checked = e.target.checked
+                              setEventForm((prev) => ({
+                                ...prev,
+                                isAllDay: checked,
+                                time: checked ? '' : (prev.time || '10:00'),
+                                endTime: checked ? '' : (prev.endTime || '11:00'),
+                              }))
+                            }}
                             className="w-3.5 h-3.5 rounded accent-primary cursor-pointer"
                           />
                           <span>Todo el día</span>
                         </label>
                       </div>
-                      <input
-                        type="time"
-                        disabled={eventForm.isAllDay}
-                        value={eventForm.time}
-                        onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
-                        className={`w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-xs sm:text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all ${
-                          eventForm.isAllDay ? 'opacity-40 cursor-not-allowed' : ''
-                        }`}
-                      />
+                      {eventForm.isAllDay ? (
+                        <div className="h-10 px-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex items-center gap-2 text-xs text-secondary font-medium select-none">
+                          <span className="material-symbols-outlined text-[17px] text-amber-500">wb_sunny</span>
+                          <span>Todo el día (sin hora)</span>
+                        </div>
+                      ) : (
+                        <input
+                          type="time"
+                          value={eventForm.time || '10:00'}
+                          onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
+                          className="w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-xs sm:text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -4293,7 +4309,15 @@ export default function CalendarPage() {
                           <input
                             type="checkbox"
                             checked={eventForm.isAllDay}
-                            onChange={(e) => setEventForm({ ...eventForm, isAllDay: e.target.checked })}
+                            onChange={(e) => {
+                              const checked = e.target.checked
+                              setEventForm((prev) => ({
+                                ...prev,
+                                isAllDay: checked,
+                                time: checked ? '' : (prev.time || '10:00'),
+                                endTime: checked ? '' : (prev.endTime || '11:00'),
+                              }))
+                            }}
                             className="sr-only peer"
                           />
                           <div className="w-8 h-4.5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary shadow-xs"></div>
@@ -4332,63 +4356,68 @@ export default function CalendarPage() {
                         className="w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
                       />
                     </div>
-                    <div>
-                      <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">Hora inicio</label>
-                      <input
-                        type="time"
-                        disabled={eventForm.isAllDay}
-                        value={eventForm.time}
-                        onChange={(e) => {
-                          const newTime = e.target.value
-                          const dur = eventForm.duration || 60
-                          const [sh, sm] = (newTime || '10:00').split(':').map(Number)
-                          const totalM = (sh * 60 + (sm || 0) + dur) % 1440
-                          const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
-                          const endM = String(totalM % 60).padStart(2, '0')
-                          setEventForm({
-                            ...eventForm,
-                            time: newTime,
-                            endTime: `${endH}:${endM}`,
-                          })
-                        }}
-                        className={`w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all ${
-                          eventForm.isAllDay ? 'opacity-40 cursor-not-allowed' : ''
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">
-                        Duración {eventForm.endTime && !eventForm.isAllDay ? `(hasta ${eventForm.endTime})` : ''}
-                      </label>
-                      <select
-                        disabled={eventForm.isAllDay}
-                        value={eventForm.duration || 60}
-                        onChange={(e) => {
-                          const dur = parseInt(e.target.value, 10)
-                          const [sh, sm] = (eventForm.time || '10:00').split(':').map(Number)
-                          const totalM = (sh * 60 + (sm || 0) + dur) % 1440
-                          const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
-                          const endM = String(totalM % 60).padStart(2, '0')
-                          setEventForm({
-                            ...eventForm,
-                            duration: dur,
-                            endTime: `${endH}:${endM}`,
-                          })
-                        }}
-                        className={`w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all cursor-pointer ${
-                          eventForm.isAllDay ? 'opacity-40 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        <option value={30}>30 minutos</option>
-                        <option value={45}>45 minutos</option>
-                        <option value={60}>1 hora (60m)</option>
-                        <option value={90}>1 hora 30 min (90m)</option>
-                        <option value={120}>2 horas (120m)</option>
-                        <option value={150}>2 horas 30 min (150m)</option>
-                        <option value={180}>3 horas (180m)</option>
-                        <option value={240}>4 horas (240m)</option>
-                      </select>
-                    </div>
+                    {eventForm.isAllDay ? (
+                      <div className="sm:col-span-2 flex flex-col justify-end">
+                        <div className="h-10 px-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex items-center gap-2 text-xs text-secondary font-medium select-none">
+                          <span className="material-symbols-outlined text-[18px] text-amber-500">wb_sunny</span>
+                          <span>Evento de jornada completa (sin horario específico)</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">Hora inicio</label>
+                          <input
+                            type="time"
+                            value={eventForm.time || '10:00'}
+                            onChange={(e) => {
+                              const newTime = e.target.value
+                              const dur = eventForm.duration || 60
+                              const [sh, sm] = (newTime || '10:00').split(':').map(Number)
+                              const totalM = (sh * 60 + (sm || 0) + dur) % 1440
+                              const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+                              const endM = String(totalM % 60).padStart(2, '0')
+                              setEventForm({
+                                ...eventForm,
+                                time: newTime,
+                                endTime: `${endH}:${endM}`,
+                              })
+                            }}
+                            className="w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-label-sm text-label-sm text-secondary mb-1 font-medium">
+                            Duración {eventForm.endTime ? `(hasta ${eventForm.endTime})` : ''}
+                          </label>
+                          <select
+                            value={eventForm.duration || 60}
+                            onChange={(e) => {
+                              const dur = parseInt(e.target.value, 10)
+                              const [sh, sm] = (eventForm.time || '10:00').split(':').map(Number)
+                              const totalM = (sh * 60 + (sm || 0) + dur) % 1440
+                              const endH = String(Math.floor(totalM / 60)).padStart(2, '0')
+                              const endM = String(totalM % 60).padStart(2, '0')
+                              setEventForm({
+                                ...eventForm,
+                                duration: dur,
+                                endTime: `${endH}:${endM}`,
+                              })
+                            }}
+                            className="w-full h-10 px-3 bg-slate-50 hover:bg-slate-100/80 focus:bg-white dark:bg-slate-800/40 rounded-xl text-on-surface text-body-sm border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all cursor-pointer"
+                          >
+                            <option value={30}>30 minutos</option>
+                            <option value={45}>45 minutos</option>
+                            <option value={60}>1 hora (60m)</option>
+                            <option value={90}>1 hora 30 min (90m)</option>
+                            <option value={120}>2 horas (120m)</option>
+                            <option value={150}>2 horas 30 min (150m)</option>
+                            <option value={180}>3 horas (180m)</option>
+                            <option value={240}>4 horas (240m)</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Categoría y Esfuerzo */}

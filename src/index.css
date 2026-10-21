@@ -2,65 +2,89 @@
 @config "../tailwind.config.js";
 
 @theme {
+  /* Raycast Palette Tokens */
+  --color-void-black: #040506;
+  --color-ink: #07080a;
+  --color-obsidian: #111214;
+  --color-graphite: #1b1c1e;
+  --color-smoke: #6a6b6c;
+  --color-ash: #9c9c9d;
+  --color-mist: #e6e6e6;
+  --color-iron: #454647;
+  --color-coral-pulse: #ff6363;
+  --color-ember-hush: #452324;
+
+  /* Webflow Palette Tokens */
+  --color-webflow-blue: #146ef5;
+  --color-indigo-ink: #1366e2;
+  --color-mercury-tint: #6ca7ff;
+  --color-mint-pulse: #60ed76;
+  --color-apricot-glow: #ffa666;
+  --color-obsidian-type: #080808;
+  --color-slate-webflow: #5a5a5a;
+  --color-ash-border: #d8d8d8;
+  --color-smoke-webflow: #bdbdbd;
+  --color-mist-webflow: #f0f0f0;
+
   --color-inverse-on-surface: #edf0ff;
-  --color-outline-variant: #c3c6d7;
+  --color-outline-variant: #d8d8d8;
   --color-on-primary: #ffffff;
   --color-tertiary: #006242;
   --color-outline: #737686;
-  --color-on-secondary-container: #596372;
+  --color-on-secondary-container: #080808;
   --color-primary-fixed: #dbe1ff;
-  --color-on-surface: #141b2b;
+  --color-on-surface: #080808;
   --color-tertiary-fixed: #6ffbbe;
   --color-on-secondary: #ffffff;
   --color-on-error-container: #93000a;
   --color-primary-fixed-dim: #b4c5ff;
-  --color-border-subtle: #E5E7EB;
+  --color-border-subtle: #e5e7eb;
   --color-tertiary-fixed-dim: #4edea3;
-  --color-surface-tint: #0053db;
-  --color-secondary: #555f6d;
+  --color-surface-tint: #146ef5;
+  --color-secondary: #5a5a5a;
   --color-tag-urgent-bg: #FEF2F2;
-  --color-surface-variant: #dce2f7;
+  --color-surface-variant: #f0f0f0;
   --color-tag-personal-text: #C2410C;
-  --color-on-secondary-fixed: #121c28;
+  --color-on-secondary-fixed: #080808;
   --color-tag-urgent-text: #B91C1C;
-  --color-secondary-container: #d6e0f1;
+  --color-secondary-container: #f0f0f0;
   --color-on-primary-fixed-variant: #003ea8;
-  --color-primary-container: #2563eb;
+  --color-primary-container: #146ef5;
   --color-on-tertiary-fixed: #002113;
   --color-on-secondary-fixed-variant: #3e4755;
   --color-tag-health-text: #047857;
-  --color-surface-bright: #f9f9ff;
-  --color-tag-university-text: #1D4ED8;
+  --color-surface-bright: #ffffff;
+  --color-tag-university-text: #146ef5;
   --color-surface-pure: #FFFFFF;
-  --color-surface-container-high: #e1e8fd;
+  --color-surface-container-high: #f1f3f5;
   --color-error: #ba1a1a;
   --color-tag-university-bg: #EFF6FF;
   --color-on-primary-container: #eeefff;
-  --color-surface-container: #e9edff;
+  --color-surface-container: #f8f9fa;
   --color-on-tertiary-fixed-variant: #005236;
   --color-secondary-fixed-dim: #bdc7d8;
-  --color-surface-dim: #d3daef;
-  --color-inverse-surface: #293040;
-  --color-surface-container-highest: #dce2f7;
+  --color-surface-dim: #e9ecef;
+  --color-inverse-surface: #111214;
+  --color-surface-container-highest: #e9ecef;
   --color-on-tertiary: #ffffff;
   --color-on-primary-fixed: #00174b;
   --color-on-tertiary-container: #bdffdb;
-  --color-surface-muted: #F3F4F6;
-  --color-on-surface-variant: #434655;
+  --color-surface-muted: #F0F0F0;
+  --color-on-surface-variant: #5a5a5a;
   --color-inverse-primary: #b4c5ff;
   --color-tertiary-container: #007d55;
   --color-tag-health-bg: #ECFDF5;
   --color-surface-container-lowest: #ffffff;
-  --color-on-background: #141b2b;
-  --color-secondary-fixed: #d9e3f4;
-  --color-surface: #f9f9ff;
-  --color-surface-subtle: #F9FAFB;
+  --color-on-background: #080808;
+  --color-secondary-fixed: #f0f0f0;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #FAFAFA;
   --color-on-error: #ffffff;
-  --color-primary: #004ac6;
-  --color-border-strong: #D1D5DB;
-  --color-surface-container-low: #f1f3ff;
+  --color-primary: #146ef5;
+  --color-border-strong: #D8D8D8;
+  --color-surface-container-low: #ffffff;
   --color-error-container: #ffdad6;
-  --color-background: #f9f9ff;
+  --color-background: #ffffff;
   --color-tag-personal-bg: #FFF7ED;
 
   --spacing-margin-md: 1.5rem;
@@ -233,27 +257,137 @@ header, aside, main, nav, footer, .theme-transition {
 }
 
 .dark {
-  --color-background: #0d111a;
-  --color-surface-pure: #151a26;
-  --color-surface-subtle: #0d111a;
-  --color-surface-muted: #1e2536;
-  --color-surface: #10141f;
-  --color-surface-bright: #1c2333;
-  --color-surface-container: #171d2b;
-  --color-surface-container-high: #20273a;
-  --color-surface-container-low: #111622;
-  --color-surface-container-lowest: #0b0e16;
-  --color-surface-variant: #222b3d;
-  --color-on-surface: #f3f6fc;
-  --color-on-surface-variant: #949db1;
-  --color-secondary: #949db1;
-  --color-secondary-container: #232c3d;
-  --color-on-secondary-container: #c4cddf;
-  --color-outline: #5c667a;
-  --color-outline-variant: #2d3548;
-  --color-border-subtle: #242c3d;
-  --color-border-strong: #364057;
+  /* Raycast Midnight Command Center Palette */
+  --color-background: #040506;
+  --color-surface-pure: #0b0d10;
+  --color-surface-subtle: #040506;
+  --color-surface-muted: #111214;
+  --color-surface: #07080a;
+  --color-surface-bright: #16181b;
+  --color-surface-container: #0d0f12;
+  --color-surface-container-high: #14161a;
+  --color-surface-container-low: #07080a;
+  --color-surface-container-lowest: #040506;
+  --color-surface-variant: #111214;
+  --color-on-surface: #ffffff;
+  --color-on-background: #ffffff;
+  --color-on-surface-variant: #9c9c9d;
+  --color-secondary: #9c9c9d;
+  --color-secondary-container: #1b1c1e;
+  --color-on-secondary-container: #e6e6e6;
+  --color-outline: #6a6b6c;
+  --color-outline-variant: #27272a;
+  --color-border-subtle: #27272a;
+  --color-border-strong: #363739;
+  --color-primary: #3b82f6;
+  --color-primary-container: #2563eb;
   color-scheme: dark;
+}
+
+/* ==========================================================================
+   FUSIÓN DE DISEÑO: RAYCAST (DARK COMMAND CENTER) + WEBFLOW (WHITE STUDIO DRAFTING)
+   ========================================================================== */
+
+/* 1. Raycast Midnight Command Center (Atmósfera profunda y táctil, sin tinte azul) */
+.dark body {
+  background-color: #040506 !important;
+  color: #ffffff !important;
+}
+
+.dark main {
+  background-color: #040506 !important;
+}
+
+.dark .bg-surface-subtle {
+  background-color: #040506 !important;
+}
+
+.dark .bg-surface-pure,
+.dark .bg-white {
+  background-color: #07080a !important;
+}
+
+.dark .bg-\[\#161b26\],
+.dark .bg-\[\#121620\],
+.dark .bg-\[\#10141f\],
+.dark .bg-\[\#1a202c\],
+.dark .bg-\[\#0d111a\],
+.dark .bg-\[\#0d1117\],
+.dark .bg-slate-900 {
+  background-color: #07080a !important;
+}
+
+.dark .bg-slate-950 {
+  background-color: #040506 !important;
+}
+
+.dark .bg-slate-800,
+.dark .bg-slate-800\/40,
+.dark .bg-slate-800\/60,
+.dark .bg-slate-800\/70,
+.dark .bg-slate-800\/80,
+.dark .bg-surface-muted {
+  background-color: #111214 !important;
+}
+
+.dark .border-slate-800,
+.dark .border-slate-800\/40,
+.dark .border-slate-800\/60,
+.dark .border-slate-800\/80,
+.dark .border-slate-700,
+.dark .border-slate-700\/40,
+.dark .border-slate-700\/60,
+.dark .border-slate-700\/80,
+.dark .border-outline-variant\/30 {
+  border-color: #27272a !important;
+}
+
+/* Sombra Táctil Inset Raycast Key-Shadow: profundidad mecánica sin sombras externas difusas */
+.shadow-raycast-key {
+  box-shadow: rgba(255, 255, 255, 0.05) 0px 1px 0px 0px inset,
+              rgba(255, 255, 255, 0.15) 0px 0px 0px 1px,
+              rgba(0, 0, 0, 0.25) 0px -1px 0px 0px inset !important;
+}
+
+.dark div[class*="rounded-2xl"][class*="border"],
+.dark div[class*="rounded-xl"][class*="border"],
+.dark div[class*="rounded-3xl"][class*="border"] {
+  box-shadow: rgba(255, 255, 255, 0.04) 0px 1px 0px 0px inset,
+              rgba(255, 255, 255, 0.09) 0px 0px 0px 1px,
+              rgba(0, 0, 0, 0.35) 0px -1px 0px 0px inset;
+}
+
+/* Botón de Acción Neutral Mist (Raycast) */
+.btn-raycast-mist {
+  background-color: #e6e6e6;
+  color: #1b1c1e;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-raycast-mist:hover {
+  background-color: #ffffff;
+}
+
+/* 2. Webflow Studio Drafting Table (Luz blanca de estudio, trazo fino Ash y tipografía Obsidian) */
+html:not(.dark) body {
+  background-color: #ffffff;
+  color: #080808;
+}
+
+html:not(.dark) main {
+  background-color: #fafafa;
+}
+
+html:not(.dark) div[class*="rounded-2xl"][class*="border"],
+html:not(.dark) div[class*="rounded-xl"][class*="border"] {
+  border-color: #d8d8d8;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+/* Tipografía de Precisión Arquitectónica (Webflow tight tracking + Raycast Inter) */
+h1, h2, h3, h4, .font-headline-xl, .font-headline-lg, .font-headline-md {
+  letter-spacing: -0.015em;
 }
 
 /* Escala fluida y proporcional para adaptar toda la interfaz según la resolución */
