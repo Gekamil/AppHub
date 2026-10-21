@@ -1,168 +1,122 @@
 /* ==========================================================================
-   StudentHub Landing Page - Refero & Linear Modern Dark SaaS Design System
+   StudentHub Landing Page - Apple Cinematic Dark Design System
    ========================================================================== */
 
 .landing-root,
 .landing-root main,
 .landing-main {
-  background-color: #030712 !important;
-  color: #f3f4f6 !important;
+  background-color: #000000 !important;
+  color: #f5f5f7 !important;
   color-scheme: dark !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.015em;
 }
 
-/* Fondo con patrón sutil de cuadrícula técnica (Estilo Refero & Linear) */
-.refero-bg-grid {
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 100%);
-}
-
-/* Esferas de luz ambiental volumétrica */
-.refero-glow-top {
+/* Sutil resplandor cinematográfico centrado superior (Apple Keynote Light) */
+.apple-hero-glow {
   position: absolute;
-  top: -160px;
+  top: -120px;
   left: 50%;
   transform: translateX(-50%);
-  width: 900px;
-  height: 480px;
-  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.18) 0%, rgba(59, 130, 246, 0.10) 45%, transparent 70%);
-  filter: blur(100px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.refero-glow-coral {
-  position: absolute;
-  top: 35%;
-  right: -100px;
-  width: 500px;
+  width: 1000px;
   height: 500px;
-  background: radial-gradient(circle, rgba(255, 99, 99, 0.10) 0%, transparent 65%);
-  filter: blur(120px);
+  background: radial-gradient(ellipse at 50% 30%, rgba(41, 151, 255, 0.12) 0%, rgba(120, 119, 198, 0.05) 50%, transparent 75%);
+  filter: blur(80px);
   pointer-events: none;
   z-index: 0;
 }
 
-.refero-glow-cyan {
-  position: absolute;
-  top: 60%;
-  left: -150px;
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 65%);
-  filter: blur(130px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Tarjetas con profundidad de capas y reflejo superior (Estilo Refero Cards) */
-.refero-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%), #090d16 !important;
+/* Tarjetas estilo Apple Glass Surface */
+.apple-card {
+  background: #161617 !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 
-              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border-radius: 24px !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
-.refero-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 
-              inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+.apple-card:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7) !important;
 }
 
-/* Botón Primario con Destello y Sombra Gradiente (High-Conversion Hero CTA) */
-.refero-btn-primary {
-  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%) !important;
-  color: #0f172a !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  font-weight: 600 !important;
-  border-radius: 10px !important;
-  box-shadow: 0 0 24px -4px rgba(255, 255, 255, 0.3),
-              0 4px 12px rgba(0, 0, 0, 0.4) !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.refero-btn-primary:hover {
-  background: #ffffff !important;
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 0 32px -2px rgba(255, 255, 255, 0.45),
-              0 6px 16px rgba(0, 0, 0, 0.5) !important;
-}
-
-.refero-btn-primary:active {
-  transform: translateY(0) scale(0.99);
-}
-
-/* Botón Secundario de Cristal Templado */
-.refero-btn-secondary {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #f1f5f9 !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 10px !important;
-  font-weight: 500 !important;
-  backdrop-filter: blur(12px) !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.refero-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.09) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
+/* Botón Primario Estilo Apple Blue */
+.apple-btn-blue {
+  background-color: #0071e3 !important;
   color: #ffffff !important;
-  transform: translateY(-1px);
+  font-weight: 500 !important;
+  border-radius: 980px !important;
+  padding: 12px 24px !important;
+  font-size: 14px !important;
+  border: none !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3) !important;
 }
 
-/* Contenedores de Icono con Pozo Luminoso */
-.refero-icon-well {
-  position: relative;
-  display: flex;
+.apple-btn-blue:hover {
+  background-color: #0077ed !important;
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.45) !important;
+}
+
+.apple-btn-blue:active {
+  transform: scale(0.98);
+}
+
+/* Botón Secundario Translúcido Apple */
+.apple-btn-secondary {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f5f5f7 !important;
+  font-weight: 500 !important;
+  border-radius: 980px !important;
+  padding: 12px 24px !important;
+  font-size: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(20px) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.apple-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.02);
+}
+
+.apple-btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Enlaces estilo Apple (Azul con flecha sutil) */
+.apple-link {
+  color: #2997ff;
+  font-weight: 400;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 4px;
+  transition: gap 0.2s ease, opacity 0.2s ease;
 }
 
-/* Animaciones y entrada suave */
-.hero-enter {
-  opacity: 0;
-  transform: translateY(24px) scale(0.98);
-  animation: referoFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.apple-link:hover {
+  opacity: 0.85;
+  gap: 7px;
 }
 
-@keyframes referoFadeUp {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* Marco de Pantalla MacBook / Hardware Glass */
+.apple-device-frame {
+  background: #1d1d1f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9), 
+              0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
-.hero-delay-1 { animation-delay: 0.05s; }
-.hero-delay-2 { animation-delay: 0.15s; }
-.hero-delay-3 { animation-delay: 0.25s; }
-.hero-delay-4 { animation-delay: 0.35s; }
-.hero-delay-5 { animation-delay: 0.45s; }
-
-/* Flotación suave para elementos destacados */
-@keyframes referoFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-}
-
-.refero-floating {
-  animation: referoFloat 6s ease-in-out infinite;
-}
-
+/* Transiciones de revelado limpias */
 .reveal-elem {
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(28px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 

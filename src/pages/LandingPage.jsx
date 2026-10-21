@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './LandingPage.css'
 
@@ -7,9 +7,8 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState('semanal')
   const [isIosModalOpen, setIsIosModalOpen] = useState(false)
   const [currentTimeStr, setCurrentTimeStr] = useState('16:03:07')
-  const spotlightRef = useRef(null)
 
-  // Reloj en tiempo real Europa/Madrid
+  // Reloj de precisión Madrid
   useEffect(() => {
     const updateTime = () => {
       const now = new Date()
@@ -28,25 +27,7 @@ export default function LandingPage() {
     return () => clearInterval(timer)
   }, [])
 
-  // Spotlight mouse aura suave a 60-120 FPS
-  useEffect(() => {
-    let rafId = null
-    const handleMouseMove = (e) => {
-      if (rafId) cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        if (spotlightRef.current) {
-          spotlightRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-50%, -50%)`
-        }
-      })
-    }
-    window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId)
-      window.removeEventListener('mousemove', handleMouseMove)
-    }
-  }, [])
-
-  // IntersectionObserver para apariciones suaves
+  // IntersectionObserver para transiciones suaves
   useEffect(() => {
     const elements = document.querySelectorAll('.reveal-elem')
     const observer = new IntersectionObserver(
@@ -58,7 +39,7 @@ export default function LandingPage() {
           }
         })
       },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
     )
 
     elements.forEach((el) => observer.observe(el))
@@ -66,45 +47,37 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="landing-root bg-[#030712] text-[#f3f4f6] min-h-screen relative overflow-x-hidden selection:bg-indigo-500/30 selection:text-white">
-      {/* Patrón de cuadrícula técnica Refero */}
-      <div className="refero-bg-grid fixed inset-0 pointer-events-none z-0 opacity-80" />
+    <div className="landing-root bg-black text-[#f5f5f7] min-h-screen relative overflow-x-hidden selection:bg-[#0071e3]/40 selection:text-white">
+      {/* Luz ambiental cinematográfica superior */}
+      <div className="apple-hero-glow" />
 
-      {/* Esferas de luz ambiental */}
-      <div className="refero-glow-top" />
-      <div className="refero-glow-coral" />
-      <div className="refero-glow-cyan" />
-
-      {/* Interactive Mouse Spotlight Aura */}
-      <div
-        ref={spotlightRef}
-        className="fixed top-0 left-0 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-indigo-500/10 via-purple-500/10 to-blue-500/10 blur-[120px] pointer-events-none z-0 will-change-transform"
-        style={{ transform: 'translate3d(-500px, -500px, 0) translate(-50%, -50%)' }}
-      />
-
-      {/* 1. NAVEGACIÓN SUPERIOR FLOTANTE (Refero Glass Pill) */}
+      {/* 1. NAVEGACIÓN SUPERIOR ESTILO APPLE */}
       <header className="fixed top-0 inset-x-0 z-50 px-4 pt-4 pointer-events-none">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-5 rounded-full bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] pointer-events-auto transition-all">
-          {/* Logo y Marca */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shadow-inner group-hover:border-indigo-400/50 transition-all">
-              <span className="w-2.5 h-2.5 bg-[#ff6363] rotate-45 rounded-[2px] shadow-[0_0_8px_rgba(255,99,99,0.9)]" />
+        <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-6 rounded-full bg-[#161617]/85 backdrop-blur-2xl border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.8)] pointer-events-auto">
+          {/* Logo oficial de StudentHub */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 rounded-xl bg-[#242426] border border-white/10 flex items-center justify-center p-1 shadow-inner group-hover:border-white/30 transition-all">
+              <img
+                src="/logo.png"
+                alt="StudentHub Logo"
+                className="w-full h-full object-contain filter invert opacity-95 group-hover:scale-105 transition-transform"
+              />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[14px] font-semibold tracking-tight text-white font-sans">StudentHub</span>
-              <span className="hidden sm:inline-block font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">
+              <span className="text-[15px] font-semibold tracking-tight text-white font-sans">StudentHub</span>
+              <span className="hidden sm:inline-block font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[#86868b]">
                 v0.0.8
               </span>
             </div>
           </Link>
 
-          {/* Enlaces del Menú */}
-          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-slate-400">
-            <a href="#workspace" className="hover:text-white transition-colors">
-              Espacio de Trabajo
+          {/* Enlaces de Navegación */}
+          <nav className="hidden md:flex items-center gap-8 text-[13px] font-normal text-[#86868b]">
+            <a href="#experiencia" className="hover:text-white transition-colors">
+              Experiencia
             </a>
-            <a href="#features" className="hover:text-white transition-colors">
-              Características
+            <a href="#caracteristicas" className="hover:text-white transition-colors">
+              Capacidades
             </a>
             <a href="#descargas" className="hover:text-white transition-colors">
               Descargas
@@ -115,19 +88,19 @@ export default function LandingPage() {
               rel="noreferrer"
               className="hover:text-white transition-colors flex items-center gap-1"
             >
-              <span>GitHub</span>
+              <span>Código Fuente</span>
               <span className="material-symbols-outlined text-[13px]">arrow_outward</span>
             </a>
           </nav>
 
-          {/* Botón de Acción Directa */}
-          <div className="flex items-center gap-2.5">
+          {/* Botón de Entrada Rápida */}
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => navigate('/app')}
-              className="refero-btn-primary px-4 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
+              className="apple-btn-blue text-xs py-2 px-4 flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Entrar a la Web App</span>
+              <span>Abrir Web App</span>
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
             </button>
           </div>
@@ -135,37 +108,30 @@ export default function LandingPage() {
       </header>
 
       {/* CUERPO PRINCIPAL */}
-      <main className="landing-main relative z-10 w-full pt-28 pb-20">
-        {/* 2. HERO SECTION */}
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-14 flex flex-col items-center text-center">
-          {/* Announcement Pill Tag */}
-          <div className="hero-enter hero-delay-1 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 shadow-inner mb-6 hover:border-indigo-400/40 transition-all cursor-default">
-            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-            <span className="text-xs font-medium text-slate-300">
-              v0.0.8 Disponible <span className="text-slate-600">|</span> Widgets Android & WhatsApp Bot con IA
-            </span>
-            <span className="material-symbols-outlined text-[14px] text-slate-400">arrow_forward</span>
-          </div>
+      <main className="landing-main relative z-10 w-full pt-32 pb-24">
+        {/* 2. HERO PRINCIPAL CINEMATOGRÁFICO (Estilo Apple Keynote) */}
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 flex flex-col items-center text-center">
+          {/* Eyebrow de Versión */}
+          <span className="text-xs sm:text-sm font-semibold tracking-widest text-[#86868b] uppercase mb-4">
+            StudentHub 0.0.8 • Multiplataforma
+          </span>
 
-          {/* Monumental Headline */}
-          <h1 className="hero-enter hero-delay-2 text-4xl sm:text-6xl lg:text-[68px] font-bold tracking-tight text-white max-w-4xl leading-[1.08] mb-6">
-            Domina tu semestre.{' '}
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
-              Sin caos ni fricción.
-            </span>
+          {/* Titular Monumental en Blanco Puro */}
+          <h1 className="text-5xl sm:text-7xl lg:text-[84px] font-semibold tracking-tight text-white max-w-4xl leading-[1.04] mb-6">
+            Tu semestre.{' '}
+            <span className="text-[#86868b] block sm:inline">Bajo control absoluto.</span>
           </h1>
 
-          {/* Subtítulo Descriptivo */}
-          <p className="hero-enter hero-delay-3 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto mb-9 leading-relaxed font-normal">
-            El primer centro de mando académico que fusiona radar inteligente de exámenes, calendario de contextos densos,
-            organizador de tareas y sincronización bidireccional con tu WhatsApp.
+          {/* Subtítulo sobrio y elegante */}
+          <p className="text-lg sm:text-2xl text-[#86868b] max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+            El primer centro de mando académico que combina radar inteligente de exámenes, calendario de alta densidad y tu propio mayordomo en WhatsApp.
           </p>
 
-          {/* Botones Principales CTA */}
-          <div className="hero-enter hero-delay-4 flex flex-wrap items-center justify-center gap-3.5 mb-10 w-full max-w-md">
+          {/* Botones de Acción */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-14 w-full max-w-md">
             <a
               href="#descargas"
-              className="refero-btn-primary flex-1 min-w-[190px] py-3 px-5 text-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="apple-btn-blue flex-1 min-w-[190px] text-center flex items-center justify-center gap-2 cursor-pointer shadow-lg"
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
               <span>Descargar Gratis</span>
@@ -173,269 +139,217 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => navigate('/app')}
-              className="refero-btn-secondary flex-1 min-w-[190px] py-3 px-5 text-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="apple-btn-secondary flex-1 min-w-[190px] text-center flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Abrir en Navegador</span>
-              <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+              <span>Probar en Navegador</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
 
-          {/* Metadata de Plataformas */}
-          <div className="hero-enter hero-delay-5 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500 font-mono">
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <span className="material-symbols-outlined text-[14px]">desktop_windows</span> Windows 10/11
+          {/* Franja de Disponibilidad de Hardware */}
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[#86868b]">
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="material-symbols-outlined text-[15px]">desktop_windows</span> Windows 10 & 11
             </span>
             <span>•</span>
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <span className="material-symbols-outlined text-[14px]">android</span> Android (.APK)
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="material-symbols-outlined text-[15px]">android</span> Android (Widgets Nativos)
             </span>
             <span>•</span>
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <span className="material-symbols-outlined text-[14px]">phone_iphone</span> iPhone PWA
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="material-symbols-outlined text-[15px]">phone_iphone</span> iPhone & iPad PWA
             </span>
             <span>•</span>
-            <span className="text-[#10b981] font-semibold">100% Gratuito y Open Source</span>
+            <span className="text-[#30d158] font-medium">100% Gratuito y Open Source</span>
           </div>
         </section>
 
-        {/* 3. COCKPIT INTERACTIVO / PRODUCT SHOWCASE (Refero High-Fidelity UI) */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-6 scroll-mt-24" id="workspace">
-          {/* Header de la sección del Cockpit */}
-          <div className="reveal-elem flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-            <div>
-              <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold">
-                Espacio de Trabajo Unificado
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
-                Tu centro de control en tiempo real
-              </h2>
-            </div>
-
-            {/* Píldora selector de vistas interactivas */}
-            <div className="inline-flex p-1 rounded-xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
-              <button
-                type="button"
-                onClick={() => setActiveTab('semanal')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'semanal'
-                    ? 'bg-white/10 text-white shadow-xs font-semibold border border-white/10'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[15px]">view_week</span>
-                <span>Organizador Semanal</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('mensual')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'mensual'
-                    ? 'bg-white/10 text-white shadow-xs font-semibold border border-white/10'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[15px]">calendar_month</span>
-                <span>Calendario Mensual</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('radar')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'radar'
-                    ? 'bg-white/10 text-white shadow-xs font-semibold border border-white/10'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[15px]">radar</span>
-                <span>Radar de Exámenes</span>
-              </button>
-            </div>
+        {/* 3. SHOWCASE DEL PRODUCTO (Marco MacBook Glass con Interfaz Real en Modo Oscuro) */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-6 scroll-mt-24" id="experiencia">
+          <div className="reveal-elem text-center max-w-2xl mx-auto mb-8">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Diseñado para el ritmo real del estudiante
+            </h2>
+            <p className="text-sm sm:text-base text-[#86868b] mt-2">
+              Sin pantallas lentas ni distracciones. Cada segundo y cada entrega están donde deben estar.
+            </p>
           </div>
 
-          {/* Marco de Navegador Realista y Elegante en Modo Oscuro Puro */}
-          <div className="reveal-elem relative rounded-2xl bg-[#090d16] border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden">
-            {/* Barra superior de la ventana */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[#0a0f1d] border-b border-white/5 font-mono text-xs text-slate-400">
+          {/* Marco de Pantalla Hardware */}
+          <div className="reveal-elem relative apple-device-frame p-3 sm:p-4 bg-[#161617] max-w-5xl mx-auto">
+            {/* Barra de ventana macOS */}
+            <div className="flex items-center justify-between px-3 py-2 text-xs text-[#86868b] border-b border-white/5 mb-3 font-mono">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
                 <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
                 <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-                <span className="ml-2 px-2.5 py-0.5 rounded bg-white/[0.04] border border-white/5 text-slate-400 text-[11px] hidden sm:inline-block">
-                  https://studenthub.workspace/agenda
+                <span className="ml-3 px-3 py-0.5 rounded-full bg-white/5 text-[#86868b] text-[11px] hidden sm:inline-block">
+                  studenthub.workspace
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5 text-xs text-[#10b981]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
-                  <span>Sincronización activa</span>
-                </span>
-                <span className="text-slate-500 hidden sm:inline">|</span>
-                <span className="text-slate-400 hidden sm:inline">{currentTimeStr}</span>
+
+              {/* Selector de Vistas de la App */}
+              <div className="flex items-center p-1 rounded-lg bg-black/40 border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('semanal')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    activeTab === 'semanal' ? 'bg-[#0071e3] text-white shadow-sm' : 'text-[#86868b] hover:text-white'
+                  }`}
+                >
+                  Semana
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('mensual')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    activeTab === 'mensual' ? 'bg-[#0071e3] text-white shadow-sm' : 'text-[#86868b] hover:text-white'
+                  }`}
+                >
+                  Mes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('radar')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                    activeTab === 'radar' ? 'bg-[#0071e3] text-white shadow-sm' : 'text-[#86868b] hover:text-white'
+                  }`}
+                >
+                  Radar IA
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-[11px] text-[#30d158]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#30d158] animate-pulse" />
+                <span className="hidden sm:inline">En vivo</span>
               </div>
             </div>
 
-            {/* Contenido Visual Interactivo según la pestaña activa */}
-            <div className="p-4 sm:p-6 min-h-[460px] bg-gradient-to-b from-[#090d16] to-[#06080e] flex flex-col justify-between">
+            {/* Interfaz Interior en Modo Oscuro Puro */}
+            <div className="rounded-xl bg-[#0c0c0e] border border-white/5 p-4 sm:p-6 min-h-[460px] flex flex-col justify-between">
               {activeTab === 'semanal' && (
-                <div className="space-y-4 animate-fadeIn">
-                  {/* Fila de Encabezado del Workspace */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+                <div className="space-y-4">
+                  {/* Cabecera del día */}
+                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
                     <div>
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <span>Viernes, 24 de Octubre</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-normal">
-                          4 actividades planificadas
-                        </span>
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Próximo bloque de estudio: <strong className="text-white">Seguridad de Sistemas</strong> a las 09:30 AM
+                      <h3 className="text-lg font-semibold text-white">Viernes, 24 de Octubre</h3>
+                      <p className="text-xs text-[#86868b] mt-0.5">
+                        Hora local de Madrid: <span className="text-white font-mono">{currentTimeStr}</span> • 4 actividades programadas
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs px-2.5 py-1 rounded-lg bg-white/5 text-slate-300 border border-white/10 font-mono">
-                        Tiempo semanal: 14h 30m
-                      </span>
-                    </div>
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[#86868b]">
+                      Próximo: Seguridad de Sistemas (09:30)
+                    </span>
                   </div>
 
-                  {/* Lista de Tareas y Eventos del Día */}
+                  {/* Grid de eventos del día */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                    {/* Item 1 */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 hover:border-indigo-400/30 transition-all flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="material-symbols-outlined text-[18px]">school</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-blue-400 font-semibold">09:30 - 11:30</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-300 font-medium">Universidad</span>
-                          </div>
-                          <h4 className="text-sm font-semibold text-white mt-0.5">Repaso Examen Seguridad de Sistemas</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">Temas 4 a 7: Criptografía asimétrica y firmas digitales.</p>
-                        </div>
+                    {/* Tarjeta Evento 1 */}
+                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs text-[#2997ff] font-semibold">09:30 - 11:30</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2997ff]/20 text-[#2997ff] font-medium">
+                          Universidad
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-[#ff6363] px-2 py-0.5 rounded bg-red-500/10 border border-red-500/20 shrink-0">
-                        Prioridad Alta
-                      </span>
+                      <h4 className="text-sm font-semibold text-white mt-2">Seguridad de Sistemas Operativos</h4>
+                      <p className="text-xs text-[#86868b] mt-1">Repaso intensivo: Criptografía y firmas digitales.</p>
+                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                        <span>Prioridad: Alta</span>
+                        <span className="text-[#ff453a]">Examen en 2 días</span>
+                      </div>
                     </div>
 
-                    {/* Item 2 */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 hover:border-emerald-400/30 transition-all flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="material-symbols-outlined text-[18px]">terminal</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-emerald-400 font-semibold">12:30 - 13:30</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 font-medium">Proyectos</span>
-                          </div>
-                          <h4 className="text-sm font-semibold text-white mt-0.5">Implementar Endpoints de API en Backend</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">Conectar autenticación y validación de tokens.</p>
-                        </div>
+                    {/* Tarjeta Evento 2 */}
+                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs text-[#30d158] font-semibold">12:30 - 13:30</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#30d158]/20 text-[#30d158] font-medium">
+                          Proyectos
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-[#10b981] px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 shrink-0">
-                        En Curso
-                      </span>
+                      <h4 className="text-sm font-semibold text-white mt-2">Backend API & Sincronización</h4>
+                      <p className="text-xs text-[#86868b] mt-1">Revisar endpoints de autenticación y exportación de datos.</p>
+                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                        <span>Prioridad: Media</span>
+                        <span className="text-[#30d158]">En Curso</span>
+                      </div>
                     </div>
 
-                    {/* Item 3 */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 hover:border-purple-400/30 transition-all flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="material-symbols-outlined text-[18px]">fitness_center</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-purple-400 font-semibold">16:30 - 17:45</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-300 font-medium">Salud & Deporte</span>
-                          </div>
-                          <h4 className="text-sm font-semibold text-white mt-0.5">Sesión de Torso y Cardio</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">Press banca, remo con barra y 20m de intervalos.</p>
-                        </div>
+                    {/* Tarjeta Evento 3 */}
+                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs text-[#bf5af2] font-semibold">16:30 - 17:45</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#bf5af2]/20 text-[#bf5af2] font-medium">
+                          Salud & Deporte
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-slate-400 px-2 py-0.5 rounded bg-white/5 shrink-0">
-                        Pendiente
-                      </span>
+                      <h4 className="text-sm font-semibold text-white mt-2">Sesión de Torso y Movilidad</h4>
+                      <p className="text-xs text-[#86868b] mt-1">Press banca, jalones y 15 min de estiramientos.</p>
+                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                        <span>Prioridad: Media</span>
+                        <span className="text-slate-400">16:30</span>
+                      </div>
                     </div>
 
-                    {/* Item 4 */}
-                    <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/5 hover:border-amber-400/30 transition-all flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="material-symbols-outlined text-[18px]">restaurant</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-amber-400 font-semibold">20:30</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-300 font-medium">Personal</span>
-                          </div>
-                          <h4 className="text-sm font-semibold text-white mt-0.5">Cena en el Centro con Compañeros</h4>
-                          <p className="text-xs text-slate-400 mt-0.5">Reserva confirmada en Osteria.</p>
-                        </div>
+                    {/* Tarjeta Evento 4 */}
+                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 hover:border-white/15 transition-all">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs text-[#ff9f0a] font-semibold">20:30</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff9f0a]/20 text-[#ff9f0a] font-medium">
+                          Personal
+                        </span>
                       </div>
-                      <span className="text-xs font-mono text-slate-400 px-2 py-0.5 rounded bg-white/5 shrink-0">
-                        Programado
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Pills flotantes de sincronización */}
-                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      <span>Sincronizado vía WhatsApp Bot hace 4 minutos</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-indigo-400 font-mono">
-                      <span>Presiona / para buscar rápidamente</span>
+                      <h4 className="text-sm font-semibold text-white mt-2">Cena en Osteria Angelic</h4>
+                      <p className="text-xs text-[#86868b] mt-1">Reserva confirmada con el grupo de clase.</p>
+                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                        <span>Prioridad: Baja</span>
+                        <span className="text-slate-400">Plaza Merced</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
               {activeTab === 'mensual' && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-white/5">
-                    <h3 className="text-base font-semibold text-white">Octubre 2026 • Vista Cuadrícula Mensual</h3>
-                    <span className="text-xs text-slate-400 font-mono">Soporte iCal Google / Apple Calendar</span>
+                    <h3 className="text-base font-semibold text-white">Octubre 2026 • Calendario Integrado</h3>
+                    <span className="text-xs text-[#86868b]">Compatible con Google Calendar y Apple Calendar (iCal)</span>
                   </div>
 
-                  {/* Mini-Grid de Calendario Mensual */}
                   <div className="grid grid-cols-7 gap-2 text-center text-xs">
-                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((d) => (
-                      <div key={d} className="font-mono text-slate-500 py-1 font-semibold uppercase text-[11px]">
+                    {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
+                      <div key={d} className="font-medium text-[#86868b] py-1 text-[11px]">
                         {d}
                       </div>
                     ))}
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
                       const isToday = day === 24
                       const hasExam = day === 26
-                      const hasEvent = [12, 16, 20, 24, 28].includes(day)
+                      const hasLab = [12, 16, 20, 28].includes(day)
                       return (
                         <div
                           key={day}
-                          className={`min-h-[58px] p-1.5 rounded-lg border text-left transition-all ${
+                          className={`min-h-[56px] p-2 rounded-xl border text-left transition-all ${
                             isToday
-                              ? 'bg-indigo-600/20 border-indigo-500/50 text-white'
+                              ? 'bg-[#0071e3]/20 border-[#0071e3] text-white'
                               : hasExam
-                              ? 'bg-red-500/10 border-red-500/30 text-white'
-                              : 'bg-white/[0.02] border-white/5 text-slate-300 hover:border-white/20'
+                              ? 'bg-[#ff453a]/15 border-[#ff453a]/40 text-white'
+                              : 'bg-[#161617] border-white/5 text-slate-300'
                           }`}
                         >
-                          <span className={`text-[11px] font-mono ${isToday ? 'font-bold text-indigo-300' : 'text-slate-400'}`}>
+                          <span className={`text-[11px] font-mono ${isToday ? 'font-bold text-[#2997ff]' : 'text-[#86868b]'}`}>
                             {day}
                           </span>
                           {hasExam && (
-                            <span className="mt-1 block text-[10px] px-1 py-0.5 rounded bg-red-500/20 text-red-300 font-semibold truncate">
+                            <span className="mt-1 block text-[9px] px-1 py-0.5 rounded bg-[#ff453a]/30 text-red-200 font-semibold truncate">
                               Examen SO
                             </span>
                           )}
-                          {hasEvent && !hasExam && (
-                            <span className="mt-1 block text-[10px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-300 truncate">
-                              Entrega Lab
+                          {hasLab && (
+                            <span className="mt-1 block text-[9px] px-1 py-0.5 rounded bg-[#2997ff]/20 text-blue-200 truncate">
+                              Entrega
                             </span>
                           )}
                         </div>
@@ -446,491 +360,295 @@ export default function LandingPage() {
               )}
 
               {activeTab === 'radar' && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-white/5">
                     <div>
-                      <h3 className="text-base font-semibold text-white">Radar Inteligente de Exámenes y Entregas</h3>
-                      <p className="text-xs text-slate-400">Algoritmo predictivo de espaciado temporal basado en fechas límite.</p>
+                      <h3 className="text-base font-semibold text-white">Radar Predictivo de Exámenes</h3>
+                      <p className="text-xs text-[#86868b]">Cálculo continuo de preparación según tus horas de estudio registradas.</p>
                     </div>
-                    <span className="text-xs px-2.5 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-semibold">
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-[#ff453a]/20 text-[#ff453a] font-semibold">
                       1 Examen Inminente
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold text-white">Seguridad de Sistemas Operativos</h4>
-                        <span className="font-mono text-xs text-[#ff6363] font-bold">En 2 días (Lunes 26)</span>
+                        <span className="text-xs text-[#ff453a] font-semibold">En 2 días (Lunes)</span>
                       </div>
                       <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                        <div className="bg-gradient-to-r from-amber-500 to-red-500 h-full w-[85%] rounded-full shadow-[0_0_8px_rgba(255,99,99,0.5)]" />
+                        <div className="bg-[#ff453a] h-full w-[85%] rounded-full" />
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>Preparación calculada: 85%</span>
-                        <span className="text-emerald-400">Fase: Repaso activo de problemas</span>
+                      <div className="flex items-center justify-between text-xs text-[#86868b]">
+                        <span>Preparación: 85%</span>
+                        <span className="text-[#30d158]">Fase: Repaso activo</span>
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
+                    <div className="p-4 rounded-xl bg-[#161617] border border-white/5 space-y-3">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-white">Redes y Comunicaciones II</h4>
-                        <span className="font-mono text-xs text-amber-400 font-bold">En 8 días (Martes 3)</span>
+                        <h4 className="text-sm font-semibold text-white">Redes y Comunicaciones</h4>
+                        <span className="text-xs text-[#ff9f0a] font-semibold">En 8 días (Martes)</span>
                       </div>
                       <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full w-[45%] rounded-full" />
+                        <div className="bg-[#ff9f0a] h-full w-[45%] rounded-full" />
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>Preparación calculada: 45%</span>
-                        <span className="text-indigo-400">Fase: Estudio de protocolos de enrutamiento</span>
+                      <div className="flex items-center justify-between text-xs text-[#86868b]">
+                        <span>Preparación: 45%</span>
+                        <span className="text-[#2997ff]">Fase: Conceptos teóricos</span>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Barra de atajos y pie del mockup */}
-              <div className="mt-4 pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-                <div className="flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-slate-300 font-mono text-[10px]">↵ Enter</span>
-                  <span>Nueva tarea</span>
-                  <span className="px-1.5 py-0.5 rounded bg-white/10 text-slate-300 font-mono text-[10px] ml-2">/</span>
-                  <span>Búsqueda instantánea</span>
-                </div>
+              {/* Pie de pantalla */}
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-[#86868b]">
+                <span>Sincronización instantánea en local y nube</span>
                 <button
                   type="button"
                   onClick={() => navigate('/app')}
-                  className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold cursor-pointer"
+                  className="apple-link text-xs cursor-pointer font-medium"
                 >
-                  <span>Abrir Workspace Completo</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  <span>Abrir aplicación completa</span>
+                  <span>&gt;</span>
                 </button>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 4. SECCIÓN DE DESCARGAS MULTIPLATAFORMA (Refero Elevated Cards) */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 scroll-mt-24" id="descargas">
-          <div className="reveal-elem text-center max-w-2xl mx-auto mb-12">
-            <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">
-              Instalación Directa
+        {/* 4. SECCIÓN DE CARACTERÍSTICAS (Estilo Bento Grid de Apple) */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20 scroll-mt-24" id="caracteristicas">
+          <div className="reveal-elem text-center max-w-2xl mx-auto mb-14">
+            <span className="text-xs font-semibold tracking-widest text-[#86868b] uppercase">
+              Capacidades Centrales
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mt-1.5">
-              Disponible en todos tus dispositivos
+            <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white mt-2">
+              Todo pensado para tu éxito académico.
             </h2>
-            <p className="text-sm sm:text-base text-slate-400 mt-2.5">
-              Descarga la aplicación nativa para tu sistema operativo o accede directamente desde cualquier navegador web.
-            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Bento 1: Radar Proactivo */}
+            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-semibold tracking-wider text-[#ff453a] uppercase">01 • Radar de Exámenes</span>
+                <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
+                  Adelántate a las fechas límite antes de que sea tarde.
+                </h3>
+                <p className="text-sm sm:text-base text-[#86868b] mt-3 leading-relaxed">
+                  StudentHub analiza tus calendarios universitarios y planifica automáticamente bloques de estudio progresivos para que llegues al examen con la materia dominada.
+                </p>
+              </div>
+
+              <div className="mt-8 p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white font-medium">Examen Seguridad de Sistemas</span>
+                  <span className="text-[#ff453a] font-semibold">En 48 horas</span>
+                </div>
+                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#ff453a] h-full w-[85%] rounded-full" />
+                </div>
+                <span className="text-[11px] text-[#86868b] block">3 bloques de repaso recomendados completados</span>
+              </div>
+            </div>
+
+            {/* Bento 2: WhatsApp Bot */}
+            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-semibold tracking-wider text-[#30d158] uppercase">02 • Mayordomo en WhatsApp</span>
+                <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
+                  Tu agenda en el bolsillo, con solo una nota de voz.
+                </h3>
+                <p className="text-sm sm:text-base text-[#86868b] mt-3 leading-relaxed">
+                  Mándale un audio de WhatsApp mientras vas a la facultad. La inteligencia artificial transcribe tus palabras, identifica la hora y añade el evento a tu calendario al instante.
+                </p>
+              </div>
+
+              <div className="mt-8 p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2 text-xs">
+                <div className="flex justify-end">
+                  <div className="bg-[#005c4b] text-white px-3 py-1.5 rounded-xl rounded-tr-none max-w-[85%]">
+                    <span>¿Qué actividades tengo programadas para mañana?</span>
+                  </div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="bg-[#202c33] text-slate-200 px-3 py-1.5 rounded-xl rounded-tl-none max-w-[90%] space-y-0.5">
+                    <span className="text-[#30d158] font-semibold block text-[11px]">Mayordomo StudentHub</span>
+                    <span>Tienes 2 actividades: Gimnasio a las 16:30 y Entrega de Redes a las 19:00.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bento 3: Widgets Móviles */}
+            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-semibold tracking-wider text-[#2997ff] uppercase">03 • Widgets Nativos</span>
+                <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
+                  Tu día de un vistazo, directo en tu pantalla de inicio.
+                </h3>
+                <p className="text-sm sm:text-base text-[#86868b] mt-3 leading-relaxed">
+                  Widgets oficiales para Android y Windows con adaptación automática a modo oscuro o claro, tachado de tareas completadas y botón rápido de voz.
+                </p>
+              </div>
+
+              <div className="mt-8 p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2 text-xs font-mono">
+                <div className="flex items-center justify-between text-[#86868b] pb-1 border-b border-white/5">
+                  <span className="text-[#2997ff] font-semibold">HOY • WIDGET SEMANAL</span>
+                  <span className="text-[#30d158]">Sincronizado</span>
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-slate-500 line-through">
+                    <span>• Clase Álgebra 08:30</span>
+                    <span className="text-[#30d158] text-[10px]">Hecho</span>
+                  </div>
+                  <div className="flex items-center justify-between text-white font-medium">
+                    <span>• Repaso Sistemas 11:30</span>
+                    <span className="text-[#2997ff] text-[10px]">En curso</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bento 4: Privacidad y Local-First */}
+            <div className="reveal-elem apple-card p-8 sm:p-10 flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-semibold tracking-wider text-[#bf5af2] uppercase">04 • Privacidad Absoluta</span>
+                <h3 className="text-2xl sm:text-3xl font-semibold text-white mt-2 leading-tight">
+                  Tus datos son tuyos. Sin rastreo ni publicidad.
+                </h3>
+                <p className="text-sm sm:text-base text-[#86868b] mt-3 leading-relaxed">
+                  Arquitectura Local-First. Tu información reside en tu equipo y se sincroniza encriptada en la nube mediante Cloud Firestore. Compatible con cualquier suscripción iCal.
+                </p>
+              </div>
+
+              <div className="mt-8 grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                  <span className="text-white font-semibold block">Local-First</span>
+                  <span className="text-[10px] text-[#86868b]">Sin conexión</span>
+                </div>
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                  <span className="text-white font-semibold block">iCal Sync</span>
+                  <span className="text-[10px] text-[#86868b]">Google / Apple</span>
+                </div>
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                  <span className="text-white font-semibold block">100% Libre</span>
+                  <span className="text-[10px] text-[#86868b]">Open Source</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 5. SECCIÓN DE DESCARGAS (Estilo Tarjetas Apple) */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 scroll-mt-24" id="descargas">
+          <div className="reveal-elem text-center max-w-2xl mx-auto mb-14">
+            <span className="text-xs font-semibold tracking-widest text-[#86868b] uppercase">
+              Multiplataforma
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white mt-2">
+              Descarga StudentHub para tu equipo.
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Tarjeta Windows */}
-            <div className="reveal-elem refero-card p-7 rounded-2xl flex flex-col justify-between group">
+            {/* Windows */}
+            <div className="reveal-elem apple-card p-8 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-[0_0_16px_rgba(59,130,246,0.2)] group-hover:border-blue-400/50 transition-all">
-                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                      <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801" />
-                    </svg>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 font-mono text-[11px]">
-                    Windows 10 / 11
-                  </span>
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white mb-6">
+                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801" />
+                  </svg>
                 </div>
-
-                <h3 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors">
-                  Windows (.EXE)
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  Instalador nativo completo con notificaciones de escritorio, sincronización silenciosa y arranque ultrarrápido.
+                <span className="text-xs text-[#86868b] uppercase tracking-wider font-semibold">Windows 10 / 11</span>
+                <h3 className="text-2xl font-semibold text-white mt-1">Windows (.EXE)</h3>
+                <p className="text-xs sm:text-sm text-[#86868b] mt-2 leading-relaxed">
+                  Instalador oficial de 64 bits con notificaciones nativas de escritorio y sincronización en segundo plano.
                 </p>
-
-                <ul className="mt-5 space-y-2 text-xs text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-400 text-[16px]">check_circle</span>
-                    <span>Instalador oficial 64-bit seguro</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-400 text-[16px]">check_circle</span>
-                    <span>Notificaciones emergentes de tareas</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-400 text-[16px]">check_circle</span>
-                    <span>Atajos de teclado globales</span>
-                  </li>
-                </ul>
               </div>
 
               <div className="mt-8 pt-5 border-t border-white/5">
                 <a
                   href="/download/StudentHub-Setup.exe"
                   download="StudentHub-Setup.exe"
-                  className="refero-btn-primary w-full py-3 px-4 text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  className="apple-btn-blue w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
                   <span className="material-symbols-outlined text-[17px]">download</span>
-                  <span>Descargar Instalador (.EXE)</span>
+                  <span>Descargar Instalador</span>
                 </a>
-                <span className="block text-center text-[11px] font-mono text-slate-500 mt-2">
-                  Versión 0.0.8 • 64-bit ejecutable
-                </span>
               </div>
             </div>
 
-            {/* Tarjeta Android */}
-            <div className="reveal-elem refero-card p-7 rounded-2xl flex flex-col justify-between group">
+            {/* Android */}
+            <div className="reveal-elem apple-card p-8 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-[0_0_16px_rgba(16,185,129,0.2)] group-hover:border-emerald-400/50 transition-all">
-                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                      <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993 0 .5511-.4483.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.084 12 8.084s-3.5902.3276-5.1368.8657L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
-                    </svg>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold">
-                    Widgets de Inicio
-                  </span>
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-[#30d158] mb-6">
+                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993 0 .5511-.4483.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.084 12 8.084s-3.5902.3276-5.1368.8657L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
+                  </svg>
                 </div>
-
-                <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
-                  Android (.APK)
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  Widgets interactivos de inicio en modo oscuro y claro real, alarmas sonoras automáticas y sincronización móvil.
+                <span className="text-xs text-[#86868b] uppercase tracking-wider font-semibold">Android 10+</span>
+                <h3 className="text-2xl font-semibold text-white mt-1">Android (.APK)</h3>
+                <p className="text-xs sm:text-sm text-[#86868b] mt-2 leading-relaxed">
+                  Paquete APK oficial con widgets interactivos de pantalla de inicio, modo oscuro real y alarmas sonoras.
                 </p>
-
-                <ul className="mt-5 space-y-2 text-xs text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-emerald-400 text-[16px]">check_circle</span>
-                    <span>Widget de planificación semanal con tachado</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-emerald-400 text-[16px]">check_circle</span>
-                    <span>Widget de calendario con minicuadrícula</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-emerald-400 text-[16px]">check_circle</span>
-                    <span>Selector de color de acento y modo oscuro</span>
-                  </li>
-                </ul>
               </div>
 
               <div className="mt-8 pt-5 border-t border-white/5">
                 <a
                   href="/download/StudentHub.apk"
                   download="StudentHub.apk"
-                  className="refero-btn-primary w-full py-3 px-4 text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  className="apple-btn-blue w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
                   <span className="material-symbols-outlined text-[17px]">download</span>
                   <span>Descargar APK Oficial</span>
                 </a>
-                <span className="block text-center text-[11px] font-mono text-slate-500 mt-2">
-                  Android 10 o superior • v0.0.8
-                </span>
               </div>
             </div>
 
-            {/* Tarjeta iPhone / Web */}
-            <div className="reveal-elem refero-card p-7 rounded-2xl flex flex-col justify-between group">
+            {/* iPhone / Web */}
+            <div className="reveal-elem apple-card p-8 flex flex-col justify-between">
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shadow-[0_0_16px_rgba(168,85,247,0.2)] group-hover:border-purple-400/50 transition-all">
-                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.61-.75 1.04-1.8 0.92-2.87-.9.04-2.02.63-2.65 1.38-.56.65-.99 1.7-0.88 2.73.99.08 2-.49 2.61-1.24Z" />
-                    </svg>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono text-[11px]">
-                    iOS / Web PWA
-                  </span>
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white mb-6">
+                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.61-.75 1.04-1.8 0.92-2.87-.9.04-2.02.63-2.65 1.38-.56.65-.99 1.7-0.88 2.73.99.08 2-.49 2.61-1.24Z" />
+                  </svg>
                 </div>
-
-                <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors">
-                  iPhone, iPad & Web
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  Instalación instantánea como Progressive Web App (PWA) en Safari a pantalla completa, o acceso directo en tu navegador.
+                <span className="text-xs text-[#86868b] uppercase tracking-wider font-semibold">iPhone & Web PWA</span>
+                <h3 className="text-2xl font-semibold text-white mt-1">iOS & Navegadores</h3>
+                <p className="text-xs sm:text-sm text-[#86868b] mt-2 leading-relaxed">
+                  Instalable directamente en Safari a pantalla completa como una app nativa, o accesible desde cualquier navegador.
                 </p>
-
-                <ul className="mt-5 space-y-2 text-xs text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-purple-400 text-[16px]">check_circle</span>
-                    <span>Sin descargas de la App Store</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-purple-400 text-[16px]">check_circle</span>
-                    <span>Modo sin conexión con caché local</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-purple-400 text-[16px]">check_circle</span>
-                    <span>Sincronizado con todos tus calendarios</span>
-                  </li>
-                </ul>
               </div>
 
               <div className="mt-8 pt-5 border-t border-white/5 flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => setIsIosModalOpen(true)}
-                  className="refero-btn-secondary w-full py-3 px-4 text-xs flex items-center justify-center gap-2 cursor-pointer font-semibold"
+                  className="apple-btn-secondary w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
-                  <span className="material-symbols-outlined text-[17px]">install_mobile</span>
-                  <span>Ver Cómo Instalar en iPhone</span>
+                  <span className="material-symbols-outlined text-[17px]">phone_iphone</span>
+                  <span>Guía para iPhone</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/app')}
-                  className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  Abrir directamente en navegador →
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. BENTO GRID DE CARACTERÍSTICAS (Refero Asymmetric 12-Column Grid) */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 scroll-mt-24" id="features">
-          <div className="reveal-elem text-center max-w-2xl mx-auto mb-12">
-            <span className="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold">
-              Arquitectura & Capacidades
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mt-1.5">
-              Todo lo que necesitas para tu carrera
-            </h2>
-            <p className="text-sm sm:text-base text-slate-400 mt-2.5">
-              Diseñado meticulosamente para eliminar la fricción entre tus horarios de clase, fechas de exámenes y vida personal.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* Bento 1: Radar Proactivo de Exámenes (Span 7) */}
-            <div className="reveal-elem md:col-span-7 refero-card p-7 rounded-2xl flex flex-col justify-between group">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shadow-inner">
-                    <span className="material-symbols-outlined text-[20px]">radar</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-300 font-mono text-[11px] font-semibold">
-                    #001 - RADAR PROACTIVO
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-bold text-white">Radar Inteligente de Exámenes y Repaso</h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  Detecta automáticamente exámenes y entregas críticas en tus calendarios. El algoritmo calcula el tiempo restante y sugiere bloques de estudio progresivos para evitar atracones de última hora.
-                </p>
-              </div>
-
-              {/* Mockup visual interior */}
-              <div className="mt-6 p-4 rounded-xl bg-[#06080e] border border-white/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-red-400 text-[18px]">school</span>
-                    <span className="text-xs font-semibold text-white">Seguridad de Sistemas Operativos</span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-mono text-[10px] font-bold">
-                    Quedan 24 horas
-                  </span>
-                </div>
-                <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-red-500 h-full w-[88%] rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Hitos completados: 5 de 6</span>
-                  <span className="text-emerald-400">Estado: Listo para examen</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bento 2: WhatsApp Bot (Span 5) */}
-            <div className="reveal-elem md:col-span-5 refero-card p-7 rounded-2xl flex flex-col justify-between group">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
-                    <span className="material-symbols-outlined text-[20px]">chat</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-mono text-[11px] font-semibold">
-                    #002 - MAYORDOMO IA
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-bold text-white">Mayordomo en WhatsApp</h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  Mándale notas de voz o mensajes: tu bot transcribe, interpreta horarios y agenda tus tareas al instante sin que tengas que abrir la aplicación.
-                </p>
-              </div>
-
-              {/* Chat bubble mockup WhatsApp */}
-              <div className="mt-6 p-3.5 rounded-xl bg-[#06080e] border border-white/5 space-y-2.5 text-xs font-sans">
-                <div className="flex justify-end">
-                  <div className="bg-[#005c4b] text-white px-3 py-1.5 rounded-lg rounded-tr-none max-w-[85%] shadow-sm">
-                    <span>¿Qué actividades tengo mañana por la tarde?</span>
-                  </div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="bg-[#202c33] text-slate-200 px-3 py-1.5 rounded-lg rounded-tl-none max-w-[90%] shadow-sm space-y-1">
-                    <span className="text-emerald-400 font-semibold block text-[11px]">StudentHub AI Butler</span>
-                    <span>Mañana tienes 2 actividades: Gimnasio a las 16:30 y Entrega de Redes a las 19:00.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bento 3: Widgets de Pantalla de Inicio (Span 5) */}
-            <div className="reveal-elem md:col-span-5 refero-card p-7 rounded-2xl flex flex-col justify-between group">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-inner">
-                    <span className="material-symbols-outlined text-[20px]">widgets</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-300 font-mono text-[11px] font-semibold">
-                    #003 - WIDGETS NATIVOS
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-bold text-white">Widgets Nativos en Móvil</h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  Consulta tu día en tu pantalla de inicio con soporte de modo oscuro real, eventos finalizados con tachado automático y botón rápido de voz.
-                </p>
-              </div>
-
-              {/* Mockup de widget móvil */}
-              <div className="mt-6 p-3.5 rounded-xl bg-[#06080e] border border-white/5 space-y-2 font-mono text-xs">
-                <div className="flex items-center justify-between text-slate-400 pb-1 border-b border-white/5">
-                  <span className="text-indigo-400 font-semibold">HOY • 3 TAREAS</span>
-                  <span className="text-[11px] text-emerald-400 font-bold">1 Completada</span>
-                </div>
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-slate-500 line-through">
-                    <span>• Clase Álgebra 08:30</span>
-                    <span className="text-emerald-500 text-[10px]">Hecho</span>
-                  </div>
-                  <div className="flex items-center justify-between text-white font-medium">
-                    <span>• Repaso Sistemas 11:30</span>
-                    <span className="text-indigo-400 text-[10px]">En curso</span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span>• Gimnasio Torso 16:30</span>
-                    <span className="text-slate-500 text-[10px]">16:30</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bento 4: Privacidad y Multi-Feed iCal (Span 7) */}
-            <div className="reveal-elem md:col-span-7 refero-card p-7 rounded-2xl flex flex-col justify-between group">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shadow-inner">
-                    <span className="material-symbols-outlined text-[20px]">sync</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 font-mono text-[11px] font-semibold">
-                    #004 - SINCRONIZACIÓN Y PRIVACIDAD
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-bold text-white">Sincronización Total y Arquitectura Local-First</h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  Conecta calendarios iCal externos (Google Calendar, Apple, TeamUp o Campus Virtual). Tus datos se guardan de forma local en tu dispositivo con copia de seguridad instantánea en Cloud Firestore.
-                </p>
-              </div>
-
-              {/* Badges de integración técnica */}
-              <div className="mt-6 grid grid-cols-3 gap-2.5 pt-2">
-                <div className="p-2.5 rounded-xl bg-[#06080e] border border-white/5 text-center">
-                  <span className="text-xs font-semibold text-white block">Google & Apple</span>
-                  <span className="text-[10px] text-slate-400 font-mono">Sync iCal en vivo</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-[#06080e] border border-white/5 text-center">
-                  <span className="text-xs font-semibold text-white block">Local-First</span>
-                  <span className="text-[10px] text-slate-400 font-mono">Resistencia offline</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-[#06080e] border border-white/5 text-center">
-                  <span className="text-xs font-semibold text-white block">Groq LPU IA</span>
-                  <span className="text-[10px] text-slate-400 font-mono">Respuesta en &lt; 0.5s</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 6. CALL TO ACTION FINAL */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
-          <div className="reveal-elem refero-card p-8 sm:p-14 rounded-3xl text-center relative overflow-hidden flex flex-col items-center">
-            {/* Ambient light inside card */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[250px] bg-gradient-to-b from-indigo-500/20 via-purple-500/10 to-transparent blur-[80px] pointer-events-none" />
-
-            <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold relative z-10">
-              Comienza Ahora · 100% Gratuito
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white mt-2 max-w-2xl leading-tight relative z-10">
-              Organiza tu semestre como un profesional
-            </h2>
-            <p className="text-sm sm:text-base text-slate-400 max-w-xl mt-3 mb-8 font-normal relative z-10">
-              Sin registros forzosos, sin publicidad y con código abierto para toda la comunidad universitaria.
-            </p>
-
-            <div className="flex flex-wrap items-center justify-center gap-3.5 w-full max-w-lg mb-10 relative z-10">
-              <a
-                href="/download/StudentHub-Setup.exe"
-                download="StudentHub-Setup.exe"
-                className="refero-btn-primary flex-1 min-w-[170px] py-3 px-4 text-xs flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[17px]">download</span>
-                <span>Windows (.EXE)</span>
-              </a>
-
-              <a
-                href="/download/StudentHub.apk"
-                download="StudentHub.apk"
-                className="refero-btn-secondary flex-1 min-w-[170px] py-3 px-4 text-xs flex items-center justify-center gap-2 cursor-pointer font-semibold"
-              >
-                <span className="material-symbols-outlined text-[17px]">android</span>
-                <span>Android (.APK)</span>
-              </a>
-
-              <button
-                type="button"
-                onClick={() => navigate('/app')}
-                className="refero-btn-secondary flex-1 min-w-[170px] py-3 px-4 text-xs flex items-center justify-center gap-2 cursor-pointer font-semibold"
-              >
-                <span className="material-symbols-outlined text-[17px]">open_in_new</span>
-                <span>Abrir Web App</span>
-              </button>
-            </div>
-
-            {/* Métricas de Confianza */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-white/5 w-full max-w-2xl text-center relative z-10 font-mono">
-              <div>
-                <span className="text-2xl text-white font-bold block">100%</span>
-                <span className="text-xs text-slate-500">Gratuito</span>
-              </div>
-              <div>
-                <span className="text-2xl text-white font-bold block">Local-First</span>
-                <span className="text-xs text-slate-500">Privacidad total</span>
-              </div>
-              <div>
-                <span className="text-2xl text-white font-bold block">WhatsApp</span>
-                <span className="text-xs text-slate-500">Bot con IA</span>
-              </div>
-              <div>
-                <span className="text-2xl text-white font-bold block">v0.0.8</span>
-                <span className="text-xs text-slate-500">Última versión</span>
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      {/* 7. FOOTER */}
-      <footer className="relative z-10 border-t border-white/5 py-8 bg-[#02050c]">
+      {/* 6. FOOTER ESTILO APPLE */}
+      <footer className="border-t border-white/10 py-10 bg-black text-[#86868b] text-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 bg-[#ff6363] rotate-45 rounded-[2px]" />
-            <span className="text-sm text-white font-semibold tracking-tight">StudentHub</span>
-            <span className="text-xs text-slate-500 font-mono">v0.0.8</span>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="StudentHub" className="w-5 h-5 object-contain filter invert opacity-70" />
+            <span className="text-white font-medium">StudentHub</span>
+            <span>•</span>
+            <span>© 2026 Jorge. Todos los derechos reservados.</span>
           </div>
 
-          <div className="flex items-center gap-6 text-xs text-slate-400">
+          <div className="flex items-center gap-6">
             <button
               type="button"
               onClick={() => navigate('/app')}
@@ -938,9 +656,6 @@ export default function LandingPage() {
             >
               Web App
             </button>
-            <a href="#workspace" className="hover:text-white transition-colors">
-              Espacio de Trabajo
-            </a>
             <a href="#descargas" className="hover:text-white transition-colors">
               Descargas
             </a>
@@ -948,68 +663,59 @@ export default function LandingPage() {
               href="https://github.com/Gekamil/AppHub"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-white transition-colors flex items-center gap-1"
+              className="hover:text-white transition-colors"
             >
-              <span>GitHub</span>
-              <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+              GitHub
             </a>
           </div>
         </div>
       </footer>
 
-      {/* MODAL GUIADO DE INSTALACIÓN iOS / PWA */}
+      {/* MODAL DE INSTALACIÓN iOS / iPHONE */}
       {isIosModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-          <div className="refero-card max-w-md w-full p-6 rounded-2xl relative shadow-2xl border border-white/20">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="apple-card max-w-md w-full p-6 sm:p-8 bg-[#1c1c1e] text-left relative">
             <button
               type="button"
               onClick={() => setIsIosModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              className="absolute top-5 right-5 text-[#86868b] hover:text-white p-1 rounded-full cursor-pointer"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-white/10 text-white flex items-center justify-center">
                 <span className="material-symbols-outlined text-[22px]">phone_iphone</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Instalar en iPhone o iPad</h3>
-                <p className="text-xs text-slate-400">Sin pasar por la App Store</p>
+                <h3 className="font-semibold text-white text-base">Instalar en iPhone o iPad</h3>
+                <p className="text-xs text-[#86868b]">Sin pasar por la App Store</p>
               </div>
             </div>
 
-            <ol className="space-y-3.5 text-xs text-slate-300 my-5">
-              <li className="flex items-start gap-2.5">
+            <ol className="space-y-4 text-xs text-slate-300 my-6">
+              <li className="flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-white/10 text-white font-mono text-[11px] flex items-center justify-center shrink-0 mt-0.5">
                   1
                 </span>
                 <span>
-                  Abre <strong className="text-white">Safari</strong> en tu iPhone y entra en la dirección web de StudentHub.
+                  Abre <strong className="text-white">Safari</strong> en tu iPhone y entra en StudentHub.
                 </span>
               </li>
-              <li className="flex items-start gap-2.5">
+              <li className="flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-white/10 text-white font-mono text-[11px] flex items-center justify-center shrink-0 mt-0.5">
                   2
                 </span>
                 <span>
-                  Pulsa el botón <strong className="text-white">Compartir</strong> (icono de cuadrado con flecha hacia arriba) en la barra inferior.
+                  Pulsa el botón <strong className="text-white">Compartir</strong> (icono de cuadrado con flecha hacia arriba).
                 </span>
               </li>
-              <li className="flex items-start gap-2.5">
+              <li className="flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-white/10 text-white font-mono text-[11px] flex items-center justify-center shrink-0 mt-0.5">
                   3
                 </span>
                 <span>
-                  Baja por las opciones y selecciona <strong className="text-white">"Añadir a pantalla de inicio"</strong>.
-                </span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-white/10 text-white font-mono text-[11px] flex items-center justify-center shrink-0 mt-0.5">
-                  4
-                </span>
-                <span>
-                  Pulsa <strong className="text-white">Añadir</strong>. ¡Listo! Se abrirá como app nativa a pantalla completa.
+                  Selecciona <strong className="text-white">"Añadir a pantalla de inicio"</strong>.
                 </span>
               </li>
             </ol>
@@ -1017,7 +723,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setIsIosModalOpen(false)}
-              className="refero-btn-primary w-full py-2.5 text-xs font-semibold cursor-pointer"
+              className="apple-btn-blue w-full text-xs font-medium cursor-pointer"
             >
               Entendido
             </button>
