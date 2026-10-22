@@ -1,11 +1,11 @@
 /* ==========================================================================
-   StudentHub Landing Page - Apple Cinematic Dark Design System
+   StudentHub Landing Page - Apple Liquid Glassify & Dynamic Aurora Background
    ========================================================================== */
 
 .landing-root,
 .landing-root main,
 .landing-main {
-  background-color: #000000 !important;
+  background-color: #060814 !important;
   color: #f5f5f7 !important;
   color-scheme: dark !important;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", -system-ui, "Inter", "Helvetica Neue", Arial, sans-serif;
@@ -15,215 +15,230 @@
 }
 
 /* --------------------------------------------------------------------------
-   Atmospheric GPU Light Orbs (Apple Keynote Light System)
+   Dynamic Aurora Light System (Capas Volumétricas Ligeras y Vibrantes)
    -------------------------------------------------------------------------- */
-.apple-orb {
+.aurora-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Cuadrícula Geométrica Iluminada con máscara radial */
+.aurora-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, #000 40%, transparent 95%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, #000 40%, transparent 95%);
+  opacity: 0.85;
+}
+
+/* Orbes de Luz Aurora con Aceleración GPU y animación de respiración */
+.aurora-orb {
   position: absolute;
   border-radius: 9999px;
   pointer-events: none;
-  transform: translate3d(0, 0, 0);
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
-.apple-orb-hero {
-  top: -140px;
+/* Haz de Luz Hero Central Superior (Azul Eléctrico + Índigo Apple) */
+.aurora-beam-hero {
+  top: -120px;
   left: 50%;
   transform: translate3d(-50%, 0, 0);
-  width: 1050px;
-  height: 580px;
-  background: radial-gradient(ellipse at 50% 40%, rgba(0, 113, 227, 0.20) 0%, rgba(120, 119, 198, 0.09) 45%, transparent 75%);
+  width: 1100px;
+  height: 600px;
+  background: radial-gradient(ellipse 65% 55% at 50% 30%, 
+    rgba(37, 99, 235, 0.55) 0%, 
+    rgba(99, 102, 241, 0.35) 35%, 
+    rgba(147, 51, 234, 0.18) 60%, 
+    transparent 80%);
+  filter: blur(75px);
+  animation: auroraPulse 8s ease-in-out infinite alternate;
+}
+
+/* Orbe 1: Superior Izquierdo (Cobalto Intenso) */
+.aurora-orb-left {
+  top: 15%;
+  left: -150px;
+  width: 650px;
+  height: 650px;
+  background: radial-gradient(circle at center, 
+    rgba(59, 130, 246, 0.40) 0%, 
+    rgba(37, 99, 235, 0.22) 45%, 
+    transparent 75%);
+  filter: blur(85px);
+  animation: floatSlow 12s ease-in-out infinite alternate;
+}
+
+/* Orbe 2: Superior Derecho (Púrpura / Magenta Apple) */
+.aurora-orb-right {
+  top: 25%;
+  right: -150px;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle at center, 
+    rgba(168, 85, 247, 0.38) 0%, 
+    rgba(217, 70, 239, 0.18) 45%, 
+    transparent 75%);
   filter: blur(90px);
+  animation: floatSlow 14s ease-in-out infinite alternate-reverse;
 }
 
-.apple-orb-mid {
-  top: 36%;
-  left: -200px;
-  width: 780px;
-  height: 780px;
-  background: radial-gradient(ellipse at center, rgba(41, 151, 255, 0.14) 0%, rgba(191, 90, 242, 0.07) 50%, transparent 75%);
-  filter: blur(100px);
+/* Orbe 3: Sección Central Bento (Cian Glaciar) */
+.aurora-orb-center {
+  top: 50%;
+  left: 20%;
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse at center, 
+    rgba(6, 182, 212, 0.28) 0%, 
+    rgba(59, 130, 246, 0.15) 50%, 
+    transparent 75%);
+  filter: blur(95px);
+  animation: floatSlow 16s ease-in-out infinite alternate;
 }
 
-.apple-orb-bottom {
-  top: 70%;
-  right: -160px;
-  width: 820px;
-  height: 720px;
-  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.15) 0%, rgba(48, 209, 88, 0.07) 50%, transparent 75%);
-  filter: blur(100px);
+/* Orbe 4: Sección Descargas Inferior (Esmeralda / Menta Pro) */
+.aurora-orb-bottom {
+  top: 75%;
+  right: -100px;
+  width: 750px;
+  height: 650px;
+  background: radial-gradient(circle at center, 
+    rgba(16, 185, 129, 0.26) 0%, 
+    rgba(59, 130, 246, 0.18) 50%, 
+    transparent 75%);
+  filter: blur(90px);
+  animation: floatSlow 13s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes auroraPulse {
+  0% { transform: translate3d(-50%, 0, 0) scale(0.96); opacity: 0.85; }
+  100% { transform: translate3d(-50%, 20px, 0) scale(1.04); opacity: 1; }
+}
+
+@keyframes floatSlow {
+  0% { transform: translate3d(0, 0, 0) scale(0.95); }
+  50% { transform: translate3d(25px, -20px, 0) scale(1.05); }
+  100% { transform: translate3d(-15px, 20px, 0) scale(0.98); }
 }
 
 /* --------------------------------------------------------------------------
-   Apple Floating Navbar Glass
+   Efecto GLASSIFY de Alta Definición (Cristal Translúcido Esmerilado Real)
    -------------------------------------------------------------------------- */
-.apple-navbar {
-  background: rgba(22, 22, 26, 0.72) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
-  backdrop-filter: blur(32px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.20) !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.15) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Tarjetas estilo Apple Frosted Glass Surface (R1 Glassify)
-   -------------------------------------------------------------------------- */
-.apple-card {
-  background: rgba(22, 22, 26, 0.68) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
-  backdrop-filter: blur(32px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.20) !important;
+.glassify-card {
+  background: rgba(15, 23, 42, 0.58) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.35) !important;
   border-radius: 24px !important;
-  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.65), 
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.25) !important;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  will-change: transform, box-shadow;
 }
 
-.apple-card:hover {
+.glassify-card:hover {
   transform: translateY(-4px) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
-  border-top-color: rgba(255, 255, 255, 0.34) !important;
-  box-shadow: 0 26px 60px -10px rgba(0, 0, 0, 0.8), 
-              inset 0 1px 0 0 rgba(255, 255, 255, 0.24),
-              0 0 30px rgba(0, 113, 227, 0.12) !important;
+  background: rgba(20, 30, 55, 0.68) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  border-top-color: rgba(255, 255, 255, 0.55) !important;
+  box-shadow: 0 28px 65px -10px rgba(0, 0, 0, 0.8), 
+              inset 0 1px 2px 0 rgba(255, 255, 255, 0.35),
+              0 0 30px rgba(59, 130, 246, 0.22) !important;
 }
 
-/* --------------------------------------------------------------------------
-   Marco de Pantalla MacBook / Hardware Glass Frame
-   -------------------------------------------------------------------------- */
-.apple-device-frame {
-  background: rgba(22, 22, 26, 0.78) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
-  backdrop-filter: blur(32px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
+/* Barra de Navegación Glassify */
+.glassify-nav {
+  background: rgba(10, 15, 30, 0.68) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
+  backdrop-filter: blur(32px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.30) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Marco de Pantalla MacBook Hardware Glass */
+.glassify-device-frame {
+  background: rgba(13, 18, 36, 0.72) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.38) !important;
   border-radius: 22px !important;
-  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9), 
-              inset 0 1px 0 0 rgba(255, 255, 255, 0.15) !important;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.85),
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
 /* --------------------------------------------------------------------------
-   Botón Primario Estilo Apple Blue + Microinteracciones (R2)
+   Botones de Acción Apple Glass
    -------------------------------------------------------------------------- */
 .apple-btn-blue {
-  background-color: #0071e3 !important;
+  background: linear-gradient(180deg, #0077ed 0%, #0062c4 100%) !important;
   color: #ffffff !important;
   font-weight: 500 !important;
   border-radius: 980px !important;
   padding: 12px 24px !important;
   font-size: 14px !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
-  position: relative;
-  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 4px 18px rgba(0, 113, 227, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .apple-btn-blue:hover {
-  background-color: #0077ed !important;
-  transform: scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 113, 227, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  background: linear-gradient(180deg, #1685fa 0%, #006ee0 100%) !important;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 24px rgba(0, 113, 227, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
 }
 
 .apple-btn-blue:active {
-  transform: scale(0.98) !important;
+  transform: translateY(0) scale(0.98);
 }
 
-/* --------------------------------------------------------------------------
-   Botón Secundario Translúcido Apple
-   -------------------------------------------------------------------------- */
-.apple-btn-secondary {
+.apple-btn-glass {
   background: rgba(255, 255, 255, 0.08) !important;
   color: #f5f5f7 !important;
   font-weight: 500 !important;
   border-radius: 980px !important;
   padding: 12px 24px !important;
   font-size: 14px !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.25) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
   backdrop-filter: blur(20px) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.apple-btn-secondary:hover {
+.apple-btn-glass:hover {
   background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 255, 255, 0.30) !important;
-  border-top-color: rgba(255, 255, 255, 0.45) !important;
-  transform: scale(1.02);
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  border-top-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px) scale(1.02);
 }
 
-.apple-btn-secondary:active {
-  transform: scale(0.98) !important;
-}
-
-/* --------------------------------------------------------------------------
-   Apple Sheen Specular Sweep Micro-Interaction (Destello Sutil)
-   -------------------------------------------------------------------------- */
-.apple-btn-sheen {
-  position: relative;
-  overflow: hidden;
-}
-
-.apple-btn-sheen::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -85%;
-  width: 50%;
-  height: 200%;
-  background: linear-gradient(
-    60deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.25) 50%,
-    transparent 100%
-  );
-  transform: rotate(25deg);
-  pointer-events: none;
-  transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.apple-btn-sheen:hover::after {
-  left: 155%;
+.apple-btn-glass:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* --------------------------------------------------------------------------
-   Enlaces estilo Apple (Azul con flecha sutil)
-   -------------------------------------------------------------------------- */
-.apple-link {
-  color: #2997ff;
-  font-weight: 400;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: gap 0.2s ease, opacity 0.2s ease;
-}
-
-.apple-link:hover {
-  opacity: 0.85;
-  gap: 7px;
-}
-
-/* --------------------------------------------------------------------------
-   Scroll-Driven Reveal Cinematográfico (R2 Staggered Reveal + Scale + Blur)
+   Animaciones de Revelado Escalonado (Scroll-Driven Reveal)
    -------------------------------------------------------------------------- */
 .reveal-elem {
   opacity: 0;
-  transform: translateY(24px) scale(0.97);
+  transform: translateY(32px) scale(0.98);
   filter: blur(8px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.85s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform, filter;
 }
 
@@ -231,57 +246,4 @@
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: blur(0px);
-}
-
-/* Escalonamiento temporal (Stagger Delays) */
-.stagger-1 { transition-delay: 80ms; }
-.stagger-2 { transition-delay: 160ms; }
-.stagger-3 { transition-delay: 240ms; }
-.stagger-4 { transition-delay: 320ms; }
-
-/* --------------------------------------------------------------------------
-   Transición Fluida de Pestañas del Workspace (Semana, Mes, Radar)
-   -------------------------------------------------------------------------- */
-@keyframes tabPaneEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.995);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.tab-pane-animate {
-  animation: tabPaneEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity, transform;
-}
-
-/* --------------------------------------------------------------------------
-   Accesibilidad / Soporte para Reducción de Movimiento
-   -------------------------------------------------------------------------- */
-@media (prefers-reduced-motion: reduce) {
-  .reveal-elem {
-    opacity: 1 !important;
-    transform: none !important;
-    filter: none !important;
-    transition: none !important;
-  }
-
-  .apple-card:hover {
-    transform: none !important;
-  }
-
-  .apple-btn-sheen::after {
-    display: none !important;
-  }
-
-  .tab-pane-animate {
-    animation: none !important;
-  }
-
-  .apple-orb {
-    transform: none !important;
-  }
 }

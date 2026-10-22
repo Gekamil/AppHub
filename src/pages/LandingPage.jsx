@@ -12,6 +12,7 @@ export default function LandingPage() {
   const orb1Ref = useRef(null)
   const orb2Ref = useRef(null)
   const orb3Ref = useRef(null)
+  const orb4Ref = useRef(null)
 
   // Reloj de precisión Madrid para demo en vivo
   useEffect(() => {
@@ -59,13 +60,16 @@ export default function LandingPage() {
         window.requestAnimationFrame(() => {
           const y = window.scrollY
           if (orb1Ref.current) {
-            orb1Ref.current.style.transform = `translate3d(-50%, ${y * 0.12}px, 0)`
+            orb1Ref.current.style.transform = `translate3d(-50%, ${y * 0.14}px, 0)`
           }
           if (orb2Ref.current) {
-            orb2Ref.current.style.transform = `translate3d(0, ${y * -0.07}px, 0)`
+            orb2Ref.current.style.transform = `translate3d(0, ${y * -0.08}px, 0)`
           }
           if (orb3Ref.current) {
-            orb3Ref.current.style.transform = `translate3d(0, ${y * -0.10}px, 0)`
+            orb3Ref.current.style.transform = `translate3d(0, ${y * -0.12}px, 0)`
+          }
+          if (orb4Ref.current) {
+            orb4Ref.current.style.transform = `translate3d(0, ${y * 0.06}px, 0)`
           }
           ticking = false
         })
@@ -79,20 +83,26 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="landing-root bg-black text-[#f5f5f7] min-h-screen relative overflow-x-hidden selection:bg-[#0071e3]/40 selection:text-white">
-      {/* Luces atmosféricas cinematográficas GPU con Parallax 3D */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-        {/* Orbe 1: Hero superior (Azul Apple / Índigo) */}
-        <div ref={orb1Ref} className="apple-orb apple-orb-hero" />
-        {/* Orbe 2: Bento medio (Cyan / Púrpura sutil) */}
-        <div ref={orb2Ref} className="apple-orb apple-orb-mid" />
-        {/* Orbe 3: Descargas inferior (Índigo / Esmeralda sutil) */}
-        <div ref={orb3Ref} className="apple-orb apple-orb-bottom" />
+    <div className="landing-root bg-[#060814] text-[#f5f5f7] min-h-screen relative overflow-x-hidden selection:bg-[#0071e3]/40 selection:text-white">
+      {/* 0. SISTEMA DE FONDO AURORA MULTICAPA & EFECTO GLASSIFY */}
+      <div className="aurora-container">
+        {/* Cuadrícula Geométrica Iluminada */}
+        <div className="aurora-grid" />
+        {/* Haz Central Superior Hero (Azul Eléctrico + Índigo Apple) */}
+        <div ref={orb1Ref} className="aurora-orb aurora-beam-hero" />
+        {/* Orbe Lateral Izquierdo (Cobalto Intenso) */}
+        <div ref={orb2Ref} className="aurora-orb aurora-orb-left" />
+        {/* Orbe Lateral Derecho (Púrpura / Magenta Apple) */}
+        <div ref={orb3Ref} className="aurora-orb aurora-orb-right" />
+        {/* Orbe Central Bento (Cian Glaciar) */}
+        <div ref={orb4Ref} className="aurora-orb aurora-orb-center" />
+        {/* Orbe Inferior Descargas (Esmeralda / Menta Pro) */}
+        <div className="aurora-orb aurora-orb-bottom" />
       </div>
 
       {/* 1. NAVEGACIÓN SUPERIOR ESTILO APPLE CON CRISTAL ESMERILADO */}
       <header className="fixed top-0 inset-x-0 z-50 px-4 pt-4 pointer-events-none">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-6 rounded-full apple-navbar pointer-events-auto">
+        <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-6 rounded-full apple-navbar glassify-nav pointer-events-auto">
           {/* Logo oficial de StudentHub de alta definición */}
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center p-0.5 shadow-md group-hover:border-white/40 group-hover:scale-105 transition-all overflow-hidden">
@@ -178,7 +188,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => navigate('/app')}
-              className="apple-btn-secondary flex-1 min-w-[190px] text-center flex items-center justify-center gap-2 cursor-pointer"
+              className="apple-btn-glass flex-1 min-w-[190px] text-center flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Probar en Navegador</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -215,7 +225,7 @@ export default function LandingPage() {
           </div>
 
           {/* Marco de Pantalla Hardware con Frosted Glass y Reflejo Superior */}
-          <div className="reveal-elem stagger-1 relative apple-device-frame p-3 sm:p-4 max-w-5xl mx-auto">
+          <div className="reveal-elem stagger-1 relative apple-device-frame glassify-device-frame p-3 sm:p-4 max-w-5xl mx-auto">
             {/* Barra de ventana macOS */}
             <div className="flex items-center justify-between px-3 py-2 text-xs text-[#86868b] border-b border-white/5 mb-3 font-mono">
               <div className="flex items-center gap-2">
