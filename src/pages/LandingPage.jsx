@@ -367,7 +367,7 @@ export default function LandingPage() {
                     )}
 
                     {/* Tarjeta Evento 1 */}
-                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="landing-preview-card p-4 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#2997ff] font-semibold">09:30 - 11:30</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2997ff]/20 text-[#2997ff] font-medium">
@@ -376,14 +376,14 @@ export default function LandingPage() {
                       </div>
                       <h4 className="text-sm font-semibold text-white mt-2">Seguridad de Sistemas Operativos</h4>
                       <p className="text-xs text-[#86868b] mt-1">Repaso intensivo: Criptografía y firmas digitales.</p>
-                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                      <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-[#86868b]">
                         <span>Prioridad: Alta</span>
-                        <span className="text-[#ff453a]">Examen en 2 días</span>
+                        <span className="text-[#ff453a] font-medium">Examen en 2 días</span>
                       </div>
                     </div>
 
                     {/* Tarjeta Evento 2 */}
-                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="landing-preview-card p-4 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#30d158] font-semibold">12:30 - 13:30</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#30d158]/20 text-[#30d158] font-medium">
@@ -392,14 +392,14 @@ export default function LandingPage() {
                       </div>
                       <h4 className="text-sm font-semibold text-white mt-2">Backend API & Sincronización</h4>
                       <p className="text-xs text-[#86868b] mt-1">Revisar endpoints de autenticación y exportación de datos.</p>
-                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                      <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-[#86868b]">
                         <span>Prioridad: Media</span>
-                        <span className="text-[#30d158]">En Curso</span>
+                        <span className="text-[#30d158] font-medium">En Curso</span>
                       </div>
                     </div>
 
                     {/* Tarjeta Evento 3 */}
-                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="landing-preview-card p-4 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#bf5af2] font-semibold">16:30 - 17:45</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#bf5af2]/20 text-[#bf5af2] font-medium">
@@ -408,14 +408,14 @@ export default function LandingPage() {
                       </div>
                       <h4 className="text-sm font-semibold text-white mt-2">Sesión de Torso y Movilidad</h4>
                       <p className="text-xs text-[#86868b] mt-1">Press banca, jalones y 15 min de estiramientos.</p>
-                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                      <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-[#86868b]">
                         <span>Prioridad: Media</span>
                         <span className="text-slate-400">16:30</span>
                       </div>
                     </div>
 
                     {/* Tarjeta Evento 4 */}
-                    <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
+                    <div className="landing-preview-card p-4 transition-all">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-[#ff9f0a] font-semibold">20:30</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff9f0a]/20 text-[#ff9f0a] font-medium">
@@ -424,7 +424,7 @@ export default function LandingPage() {
                       </div>
                       <h4 className="text-sm font-semibold text-white mt-2">Cena en Osteria Angelic</h4>
                       <p className="text-xs text-[#86868b] mt-1">Reserva confirmada con el grupo de clase.</p>
-                      <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#86868b]">
+                      <div className="mt-3 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-[#86868b]">
                         <span>Prioridad: Baja</span>
                         <span className="text-slate-400">Plaza Merced</span>
                       </div>
@@ -565,13 +565,13 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="mt-8 p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2.5">
+              <div className="landing-preview-card mt-8 p-4 space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-white font-medium">Examen Seguridad de Sistemas</span>
                   <span className="text-[#ff453a] font-semibold">En 48 horas</span>
                 </div>
                 <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-[#ff453a] h-full w-[85%] rounded-full" />
+                  <div className="bg-[#ff453a] h-full w-[85%] rounded-full shadow-[0_0_8px_rgba(255,69,58,0.5)]" />
                 </div>
                 <span className="text-[11px] text-[#86868b] block">3 bloques de repaso recomendados completados</span>
               </div>
@@ -589,14 +589,14 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="mt-8 p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2 text-xs">
+              <div className="landing-preview-card mt-8 p-4 space-y-2 text-xs">
                 <div className="flex justify-end">
-                  <div className="bg-[#005c4b] text-white px-3 py-1.5 rounded-xl rounded-tr-none max-w-[85%]">
+                  <div className="bg-[#005c4b] text-white px-3 py-1.5 rounded-xl rounded-tr-none max-w-[85%] shadow-sm">
                     <span>¿Qué actividades tengo programadas para mañana?</span>
                   </div>
                 </div>
                 <div className="flex justify-start">
-                  <div className="bg-[#202c33] text-slate-200 px-3 py-1.5 rounded-xl rounded-tl-none max-w-[90%] space-y-0.5">
+                  <div className="bg-[#202c33] text-slate-200 px-3 py-1.5 rounded-xl rounded-tl-none max-w-[90%] space-y-0.5 shadow-sm border border-white/5">
                     <span className="text-[#30d158] font-semibold block text-[11px]">Mayordomo StudentHub</span>
                     <span>Tienes 2 actividades: Gimnasio a las 16:30 y Entrega de Redes a las 19:00.</span>
                   </div>
@@ -616,13 +616,13 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="mt-8 p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2 text-xs font-mono">
-                <div className="flex items-center justify-between text-[#86868b] pb-1 border-b border-white/5">
+              <div className="landing-preview-card mt-8 p-4 space-y-2 text-xs font-mono">
+                <div className="flex items-center justify-between text-[#86868b] pb-1 border-b border-white/10">
                   <span className="text-[#2997ff] font-semibold">HOY • WIDGET SEMANAL</span>
                   <span className="text-[#30d158]">Sincronizado</span>
                 </div>
                 <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-slate-500 line-through">
+                  <div className="flex items-center justify-between text-slate-400 line-through">
                     <span>• Clase Álgebra 08:30</span>
                     <span className="text-[#30d158] text-[10px]">Hecho</span>
                   </div>
@@ -647,15 +647,15 @@ export default function LandingPage() {
               </div>
 
               <div className="mt-8 grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                <div className="landing-preview-card p-3">
                   <span className="text-white font-semibold block">Local-First</span>
                   <span className="text-[10px] text-[#86868b]">Sin conexión</span>
                 </div>
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                <div className="landing-preview-card p-3">
                   <span className="text-white font-semibold block">iCal Sync</span>
                   <span className="text-[10px] text-[#86868b]">Google / Apple</span>
                 </div>
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5">
+                <div className="landing-preview-card p-3">
                   <span className="text-white font-semibold block">100% Libre</span>
                   <span className="text-[10px] text-[#86868b]">Open Source</span>
                 </div>

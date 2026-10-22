@@ -1,15 +1,41 @@
 /* ==========================================================================
-   StudentHub Multi-Design Themes Engine (Refero Styles)
-   Transformación radical de fondos, tarjetas, botones, inputs y calendarios
+   StudentHub Multi-Design Themes Engine (Apple Glassify & Nordic Paper)
+   Calibración radical de contrastes, eliminación de bloques blancos y acento dinámico
    ========================================================================== */
 
+:root {
+  --app-accent-color: #0071E3;
+  --app-accent-rgb: 0, 113, 227;
+}
+
+/* Reglas universales de acento dinámico para botones y selectores */
+.app-dynamic-accent-bg,
+button.btn-accent,
+.app-accent-btn {
+  background-color: var(--app-accent-color) !important;
+  color: #ffffff !important;
+}
+
+.app-dynamic-accent-text,
+.app-accent-text {
+  color: var(--app-accent-color) !important;
+}
+
+.app-dynamic-accent-border,
+.app-accent-border {
+  border-color: var(--app-accent-color) !important;
+}
+
 /* --------------------------------------------------------------------------
-   1. GLASSIFY LIQUID PRO (Apple Keynote Liquid Frosted Glass)
+   1. GLASSIFY LIQUID PRO (Apple Keynote Frosted Glass)
+   - Fondo azul espacial luminoso y atmosférico (sin negro ciego)
+   - Eliminación total de tarjetas blancas opacas (cristal translúcido real)
+   - Máxima nitidez y contraste en textos e iconos
    -------------------------------------------------------------------------- */
 html[data-theme-style="glassify"] body {
-  background: radial-gradient(130% 90% at 50% -10%, #15244d 0%, #0d1736 28%, #070c20 55%, #030612 100%) !important;
-  background-color: #030612 !important;
-  color: #f5f5f7 !important;
+  background: radial-gradient(135% 100% at 50% -5%, #18284e 0%, #101c3b 35%, #0b142b 70%, #070e20 100%) !important;
+  background-color: #080f22 !important;
+  color: #f1f5f9 !important;
 }
 
 html[data-theme-style="glassify"] .bg-surface-subtle,
@@ -17,246 +43,241 @@ html[data-theme-style="glassify"] main {
   background: transparent !important;
 }
 
-/* Tarjetas de cristal esmerilado translúcido real con borde specular superior */
+/* Transformación de todos los contenedores y tarjetas a cristal esmerilado translúcido */
 html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-surface-pure"],
 html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="glassify"] .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-html[data-theme-style="glassify"] .dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
-html[data-theme-style="glassify"] .dark div[class*="rounded-"][class*="dark:bg-slate-900"],
-html[data-theme-style="glassify"] div[class*="rounded-2xl"][class*="border"] {
-  background: rgba(15, 23, 42, 0.45) !important;
+html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-slate-50"],
+html[data-theme-style="glassify"] div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="glassify"] div[class*="rounded-"][class*="dark:bg-[#121620]"],
+html[data-theme-style="glassify"] div[class*="rounded-"][class*="dark:bg-slate-900"],
+html[data-theme-style="glassify"] div[class*="rounded-2xl"][class*="border"],
+html[data-theme-style="glassify"] section[class*="rounded-"],
+html[data-theme-style="glassify"] header[class*="border"] {
+  background: rgba(14, 23, 44, 0.65) !important;
   -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
   backdrop-filter: blur(28px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.18) !important;
-  border-radius: 20px !important;
-  color: #f5f5f7 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.16) !important;
+  color: #f8fafc !important;
 }
 
-/* Botones estilo Apple Glass con sheen */
+/* Textos de alto contraste en Glassify */
+html[data-theme-style="glassify"] h1,
+html[data-theme-style="glassify"] h2,
+html[data-theme-style="glassify"] h3,
+html[data-theme-style="glassify"] h4,
+html[data-theme-style="glassify"] [class*="text-slate-900"],
+html[data-theme-style="glassify"] [class*="text-on-surface"],
+html[data-theme-style="glassify"] .text-on-surface {
+  color: #ffffff !important;
+}
+
+html[data-theme-style="glassify"] p,
+html[data-theme-style="glassify"] [class*="text-secondary"],
+html[data-theme-style="glassify"] [class*="text-slate-500"],
+html[data-theme-style="glassify"] [class*="text-slate-600"] {
+  color: #94a3b8 !important;
+}
+
+/* Botones estilo Apple Glass con brillo y acento dinámico */
 html[data-theme-style="glassify"] button[class*="bg-primary"],
-html[data-theme-style="glassify"] button[class*="bg-primary-container"] {
-  background: linear-gradient(180deg, #0077ed 0%, #0062c4 100%) !important;
+html[data-theme-style="glassify"] button[class*="bg-primary-container"],
+html[data-theme-style="glassify"] .apple-btn-blue {
+  background: linear-gradient(180deg, var(--app-accent-color, #2997ff) 0%, rgba(var(--app-accent-rgb, 41, 151, 255), 0.82) 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 4px 18px rgba(0, 113, 227, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.55) !important;
+  box-shadow: 0 4px 18px rgba(var(--app-accent-rgb, 41, 151, 255), 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
   border-radius: 980px !important;
   color: #ffffff !important;
 }
 
+/* Inputs, Textareas y Selects en Glassify sin fondo blanco */
 html[data-theme-style="glassify"] input,
-html[data-theme-style="glassify"] textarea {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 14px !important;
+html[data-theme-style="glassify"] textarea,
+html[data-theme-style="glassify"] select {
+  background: rgba(15, 25, 48, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 12px !important;
   color: #ffffff !important;
+  -webkit-backdrop-filter: blur(16px) !important;
   backdrop-filter: blur(16px) !important;
 }
 
-/* --------------------------------------------------------------------------
-   2. OBSIDIAN LINEAR PRO (Linear & Raycast Ultra-Dark Engineering)
-   -------------------------------------------------------------------------- */
-html[data-theme-style="linear"] body,
-html[data-theme-style="linear"] .bg-surface-subtle {
-  background: #08090a !important;
-  background-color: #08090a !important;
-  color: #ededed !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif !important;
+html[data-theme-style="glassify"] input::placeholder,
+html[data-theme-style="glassify"] textarea::placeholder {
+  color: #64748b !important;
 }
 
-html[data-theme-style="linear"] div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="linear"] div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="linear"] .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-html[data-theme-style="linear"] div[class*="rounded-2xl"][class*="border"] {
-  background: #0e1015 !important;
-  background-color: #0e1015 !important;
-  border: 1px solid #1f2328 !important;
-  border-radius: 10px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-  color: #d1d5db !important;
-}
-
-html[data-theme-style="linear"] button[class*="bg-primary"],
-html[data-theme-style="linear"] button[class*="bg-primary-container"] {
-  background: #5e6ad2 !important;
-  background-color: #5e6ad2 !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 6px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-  font-weight: 500 !important;
-  color: #ffffff !important;
-}
-
-html[data-theme-style="linear"] input,
-html[data-theme-style="linear"] textarea {
-  background: #12151c !important;
-  border: 1px solid #272d38 !important;
-  border-radius: 6px !important;
-  color: #f3f4f6 !important;
+/* Modales y desplegables en Glassify */
+html[data-theme-style="glassify"] [role="dialog"],
+html[data-theme-style="glassify"] .modal-content,
+html[data-theme-style="glassify"] [class*="fixed"][class*="z-50"] div[class*="bg-white"],
+html[data-theme-style="glassify"] [class*="fixed"][class*="z-50"] div[class*="dark:bg-"] {
+  background: rgba(14, 22, 42, 0.92) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.38) !important;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7) !important;
+  color: #f8fafc !important;
 }
 
 /* --------------------------------------------------------------------------
-   3. NORDIC PAPER MINIMALIST (Warm Editorial Canvas)
+   2. NORDIC PAPER MINIMALIST (Editorial & High-Contrast Ink Canvas)
+   - Textos tinta charcoal nítidos (#1c1917) sobre lienzo cálido
+   - Bordes de papel bien definidos y legibilidad 100% garantizada
    -------------------------------------------------------------------------- */
-html[data-theme-style="nordic"] body,
-html[data-theme-style="nordic"] .bg-surface-subtle {
-  background: #fbfbfa !important;
-  background-color: #fbfbfa !important;
-  color: #27272a !important;
+html[data-theme-style="nordic"] body {
+  background: #fcfbfa !important;
+  background-color: #fcfbfa !important;
+  color: #1c1917 !important;
   font-family: "Fraunces", "Inter", Georgia, serif !important;
 }
 
-html[data-theme-style="nordic"].dark body,
-html[data-theme-style="nordic"].dark .bg-surface-subtle {
-  background: #191816 !important;
-  background-color: #191816 !important;
-  color: #f4f4f5 !important;
+html[data-theme-style="nordic"] .bg-surface-subtle {
+  background: #f5f4ef !important;
+  background-color: #f5f4ef !important;
 }
 
+html[data-theme-style="nordic"].dark body {
+  background: #181614 !important;
+  background-color: #181614 !important;
+  color: #fafaf9 !important;
+}
+
+html[data-theme-style="nordic"].dark .bg-surface-subtle {
+  background: #201d1b !important;
+  background-color: #201d1b !important;
+}
+
+/* Tarjetas nórdicas con trazo nítido y sombras de papel */
 html[data-theme-style="nordic"] div[class*="rounded-"][class*="bg-surface-pure"],
 html[data-theme-style="nordic"] div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="nordic"] div[class*="rounded-2xl"][class*="border"] {
+html[data-theme-style="nordic"] div[class*="rounded-2xl"][class*="border"],
+html[data-theme-style="nordic"] section[class*="rounded-"] {
   background: #ffffff !important;
   background-color: #ffffff !important;
-  border: 1px solid #e7e5e4 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(44, 40, 35, 0.04) !important;
-  color: #292524 !important;
+  border: 1px solid #d6d3d1 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(44, 40, 35, 0.05), 0 1px 2px rgba(44, 40, 35, 0.03) !important;
+  color: #1c1917 !important;
 }
 
 html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="bg-surface-pure"],
 html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="nordic"].dark .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
 html[data-theme-style="nordic"].dark div[class*="rounded-2xl"][class*="border"] {
-  background: #242220 !important;
-  background-color: #242220 !important;
-  border: 1px solid #383531 !important;
-  color: #e7e5e4 !important;
+  background: #23201d !important;
+  background-color: #23201d !important;
+  border: 1px solid #44403c !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  color: #fafaf9 !important;
 }
 
+/* Tipografía de máximo contraste en Nórdico */
+html[data-theme-style="nordic"] h1,
+html[data-theme-style="nordic"] h2,
+html[data-theme-style="nordic"] h3,
+html[data-theme-style="nordic"] h4,
+html[data-theme-style="nordic"] [class*="text-slate-900"],
+html[data-theme-style="nordic"] [class*="text-on-surface"] {
+  color: #1c1917 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme-style="nordic"] p,
+html[data-theme-style="nordic"] [class*="text-secondary"],
+html[data-theme-style="nordic"] [class*="text-slate-600"] {
+  color: #44403c !important;
+}
+
+html[data-theme-style="nordic"] [class*="text-tertiary"],
+html[data-theme-style="nordic"] [class*="text-slate-500"] {
+  color: #57534e !important;
+}
+
+html[data-theme-style="nordic"].dark h1,
+html[data-theme-style="nordic"].dark h2,
+html[data-theme-style="nordic"].dark h3,
+html[data-theme-style="nordic"].dark h4,
+html[data-theme-style="nordic"].dark [class*="text-slate-900"],
+html[data-theme-style="nordic"].dark [class*="text-on-surface"] {
+  color: #fafaf9 !important;
+}
+
+html[data-theme-style="nordic"].dark p,
+html[data-theme-style="nordic"].dark [class*="text-secondary"] {
+  color: #d6d3d1 !important;
+}
+
+/* Botones en Nórdico: terracota tinta o acento dinámico configurado */
 html[data-theme-style="nordic"] button[class*="bg-primary"],
 html[data-theme-style="nordic"] button[class*="bg-primary-container"] {
-  background: #78350f !important;
-  background-color: #78350f !important;
+  background: var(--app-accent-color, #78350f) !important;
+  background-color: var(--app-accent-color, #78350f) !important;
   border: 1px solid transparent !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   color: #ffffff !important;
+  font-family: "Inter", sans-serif !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(var(--app-accent-rgb, 120, 53, 15), 0.28) !important;
 }
 
+/* Inputs en Nórdico con borde visible */
 html[data-theme-style="nordic"] input,
-html[data-theme-style="nordic"] textarea {
-  background: #f5f5f4 !important;
-  border: 1px solid #d6d3d1 !important;
-  border-radius: 8px !important;
+html[data-theme-style="nordic"] textarea,
+html[data-theme-style="nordic"] select {
+  background: #ffffff !important;
+  border: 1.5px solid #d6d3d1 !important;
+  border-radius: 10px !important;
   color: #1c1917 !important;
 }
 
 html[data-theme-style="nordic"].dark input,
-html[data-theme-style="nordic"].dark textarea {
-  background: #1c1b19 !important;
-  border: 1px solid #44403c !important;
+html[data-theme-style="nordic"].dark textarea,
+html[data-theme-style="nordic"].dark select {
+  background: #2a2724 !important;
+  border: 1.5px solid #57534e !important;
+  color: #fafaf9 !important;
+}
+
+/* Modales en Nórdico */
+html[data-theme-style="nordic"] [role="dialog"],
+html[data-theme-style="nordic"] .modal-content,
+html[data-theme-style="nordic"] [class*="fixed"][class*="z-50"] div[class*="bg-white"] {
+  background: #ffffff !important;
+  border: 1px solid #a8a29e !important;
+  box-shadow: 0 20px 40px -8px rgba(41, 37, 36, 0.16) !important;
+  color: #1c1917 !important;
+}
+
+html[data-theme-style="nordic"].dark [role="dialog"],
+html[data-theme-style="nordic"].dark .modal-content,
+html[data-theme-style="nordic"].dark [class*="fixed"][class*="z-50"] div[class*="bg-white"],
+html[data-theme-style="nordic"].dark [class*="fixed"][class*="z-50"] div[class*="dark:bg-"] {
+  background: #23201d !important;
+  border: 1px solid #57534e !important;
   color: #fafaf9 !important;
 }
 
 /* --------------------------------------------------------------------------
-   4. CYBERPUNK NEON TACTICAL (High-Voltage Matrix Grid)
+   3. ANIMACIÓN LATERAL CINEMATOGRÁFICA AL CAMBIAR DE TEMA
    -------------------------------------------------------------------------- */
-html[data-theme-style="cyberpunk"] body,
-html[data-theme-style="cyberpunk"] .bg-surface-subtle {
-  background: #030712 !important;
-  background-image: 
-    linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px) !important;
-  background-size: 32px 32px !important;
-  color: #00f0ff !important;
-  font-family: "Space Grotesk", "Space Mono", monospace !important;
+@keyframes themeSwitchSweep {
+  0% {
+    opacity: 0.88;
+    transform: scale(0.995);
+    filter: blur(1.5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
 }
 
-html[data-theme-style="cyberpunk"] div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="cyberpunk"] div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="cyberpunk"] .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-html[data-theme-style="cyberpunk"] div[class*="rounded-2xl"][class*="border"] {
-  background: rgba(8, 14, 28, 0.88) !important;
-  border: 1px solid #00f0ff !important;
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.18), inset 0 0 10px rgba(0, 240, 255, 0.08) !important;
-  border-radius: 4px !important;
-  color: #e0f2fe !important;
-}
-
-html[data-theme-style="cyberpunk"] button[class*="bg-primary"],
-html[data-theme-style="cyberpunk"] button[class*="bg-primary-container"] {
-  background: #00f0ff !important;
-  background-color: #00f0ff !important;
-  color: #030712 !important;
-  border: 1px solid #38bdf8 !important;
-  box-shadow: 0 0 16px rgba(0, 240, 255, 0.5) !important;
-  border-radius: 4px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-}
-
-html[data-theme-style="cyberpunk"] input,
-html[data-theme-style="cyberpunk"] textarea {
-  background: #060d1e !important;
-  border: 1px solid #0284c7 !important;
-  border-radius: 4px !important;
-  color: #38bdf8 !important;
-}
-
-/* --------------------------------------------------------------------------
-   5. NEO-BRUTALISTA INDUSTRIAL (Stark High-Contrast Workshop)
-   -------------------------------------------------------------------------- */
-html[data-theme-style="brutalista"] body,
-html[data-theme-style="brutalista"] .bg-surface-subtle {
-  background: #f4f4f0 !important;
-  color: #000000 !important;
-  font-family: "Space Grotesk", sans-serif !important;
-}
-
-html[data-theme-style="brutalista"].dark body,
-html[data-theme-style="brutalista"].dark .bg-surface-subtle {
-  background: #111111 !important;
-  color: #ffffff !important;
-}
-
-html[data-theme-style="brutalista"] div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="brutalista"] div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="brutalista"] div[class*="rounded-2xl"][class*="border"] {
-  background: #ffffff !important;
-  border: 2px solid #000000 !important;
-  border-radius: 0px !important;
-  box-shadow: 4px 4px 0px #000000 !important;
-  color: #000000 !important;
-}
-
-html[data-theme-style="brutalista"].dark div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="brutalista"].dark div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="brutalista"].dark .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-html[data-theme-style="brutalista"].dark div[class*="rounded-2xl"][class*="border"] {
-  background: #1a1a1a !important;
-  border: 2px solid #ffffff !important;
-  border-radius: 0px !important;
-  box-shadow: 4px 4px 0px #ffffff !important;
-  color: #ffffff !important;
-}
-
-html[data-theme-style="brutalista"] button[class*="bg-primary"],
-html[data-theme-style="brutalista"] button[class*="bg-primary-container"] {
-  background: #facc15 !important;
-  background-color: #facc15 !important;
-  border: 2px solid #000000 !important;
-  border-radius: 0px !important;
-  box-shadow: 3px 3px 0px #000000 !important;
-  color: #000000 !important;
-  font-weight: 700 !important;
-}
-
-html[data-theme-style="brutalista"].dark button[class*="bg-primary"],
-html[data-theme-style="brutalista"].dark button[class*="bg-primary-container"] {
-  background: #facc15 !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 3px 3px 0px #ffffff !important;
-  color: #000000 !important;
+.animate-theme-switch {
+  animation: themeSwitchSweep 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

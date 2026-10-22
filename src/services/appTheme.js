@@ -1,11 +1,8 @@
 // Servicio y Gestor de Temas, Fuentes y Estilos Visuales de AppHub Focus Hub
-// 4 Diseños Radicales, Modernos e Inconfundibles con Tipografías Dedicadas:
-// 1. Clásica (Apple Cupertino): Limpia, rounded-2xl, fuente Inter, azul Apple
-// 2. Blossom Study (Pastel Aesthetic): Estilo Notion / Goodnotes, Fraunces itálico + Outfit, pastel y curvas de 32px
-// 3. Linear Obsidian Pro: Estilo Linear / Raycast, Sora + Space Mono, obsidiana profundo, borde láser y alta densidad
-// 4. Neo-Brutalista Industrial: Esquinas estrictas a 0px, marcos de 2px, Space Grotesk + Space Mono, sombras de bloque sin solapamiento
+// Diseños refinados con tipografías dedicadas y sincronización dinámica de color de acento
 
 const THEME_STORAGE_KEY = 'app_theme_style'
+const ACCENT_STORAGE_KEY = 'studenthub_widget_accent_color'
 
 export const APP_THEMES = [
   {
@@ -65,46 +62,18 @@ export const APP_THEMES = [
     },
   },
   {
-    id: 'linear',
-    name: 'Obsidian Linear Pro',
-    tag: 'Linear & Raycast',
-    description: 'Negro obsidiana ultra-profundo (#08090a), bordes micrométricos de 1px (#1f2328), alta densidad tipográfica y acentos de enfoque índigo láser.',
-    fontName: 'Inter / Plus Jakarta',
-    fontFamily: '"Inter", "Plus Jakarta Sans", sans-serif',
-    accentColor: '#5e6ad2',
-    previewBadge: 'rounded-md px-2 py-0.5 bg-[#12151c] text-[#8b9bfb] border border-[#272d38] text-xs font-medium',
-    labels: {
-      appTitle: 'Linear Workspace',
-      autoOrganizer: 'Ciclo de Ejecución Diario',
-      autoOrganizerSubtitle: 'Gestión de alta densidad y flujos de trabajo sin fricción',
-      smartIngestion: 'Comando de Ingesta // ⌘K',
-      smartIngestionDesc: 'Prioridad y contexto por lenguaje natural',
-      timeline: 'Pipeline de Tareas',
-      timelineDesc: 'Ordenado por criticidad y hora de inicio',
-      myHub: 'Base de Referencias',
-      myHubDesc: 'Documentos, links técnicos y notas de sprint',
-      filterContext: 'Filtro por Contexto',
-      allContexts: 'Todos los Contextos',
-      todayTasks: 'Tareas del Sprint de Hoy',
-      upcomingTasks: 'Backlog Próximas Semanas',
-      calendarTitle: 'Matriz de Planificación',
-      calendarSubtitle: 'Asignación horaria compacta y bloques de enfoque',
-      newAction: '+ Nueva Tarea (C)',
-    },
-  },
-  {
     id: 'nordic',
     name: 'Nordic Paper Minimalist',
     tag: 'Editorial & Warm Canvas',
-    description: 'Lienzo cálido pergamino (#fbfbfa / #191816), acentos editoriales serif elegantes, sombras orgánicas de papel y máxima calma visual.',
+    description: 'Lienzo cálido pergamino con texto tinta de alto contraste, acentos serif elegantes y sombras orgánicas de papel.',
     fontName: 'Fraunces / Inter',
     fontFamily: '"Fraunces", "Inter", Georgia, serif',
     accentColor: '#b45309',
-    previewBadge: 'rounded-lg px-2.5 py-0.5 bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-900/60 text-xs font-serif italic',
+    previewBadge: 'rounded-lg px-2.5 py-0.5 bg-amber-50 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-800 text-xs font-serif italic font-semibold',
     labels: {
       appTitle: 'Cuaderno Nórdico',
       autoOrganizer: 'Agenda & Notas Diarias',
-      autoOrganizerSubtitle: 'Planificación pausada y lectura clara sobre papel cálido',
+      autoOrganizerSubtitle: 'Planificación pausada y lectura nítida sobre papel cálido',
       smartIngestion: 'Anotación Rápida',
       smartIngestionDesc: 'Escribe lo que tienes pendiente para hoy o mañana',
       timeline: 'Línea de Vida Diaria',
@@ -118,34 +87,6 @@ export const APP_THEMES = [
       calendarTitle: 'Almanaque & Calendario',
       calendarSubtitle: 'Distribución armónica de semanas y estudio',
       newAction: '+ Escribir Tarea',
-    },
-  },
-  {
-    id: 'cyberpunk',
-    name: 'Cyberpunk Neon Tactical',
-    tag: 'High Voltage & Matrix Grid',
-    description: 'Azul medianoche profundo (#030712) con cian eléctrico (#00f0ff) y magenta (#ff007f), cuadrícula técnica de datos y fuentes monoespaciadas.',
-    fontName: 'Space Grotesk / Space Mono',
-    fontFamily: '"Space Grotesk", "Space Mono", monospace',
-    accentColor: '#00f0ff',
-    previewBadge: 'rounded-none px-2 py-0.5 bg-[#030712] text-[#00f0ff] border border-[#00f0ff] text-xs font-mono uppercase shadow-[0_0_8px_rgba(0,240,255,0.4)]',
-    labels: {
-      appTitle: 'CYBER_HUB // V8.4',
-      autoOrganizer: 'TELEMETRÍA & COLA DE EJECUCIÓN',
-      autoOrganizerSubtitle: 'Monitoreo de tareas en tiempo real y asignación de subrutinas',
-      smartIngestion: 'INGESTA DE DATOS // TERMINAL INPUT',
-      smartIngestionDesc: 'Procesamiento heurístico en tiempo real sin latencia',
-      timeline: 'CRONOLOGÍA TÁCTICA 24H',
-      timelineDesc: 'Secuencia indexada por timestamp de inicio',
-      myHub: 'DEPÓSITO DE RECURSOS & PROTOCOLOS',
-      myHubDesc: 'Nodos de información y enlaces de acceso rápido',
-      filterContext: 'SECTORES',
-      allContexts: 'ROOT // ALL',
-      todayTasks: 'SUBRUTINAS DE HOY',
-      upcomingTasks: 'HORIZONTE PRÓXIMO',
-      calendarTitle: 'MATRIZ HORARIA DE INTERCONEXIÓN',
-      calendarSubtitle: 'Mapeo temporal multidimensional con feeds externos',
-      newAction: '[+] INSERTAR SUBRUTINA',
     },
   },
   {
@@ -234,6 +175,35 @@ export const APP_THEMES = [
   },
 ]
 
+export function hexToRgb(hex) {
+  if (!hex) return '0, 113, 227'
+  let c = hex.replace('#', '')
+  if (c.length === 3) c = c.split('').map((x) => x + x).join('')
+  const num = parseInt(c, 16)
+  if (isNaN(num)) return '0, 113, 227'
+  return `${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}`
+}
+
+export function getActiveAccentColor() {
+  try {
+    const custom = localStorage.getItem(ACCENT_STORAGE_KEY)
+    if (custom && custom.startsWith('#') && (custom.length === 7 || custom.length === 4)) {
+      return custom
+    }
+  } catch (e) {}
+  const curTheme = getAppTheme()
+  const tokens = getAppThemeTokens(curTheme)
+  return tokens.accentColor || '#0071E3'
+}
+
+export function applyDynamicAccent(color = null) {
+  if (typeof document === 'undefined') return
+  const activeColor = color || getActiveAccentColor()
+  const rgb = hexToRgb(activeColor)
+  document.documentElement.style.setProperty('--app-accent-color', activeColor)
+  document.documentElement.style.setProperty('--app-accent-rgb', rgb)
+}
+
 export function getAppTheme() {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY)
@@ -254,7 +224,8 @@ export function setAppTheme(themeId) {
     localStorage.setItem(THEME_STORAGE_KEY, themeId)
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme-style', themeId)
-      
+      applyDynamicAccent()
+
       // Disparar animación lateral cinematográfica
       const rootEl = document.getElementById('root') || document.body
       rootEl.classList.remove('animate-theme-switch')
@@ -270,15 +241,24 @@ export function setAppTheme(themeId) {
   return themeId
 }
 
-// Inicializar atributo al cargar preservando dark mode
+// Inicializar atributo y color de acento dinámico al cargar preservando dark mode
 if (typeof document !== 'undefined') {
   try {
     const cur = getAppTheme()
     document.documentElement.setAttribute('data-theme-style', cur)
+    applyDynamicAccent()
+
     // Garantizar que la clase dark no se pierda al cargar
     const isDark = localStorage.getItem('app_theme') === 'dark' || localStorage.getItem('app_dark_mode') === 'true'
     if (isDark) {
       document.documentElement.classList.add('dark')
     }
+
+    // Escuchar cambios de acento desde widgets o ajustes
+    window.addEventListener('studenthub_widget_accent_changed', (e) => {
+      if (e.detail) {
+        applyDynamicAccent(e.detail)
+      }
+    })
   } catch (e) {}
 }

@@ -152,29 +152,70 @@
 /* --------------------------------------------------------------------------
    Efecto GLASSIFY de Alta Definición (Cristal Translúcido Esmerilado Real)
    -------------------------------------------------------------------------- */
-.glassify-card {
-  background: rgba(15, 23, 42, 0.42) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.65), 
-              inset 0 1px 1px 0 rgba(255, 255, 255, 0.20) !important;
+.glassify-card,
+.apple-card {
+  background: rgba(14, 23, 44, 0.52) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
+  backdrop-filter: blur(30px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.70), 
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.22) !important;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
               background 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.glassify-card:hover {
+.glassify-card:hover,
+.apple-card:hover {
   transform: translateY(-4px) !important;
-  background: rgba(20, 30, 55, 0.58) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
-  border-top-color: rgba(255, 255, 255, 0.55) !important;
-  box-shadow: 0 28px 65px -10px rgba(0, 0, 0, 0.8), 
-              inset 0 1px 2px 0 rgba(255, 255, 255, 0.35),
-              0 0 30px rgba(59, 130, 246, 0.25) !important;
+  background: rgba(20, 32, 60, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  border-top-color: rgba(255, 255, 255, 0.58) !important;
+  box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.85), 
+              inset 0 1px 2px 0 rgba(255, 255, 255, 0.40),
+              0 0 32px rgba(59, 130, 246, 0.28) !important;
+}
+
+/* Tarjetas internas de demostración dentro del mockup y widgets (eliminando cualquier blanco plano) */
+.landing-preview-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 16px !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.landing-preview-card:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  border-top-color: rgba(255, 255, 255, 0.42) !important;
+  transform: translateY(-2px);
+}
+
+.apple-btn-secondary {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f5f5f7 !important;
+  font-weight: 500 !important;
+  border-radius: 980px !important;
+  padding: 10px 20px !important;
+  font-size: 13px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
+  backdrop-filter: blur(20px) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.apple-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
 }
 
 /* Barra de Navegación Glassify */

@@ -94,7 +94,7 @@ export default function Header({
 
   useEffect(() => {
     const handleThemeStyleChange = (e) => {
-      if (e.detail && ['clasica', 'aura', 'executive', 'brutalista'].includes(e.detail)) {
+      if (e.detail && APP_THEMES.some((t) => t.id === e.detail)) {
         setCurrentAppTheme(e.detail)
       }
     }
@@ -324,13 +324,14 @@ export default function Header({
               ref={navContainerRef}
               className="hidden md:flex items-center gap-1 bg-surface-muted/80 dark:bg-[#111214] p-1 rounded-2xl border border-slate-200/80 dark:border-[#27272a] shadow-2xs relative app-no-drag"
             >
-              {/* Pastilla Deslizante */}
+              {/* Pastilla Deslizante con acento dinámico */}
               <div
-                className="absolute top-1 bottom-1 bg-primary rounded-xl shadow-xs pointer-events-none"
+                className="absolute top-1 bottom-1 rounded-xl shadow-xs pointer-events-none"
                 style={{
                   left: `${indicatorStyle.left}px`,
                   width: `${indicatorStyle.width}px`,
                   opacity: indicatorStyle.opacity,
+                  backgroundColor: 'var(--app-accent-color, #0071E3)',
                   transition: indicatorStyle.ready ? 'all 300ms cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
                 }}
               />
@@ -373,7 +374,8 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => setIsInstallModalOpen(true)}
-                className="h-8 px-3 rounded-xl flex items-center gap-1.5 bg-[#146ef5] text-white hover:bg-[#1366e2] dark:bg-[#e6e6e6] dark:text-[#1b1c1e] dark:hover:bg-white transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs app-no-drag"
+                style={{ backgroundColor: 'var(--app-accent-color, #146ef5)' }}
+                className="h-8 px-3 rounded-xl flex items-center gap-1.5 text-white transition-all cursor-pointer font-semibold text-xs active:scale-95 shadow-2xs app-no-drag hover:brightness-110"
                 title="Descargar o instalar StudentHub en tu móvil (Android / iOS) o PC"
               >
                 <span className="material-symbols-outlined text-[17px]">install_mobile</span>
@@ -460,12 +462,13 @@ export default function Header({
 
                 return (
                   <div
-                    className="absolute top-1 bottom-1 bg-primary rounded-xl shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                    className="absolute top-1 bottom-1 rounded-xl shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                     style={{
                       left: '4px',
                       width: `calc((100% - 8px) / ${count})`,
                       transform: `translateX(${validIdx * 100}%)`,
                       opacity: activeIdx >= 0 ? 1 : 0,
+                      backgroundColor: 'var(--app-accent-color, #0071E3)',
                     }}
                   />
                 )
