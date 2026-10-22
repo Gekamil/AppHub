@@ -2438,6 +2438,11 @@ function serveStatic(req, res) {
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     res.statusCode = 200
     res.setHeader('Content-Type', MIME_TYPES[ext] || 'application/octet-stream')
+    if (ext === '.html') {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    } else if (pathname.includes('/assets/')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    }
     fs.createReadStream(filePath).pipe(res)
     return true
   }
@@ -2447,6 +2452,7 @@ function serveStatic(req, res) {
   if (fs.existsSync(indexPath)) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     fs.createReadStream(indexPath).pipe(res)
     return true
   }

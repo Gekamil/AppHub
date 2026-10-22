@@ -83,7 +83,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="landing-root bg-[#060814] text-[#f5f5f7] min-h-screen relative overflow-x-hidden selection:bg-[#0071e3]/40 selection:text-white">
+    <div className="landing-root text-[#f5f5f7] min-h-screen relative overflow-x-hidden selection:bg-[#0071e3]/40 selection:text-white">
       {/* 0. SISTEMA DE FONDO AURORA MULTICAPA & EFECTO GLASSIFY */}
       <div className="aurora-container">
         {/* Cuadrícula Geométrica Iluminada */}
@@ -688,7 +688,7 @@ export default function LandingPage() {
       </main>
 
       {/* 6. FOOTER ESTILO APPLE CON LOGO NÍTIDO */}
-      <footer className="border-t border-white/10 py-10 bg-black text-[#86868b] text-xs relative z-10">
+      <footer className="border-t border-white/10 py-10 bg-black/30 backdrop-blur-md text-[#86868b] text-xs relative z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="StudentHub" className="w-6 h-6 object-contain rounded-md shadow-sm" />
