@@ -145,7 +145,13 @@ export function getNewsPreferences() {
         if (parsed.weights && typeof parsed.weights === 'object') {
           for (const [key, val] of Object.entries(parsed.weights)) {
             const num = Number(val)
-            const isValid = val !== null && val !== '' && typeof val !== 'boolean' && Number.isFinite(num)
+            const isValid = val !== null &&
+              val !== '' &&
+              typeof val !== 'boolean' &&
+              !Array.isArray(val) &&
+              (typeof val !== 'string' || val.trim() !== '') &&
+              Number.isFinite(num) &&
+              num > 0
             weights[key] = Math.max(0.1, Math.min(2.5, isValid ? Number(num.toFixed(2)) : 1.0))
           }
         }
@@ -179,7 +185,14 @@ export function saveNewsPreferences(prefs) {
     if (prefs?.weights && typeof prefs.weights === 'object') {
       for (const [key, val] of Object.entries(prefs.weights)) {
         const num = Number(val)
-        weights[key] = Math.max(0.1, Math.min(2.5, Number.isFinite(num) ? Number(num.toFixed(2)) : 1.0))
+        const isValid = val !== null &&
+          val !== '' &&
+          typeof val !== 'boolean' &&
+          !Array.isArray(val) &&
+          (typeof val !== 'string' || val.trim() !== '') &&
+          Number.isFinite(num) &&
+          num > 0
+        weights[key] = Math.max(0.1, Math.min(2.5, isValid ? Number(num.toFixed(2)) : 1.0))
       }
     }
     const swipes = prefs?.swipes && typeof prefs.swipes === 'object' && !Array.isArray(prefs.swipes)

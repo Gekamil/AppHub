@@ -769,14 +769,14 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     : getUserCalendars(getCurrentUser())
 
   // Detección robusta de consultas sobre Noticias Diarias y Actualidad
-  const isTaskActionCommand = /(?:a[ñn]ad|crea|pon|programa|apunta|borra|elimina|quita|suprime|cambia|pasa|mueve|asigna|terminad|completad|marcar|aplaza|retrasa)/i.test(lower)
+  const isTaskActionCommand = /(?:a[ñn]ad|crea|pon|programa|apunta|borra|elimina|quita|suprime|cambia|(?<!qu[eé]\s+)\bpasa\b(?!\s*do)|mueve|asigna|terminad|completad|marcar|aplaza|retrasa)/i.test(lower)
   const isCalendarQuery = /(?:qu[eé]\s+(?:actividades|tareas|eventos|planes|cosas|clases)\s+(?:tengo|hay|tenemos)|mi\s+d[ií]a|mi\s+agenda|mi\s+calendario)/i.test(lower)
   const isMathQuery = /(?:cu[aá]nto\s+es|\b\d+\s*[\+\-\*\/]\s*\d+\b)/i.test(lower)
   const isPureGreeting = /^(?:hola|buenas|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|qu[eé]\s+tal|qui[eé]n\s+eres|c[oó]mo\s+est[aá]s|gracias|adi[oó]s)[!.,\s]*$/i.test(lower)
 
   const hasNewsDirectWord = /(?:noticia|noticias|novedad|novedades|titular|titulares|actualidad|bolet[ií]n|prensa|feed)/i.test(lower)
   const isAskingTechOrAINews = (
-    /(?:qu[eé]\s+(?:hay|sabes|pasa|pas[oó]|ha\s+pasado|ocurri[oó]|sucedi[oó]|cuenta|cuentas)|dime|cu[eé]ntame|resumen|informaci[oó]n|ver).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lower) ||
+    /(?:qu[eé]\s+(?:hay|sabes|pasa|pas[oó]|ha\s+(?:pasado|ocurrido|sucedido)|ocurri[oó]|sucedi[oó]|cuenta|cuentas)|dime|cu[eé]ntame|resumen|informaci[oó]n|ver).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lower) ||
     /(?:novedades|noticias|avances|actualidad).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lower)
   )
 

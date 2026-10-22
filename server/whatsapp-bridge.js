@@ -41,8 +41,8 @@ export function classifyWhatsAppNewsQuery(userText) {
   const lowerUserText = (userText || '').toLowerCase()
   const isNewsQuery = (
     /(?:noticia|novedad|titular|actualidad|bolet[ií]n)/i.test(lowerUserText) ||
-    /(?:qu[eé]\s+(?:hay|sabes|pasa|pas[oó]|ha\s+pasado|ocurri[oó]|sucedi[oó])|dime|cu[eé]ntame).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lowerUserText)
-  ) && !/(?:a[ñn]ad|crea|pon|programa|apunta|borra|elimina|quita|suprime|cambia|pasa|mueve|asigna)/i.test(lowerUserText)
+    /(?:qu[eé]\s+(?:hay|sabes|pasa|pas[oó]|ha\s+(?:pasado|ocurrido|sucedido)|ocurri[oó]|sucedi[oó])|dime|cu[eé]ntame).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lowerUserText)
+  ) && !/(?:a[ñn]ad|crea|pon|programa|apunta|borra|elimina|quita|suprime|cambia|(?<!qu[eé]\s+)\bpasa\b(?!\s*do)|mueve|asigna)/i.test(lowerUserText)
   const isAIOrTech = /ia|inteligencia artificial|tecnolog|software|hardware/i.test(lowerUserText)
   return { isNewsQuery, isAIOrTech }
 }
