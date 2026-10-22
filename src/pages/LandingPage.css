@@ -41,6 +41,18 @@
   z-index: 0;
 }
 
+/* Forzar tipografía nítida en blanco y plata sin interferencias de temas */
+.landing-root h1,
+.landing-root h2,
+.landing-root h3,
+.landing-root h4 {
+  color: #ffffff !important;
+}
+
+.landing-root p {
+  color: #cbd5e1 !important;
+}
+
 /* Cuadrícula Geométrica Iluminada con máscara radial en la parte superior */
 .aurora-grid {
   position: absolute;
@@ -49,12 +61,12 @@
   right: 0;
   height: 1400px;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 95% 70% at 50% 20%, black 35%, transparent 85%);
   -webkit-mask-image: radial-gradient(ellipse 95% 70% at 50% 20%, black 35%, transparent 85%);
-  opacity: 0.9;
+  opacity: 0.18;
 }
 
 /* Orbes de Luz Aurora con Aceleración GPU y animación de respiración */

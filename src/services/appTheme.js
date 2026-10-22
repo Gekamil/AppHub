@@ -62,34 +62,6 @@ export const APP_THEMES = [
     },
   },
   {
-    id: 'nordic',
-    name: 'Nordic Paper Minimalist',
-    tag: 'Editorial & Warm Canvas',
-    description: 'Lienzo cálido pergamino con texto tinta de alto contraste, acentos serif elegantes y sombras orgánicas de papel.',
-    fontName: 'Fraunces / Inter',
-    fontFamily: '"Fraunces", "Inter", Georgia, serif',
-    accentColor: '#b45309',
-    previewBadge: 'rounded-lg px-2.5 py-0.5 bg-amber-50 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-800 text-xs font-serif italic font-semibold',
-    labels: {
-      appTitle: 'Cuaderno Nórdico',
-      autoOrganizer: 'Agenda & Notas Diarias',
-      autoOrganizerSubtitle: 'Planificación pausada y lectura nítida sobre papel cálido',
-      smartIngestion: 'Anotación Rápida',
-      smartIngestionDesc: 'Escribe lo que tienes pendiente para hoy o mañana',
-      timeline: 'Línea de Vida Diaria',
-      timelineDesc: 'Cronología de lecturas, clases y momentos de foco',
-      myHub: 'Biblioteca Personal & Archivo',
-      myHubDesc: 'Colección de artículos, PDFs y lecturas guardadas',
-      filterContext: 'Temática',
-      allContexts: 'Todas las áreas',
-      todayTasks: 'Páginas de Hoy',
-      upcomingTasks: 'Horizontes Próximos',
-      calendarTitle: 'Almanaque & Calendario',
-      calendarSubtitle: 'Distribución armónica de semanas y estudio',
-      newAction: '+ Escribir Tarea',
-    },
-  },
-  {
     id: 'aura',
     name: 'Rosa Pastel & Blanco',
     tag: 'Suave & Cálido',
@@ -207,6 +179,10 @@ export function applyDynamicAccent(color = null) {
 export function getAppTheme() {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY)
+    if (saved === 'nordic') {
+      localStorage.setItem(THEME_STORAGE_KEY, 'glassify')
+      return 'glassify'
+    }
     if (saved && APP_THEMES.some((t) => t.id === saved)) {
       return saved
     }

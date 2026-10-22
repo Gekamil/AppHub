@@ -1,6 +1,6 @@
 /* ==========================================================================
-   StudentHub Multi-Design Themes Engine (Apple Glassify & Nordic Paper)
-   Calibración radical de contrastes, eliminación de bloques blancos y acento dinámico
+   StudentHub Multi-Design Themes Engine (Apple Glassify Pure System)
+   Fondo claro ultra luminoso, fondo oscuro azul espacial calibrado, y cero elementos blancos planos
    ========================================================================== */
 
 :root {
@@ -26,13 +26,12 @@ button.btn-accent,
   border-color: var(--app-accent-color) !important;
 }
 
-/* --------------------------------------------------------------------------
-   1. GLASSIFY LIQUID PRO (Apple Keynote Frosted Glass)
-   - Fondo azul espacial luminoso y atmosférico (sin negro ciego)
-   - Eliminación total de tarjetas blancas opacas (cristal translúcido real)
-   - Máxima nitidez y contraste en textos e iconos
-   -------------------------------------------------------------------------- */
-html[data-theme-style="glassify"] body {
+/* ==========================================================================
+   GLASSIFY LIQUID PRO (Apple Keynote Frosted Glass)
+   ========================================================================== */
+
+/* 1. MODO OSCURO (Luminoso, índigo/navy espacial, sin negro ciego y sin blancos planos) */
+html[data-theme-style="glassify"].dark body {
   background: radial-gradient(135% 100% at 50% -5%, #18284e 0%, #101c3b 35%, #0b142b 70%, #070e20 100%) !important;
   background-color: #080f22 !important;
   color: #f1f5f9 !important;
@@ -43,48 +42,154 @@ html[data-theme-style="glassify"] main {
   background: transparent !important;
 }
 
-/* Transformación de todos los contenedores y tarjetas a cristal esmerilado translúcido */
-html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-slate-50"],
-html[data-theme-style="glassify"] div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-html[data-theme-style="glassify"] div[class*="rounded-"][class*="dark:bg-[#121620]"],
-html[data-theme-style="glassify"] div[class*="rounded-"][class*="dark:bg-slate-900"],
-html[data-theme-style="glassify"] div[class*="rounded-2xl"][class*="border"],
-html[data-theme-style="glassify"] section[class*="rounded-"],
-html[data-theme-style="glassify"] header[class*="border"] {
+/* 2. MODO CLARO (Lienzo cristalino ultra claro, suave, luminoso con cristal blanco translúcido) */
+html[data-theme-style="glassify"]:not(.dark) body {
+  background: radial-gradient(120% 90% at 50% -5%, #ffffff 0%, #f4f8fd 40%, #e8f0fa 100%) !important;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Contenedores y tarjetas en MODO OSCURO: Cristal esmerilado translúcido real (Azul espacial profundo) */
+html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-slate-50"],
+html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
+html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-slate-900"],
+html[data-theme-style="glassify"].dark div[class*="rounded-2xl"][class*="border"],
+html[data-theme-style="glassify"].dark section[class*="rounded-"],
+html[data-theme-style="glassify"].dark header[class*="border"] {
   background: rgba(14, 23, 44, 0.65) !important;
+  background-color: rgba(14, 23, 44, 0.65) !important;
   -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
   backdrop-filter: blur(28px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
   box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.16) !important;
   color: #f8fafc !important;
 }
 
-/* Textos de alto contraste en Glassify */
-html[data-theme-style="glassify"] h1,
-html[data-theme-style="glassify"] h2,
-html[data-theme-style="glassify"] h3,
-html[data-theme-style="glassify"] h4,
-html[data-theme-style="glassify"] [class*="text-slate-900"],
-html[data-theme-style="glassify"] [class*="text-on-surface"],
-html[data-theme-style="glassify"] .text-on-surface {
-  color: #ffffff !important;
+/* Contenedores y tarjetas en MODO CLARO: Cristal de hielo puro translúcido */
+html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"][class*="border"],
+html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"] {
+  background: rgba(255, 255, 255, 0.88) !important;
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+  color: #0f172a !important;
 }
 
-html[data-theme-style="glassify"] p,
-html[data-theme-style="glassify"] [class*="text-secondary"],
-html[data-theme-style="glassify"] [class*="text-slate-500"],
-html[data-theme-style="glassify"] [class*="text-slate-600"] {
+/* Celdas del Calendario Mensual, Semanal y Diario en Glassify Oscuro (Cero bloques blancos) */
+html[data-theme-style="glassify"].dark [class*="min-h-"][class*="cursor-pointer"],
+html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="bg-white"],
+html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="dark:bg-"],
+html[data-theme-style="glassify"].dark [class*="grid-cols-7"] > div,
+html[data-theme-style="glassify"].dark .bg-slate-100\/90,
+html[data-theme-style="glassify"].dark .bg-slate-100\/80,
+html[data-theme-style="glassify"].dark .bg-slate-100\/60,
+html[data-theme-style="glassify"].dark div[class*="h-\[1440px\]"],
+html[data-theme-style="glassify"].dark div[class*="overflow-y-scroll"] {
+  background: rgba(14, 23, 44, 0.55) !important;
+  background-color: rgba(14, 23, 44, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) [class*="min-h-"][class*="cursor-pointer"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="min-h-"][class*="bg-white"],
+html[data-theme-style="glassify"]:not(.dark) [class*="grid-cols-7"] > div {
+  background: rgba(255, 255, 255, 0.82) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(226, 232, 240, 0.85) !important;
+  color: #0f172a !important;
+}
+
+/* Cabeceras de los Widgets Inferiores (Toolbar gris eliminado) */
+html[data-theme-style="glassify"].dark div[class*="bg-slate-50"][class*="border-b"],
+html[data-theme-style="glassify"].dark div[class*="border-b"][class*="text-secondary"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #94a3b8 !important;
 }
 
-/* Botones estilo Apple Glass con brillo y acento dinámico */
+/* Botones y elementos dentro de widgets inferiores (Mis Calendarios, Entregas, etc.) */
+html[data-theme-style="glassify"].dark div[class*="rounded-3xl"] div[class*="bg-white"],
+html[data-theme-style="glassify"].dark div[class*="rounded-3xl"] button[class*="bg-white"],
+html[data-theme-style="glassify"].dark div[class*="rounded-2xl"] div[class*="bg-white"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+}
+
+/* Botones secundarios en Glassify Oscuro (Auto-Organizar, Focus, WhatsApp, Avanzado, etc.) */
+html[data-theme-style="glassify"].dark button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
+html[data-theme-style="glassify"].dark button[class*="bg-slate-50"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]) {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  color: #0f172a !important;
+}
+
+/* Botón de limpiar tareas importadas (Rosa suave translúcido en lugar de caja blanca) */
+html[data-theme-style="glassify"].dark button[class*="Limpiar"],
+html[data-theme-style="glassify"].dark button:has([class*="delete_sweep"]),
+html[data-theme-style="glassify"].dark .border-pink-200 {
+  background: rgba(244, 63, 94, 0.15) !important;
+  border-color: rgba(244, 63, 94, 0.35) !important;
+  color: #fda4af !important;
+}
+
+/* Textos de alto contraste en Glassify Oscuro */
+html[data-theme-style="glassify"].dark h1,
+html[data-theme-style="glassify"].dark h2,
+html[data-theme-style="glassify"].dark h3,
+html[data-theme-style="glassify"].dark h4,
+html[data-theme-style="glassify"].dark [class*="text-slate-900"],
+html[data-theme-style="glassify"].dark [class*="text-on-surface"],
+html[data-theme-style="glassify"].dark .text-on-surface {
+  color: #ffffff !important;
+}
+
+html[data-theme-style="glassify"].dark p,
+html[data-theme-style="glassify"].dark [class*="text-secondary"],
+html[data-theme-style="glassify"].dark [class*="text-slate-500"],
+html[data-theme-style="glassify"].dark [class*="text-slate-600"] {
+  color: #94a3b8 !important;
+}
+
+/* Textos de alto contraste en Glassify Claro */
+html[data-theme-style="glassify"]:not(.dark) h1,
+html[data-theme-style="glassify"]:not(.dark) h2,
+html[data-theme-style="glassify"]:not(.dark) h3,
+html[data-theme-style="glassify"]:not(.dark) h4,
+html[data-theme-style="glassify"]:not(.dark) [class*="text-slate-900"] {
+  color: #0f172a !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) p,
+html[data-theme-style="glassify"]:not(.dark) [class*="text-secondary"],
+html[data-theme-style="glassify"]:not(.dark) [class*="text-slate-600"] {
+  color: #475569 !important;
+}
+
+/* Botones principales con acento dinámico y brillo Apple */
 html[data-theme-style="glassify"] button[class*="bg-primary"],
 html[data-theme-style="glassify"] button[class*="bg-primary-container"],
 html[data-theme-style="glassify"] .apple-btn-blue {
-  background: linear-gradient(180deg, var(--app-accent-color, #2997ff) 0%, rgba(var(--app-accent-rgb, 41, 151, 255), 0.82) 100%) !important;
+  background: linear-gradient(180deg, var(--app-accent-color, #2997ff) 0%, rgba(var(--app-accent-rgb, 41, 151, 255), 0.85) 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.55) !important;
   box-shadow: 0 4px 18px rgba(var(--app-accent-rgb, 41, 151, 255), 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
@@ -92,10 +197,10 @@ html[data-theme-style="glassify"] .apple-btn-blue {
   color: #ffffff !important;
 }
 
-/* Inputs, Textareas y Selects en Glassify sin fondo blanco */
-html[data-theme-style="glassify"] input,
-html[data-theme-style="glassify"] textarea,
-html[data-theme-style="glassify"] select {
+/* Inputs, Textareas y Selects en Glassify sin fondo blanco plano */
+html[data-theme-style="glassify"].dark input,
+html[data-theme-style="glassify"].dark textarea,
+html[data-theme-style="glassify"].dark select {
   background: rgba(15, 25, 48, 0.75) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 12px !important;
@@ -104,16 +209,22 @@ html[data-theme-style="glassify"] select {
   backdrop-filter: blur(16px) !important;
 }
 
-html[data-theme-style="glassify"] input::placeholder,
-html[data-theme-style="glassify"] textarea::placeholder {
-  color: #64748b !important;
+html[data-theme-style="glassify"]:not(.dark) input,
+html[data-theme-style="glassify"]:not(.dark) textarea,
+html[data-theme-style="glassify"]:not(.dark) select {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  border-radius: 12px !important;
+  color: #0f172a !important;
 }
 
-/* Modales y desplegables en Glassify */
-html[data-theme-style="glassify"] [role="dialog"],
-html[data-theme-style="glassify"] .modal-content,
-html[data-theme-style="glassify"] [class*="fixed"][class*="z-50"] div[class*="bg-white"],
-html[data-theme-style="glassify"] [class*="fixed"][class*="z-50"] div[class*="dark:bg-"] {
+/* Modales, dropdowns y selectores flotantes en Glassify Oscuro */
+html[data-theme-style="glassify"].dark [role="dialog"],
+html[data-theme-style="glassify"].dark .modal-content,
+html[data-theme-style="glassify"].dark [role="menu"],
+html[data-theme-style="glassify"].dark [role="listbox"],
+html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class*="bg-white"],
+html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class*="dark:bg-"] {
   background: rgba(14, 22, 42, 0.92) !important;
   -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
   backdrop-filter: blur(36px) saturate(200%) !important;
@@ -124,146 +235,7 @@ html[data-theme-style="glassify"] [class*="fixed"][class*="z-50"] div[class*="da
 }
 
 /* --------------------------------------------------------------------------
-   2. NORDIC PAPER MINIMALIST (Editorial & High-Contrast Ink Canvas)
-   - Textos tinta charcoal nítidos (#1c1917) sobre lienzo cálido
-   - Bordes de papel bien definidos y legibilidad 100% garantizada
-   -------------------------------------------------------------------------- */
-html[data-theme-style="nordic"] body {
-  background: #fcfbfa !important;
-  background-color: #fcfbfa !important;
-  color: #1c1917 !important;
-  font-family: "Fraunces", "Inter", Georgia, serif !important;
-}
-
-html[data-theme-style="nordic"] .bg-surface-subtle {
-  background: #f5f4ef !important;
-  background-color: #f5f4ef !important;
-}
-
-html[data-theme-style="nordic"].dark body {
-  background: #181614 !important;
-  background-color: #181614 !important;
-  color: #fafaf9 !important;
-}
-
-html[data-theme-style="nordic"].dark .bg-surface-subtle {
-  background: #201d1b !important;
-  background-color: #201d1b !important;
-}
-
-/* Tarjetas nórdicas con trazo nítido y sombras de papel */
-html[data-theme-style="nordic"] div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="nordic"] div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="nordic"] div[class*="rounded-2xl"][class*="border"],
-html[data-theme-style="nordic"] section[class*="rounded-"] {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
-  border: 1px solid #d6d3d1 !important;
-  border-radius: 14px !important;
-  box-shadow: 0 4px 16px rgba(44, 40, 35, 0.05), 0 1px 2px rgba(44, 40, 35, 0.03) !important;
-  color: #1c1917 !important;
-}
-
-html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
-html[data-theme-style="nordic"].dark div[class*="rounded-2xl"][class*="border"] {
-  background: #23201d !important;
-  background-color: #23201d !important;
-  border: 1px solid #44403c !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
-  color: #fafaf9 !important;
-}
-
-/* Tipografía de máximo contraste en Nórdico */
-html[data-theme-style="nordic"] h1,
-html[data-theme-style="nordic"] h2,
-html[data-theme-style="nordic"] h3,
-html[data-theme-style="nordic"] h4,
-html[data-theme-style="nordic"] [class*="text-slate-900"],
-html[data-theme-style="nordic"] [class*="text-on-surface"] {
-  color: #1c1917 !important;
-  font-weight: 700 !important;
-}
-
-html[data-theme-style="nordic"] p,
-html[data-theme-style="nordic"] [class*="text-secondary"],
-html[data-theme-style="nordic"] [class*="text-slate-600"] {
-  color: #44403c !important;
-}
-
-html[data-theme-style="nordic"] [class*="text-tertiary"],
-html[data-theme-style="nordic"] [class*="text-slate-500"] {
-  color: #57534e !important;
-}
-
-html[data-theme-style="nordic"].dark h1,
-html[data-theme-style="nordic"].dark h2,
-html[data-theme-style="nordic"].dark h3,
-html[data-theme-style="nordic"].dark h4,
-html[data-theme-style="nordic"].dark [class*="text-slate-900"],
-html[data-theme-style="nordic"].dark [class*="text-on-surface"] {
-  color: #fafaf9 !important;
-}
-
-html[data-theme-style="nordic"].dark p,
-html[data-theme-style="nordic"].dark [class*="text-secondary"] {
-  color: #d6d3d1 !important;
-}
-
-/* Botones en Nórdico: terracota tinta o acento dinámico configurado */
-html[data-theme-style="nordic"] button[class*="bg-primary"],
-html[data-theme-style="nordic"] button[class*="bg-primary-container"] {
-  background: var(--app-accent-color, #78350f) !important;
-  background-color: var(--app-accent-color, #78350f) !important;
-  border: 1px solid transparent !important;
-  border-radius: 10px !important;
-  color: #ffffff !important;
-  font-family: "Inter", sans-serif !important;
-  font-weight: 600 !important;
-  box-shadow: 0 2px 8px rgba(var(--app-accent-rgb, 120, 53, 15), 0.28) !important;
-}
-
-/* Inputs en Nórdico con borde visible */
-html[data-theme-style="nordic"] input,
-html[data-theme-style="nordic"] textarea,
-html[data-theme-style="nordic"] select {
-  background: #ffffff !important;
-  border: 1.5px solid #d6d3d1 !important;
-  border-radius: 10px !important;
-  color: #1c1917 !important;
-}
-
-html[data-theme-style="nordic"].dark input,
-html[data-theme-style="nordic"].dark textarea,
-html[data-theme-style="nordic"].dark select {
-  background: #2a2724 !important;
-  border: 1.5px solid #57534e !important;
-  color: #fafaf9 !important;
-}
-
-/* Modales en Nórdico */
-html[data-theme-style="nordic"] [role="dialog"],
-html[data-theme-style="nordic"] .modal-content,
-html[data-theme-style="nordic"] [class*="fixed"][class*="z-50"] div[class*="bg-white"] {
-  background: #ffffff !important;
-  border: 1px solid #a8a29e !important;
-  box-shadow: 0 20px 40px -8px rgba(41, 37, 36, 0.16) !important;
-  color: #1c1917 !important;
-}
-
-html[data-theme-style="nordic"].dark [role="dialog"],
-html[data-theme-style="nordic"].dark .modal-content,
-html[data-theme-style="nordic"].dark [class*="fixed"][class*="z-50"] div[class*="bg-white"],
-html[data-theme-style="nordic"].dark [class*="fixed"][class*="z-50"] div[class*="dark:bg-"] {
-  background: #23201d !important;
-  border: 1px solid #57534e !important;
-  color: #fafaf9 !important;
-}
-
-/* --------------------------------------------------------------------------
-   3. ANIMACIÓN LATERAL CINEMATOGRÁFICA AL CAMBIAR DE TEMA
+   Animación lateral cinematográfica al cambiar de tema
    -------------------------------------------------------------------------- */
 @keyframes themeSwitchSweep {
   0% {

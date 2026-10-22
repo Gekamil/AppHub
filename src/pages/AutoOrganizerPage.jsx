@@ -1301,9 +1301,9 @@ export default function AutoOrganizerPage() {
           </div>
         )}
 
-        {/* 2. Disposición Dividida en 2 Columnas: Izquierda (Ingesta Rápida) + Derecha (Radar Gráfico) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* COLUMNA IZQUIERDA: Barra de Ingesta Rápida + Centro de Enfoque de Hoy (Llena el espacio vacío con utilidad real) */}
+        {/* 2. Disposición Dividida: 2 Columnas para Plan Semanal / 1 Columna Panorámica para Kanban */}
+        <div className={`grid grid-cols-1 ${planViewMode === 'kanban' ? 'lg:grid-cols-1' : 'lg:grid-cols-2'} gap-6 items-start`}>
+          {/* COLUMNA IZQUIERDA: Barra de Ingesta Rápida + Centro de Enfoque de Hoy (En modo Kanban se optimiza en cabecera) */}
           <div className="w-full space-y-4">
             {/* 1. Barra de Entrada Rápida con Ingesta Directa por IA */}
             <div className={`p-1.5 sm:p-2 border transition-all ${
@@ -1385,9 +1385,10 @@ export default function AutoOrganizerPage() {
               </form>
             </div>
 
-            {/* 2. Centro de Enfoque y Momentum de Hoy (Llena armónicamente el espacio debajo del buscador) */}
-            <div className="bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
-              {/* Cabecera del Panel de Enfoque */}
+            {/* 2. Centro de Enfoque y Momentum de Hoy (Visible en Vista Semanal para equilibrar la composición) */}
+            {planViewMode !== 'kanban' && (
+              <div className="bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+                {/* Cabecera del Panel de Enfoque */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -1521,9 +1522,10 @@ export default function AutoOrganizerPage() {
                 </span>
               </div>
             </div>
+            )}
           </div>
 
-          {/* COLUMNA DERECHA: PLAN SEMANAL ESTRICTAMENTE SEMANAL (DISEÑO APPLE LIMPIO) */}
+          {/* COLUMNA DERECHA: PLAN SEMANAL O TABLERO KANBAN PANORÁMICO */}
           <div className="w-full bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
             {/* Cabecera Apple del Plan Semanal con Switcher Kanban */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1825,10 +1827,10 @@ export default function AutoOrganizerPage() {
             </div>
             )}
 
-            {/* VISTA 2: TABLERO KANBAN DE HOY (POR HACER • EN PROGRESO • HECHO) */}
+            {/* VISTA 2: TABLERO KANBAN DE HOY (POR HACER • EN PROGRESO • HECHO) - PANORÁMICO EXPANDIDO */}
             {planViewMode === 'kanban' && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                   {/* Columna 1: Por hacer */}
                   <div
                     data-kanban-col="todo"
@@ -1839,23 +1841,25 @@ export default function AutoOrganizerPage() {
                     }}
                     onDragLeave={() => setDropOverKanbanCol(null)}
                     onDrop={() => handleKanbanDrop('todo')}
-                    className={`p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[220px] max-h-[380px] ${
+                    className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
                       dropOverKanbanCol === 'todo'
                         ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20'
-                        : 'border-slate-200/60 dark:border-slate-800/60'
+                        : 'border-slate-200/70 dark:border-slate-800/70'
                     }`}
                   >
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50 shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[17px] text-amber-500">pending_actions</span>
-                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">Por hacer</span>
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60 dark:border-slate-700/60 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[17px]">pending_actions</span>
+                        </div>
+                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Por hacer</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
                         {kanbanTodoTasks.length}
                       </span>
                     </div>
 
-                    <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+                    <div className="space-y-3 overflow-y-auto pr-1 flex-1">
                       {kanbanTodoTasks.map((t) => {
                         const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
                         const isBeingDragged = draggedKanbanTaskId === t.id
@@ -1874,18 +1878,18 @@ export default function AutoOrganizerPage() {
                             onTouchStart={() => handleKanbanTouchStart(t.id)}
                             onTouchMove={handleKanbanTouchMove}
                             onTouchEnd={handleKanbanTouchEnd}
-                            className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/70 dark:border-slate-700/70 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs hover:border-slate-300 dark:hover:border-slate-600 flex flex-col gap-1.5 ${
+                            className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/80 dark:border-slate-700/80 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 flex flex-col gap-2.5 group ${
                               isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-1 text-[10px]">
+                            <div className="flex items-center justify-between gap-1 text-xs">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <span
-                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  className="w-2 h-2 rounded-full shrink-0"
                                   style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
                                 />
                                 <span
-                                  className="px-1.5 py-0.2 rounded font-semibold truncate"
+                                  className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
                                   style={{
                                     backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
                                     color: roleMatch?.hex || '#0071E3',
@@ -1894,28 +1898,28 @@ export default function AutoOrganizerPage() {
                                   {roleMatch?.label || roleMatch?.name || t.context || 'General'}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 shrink-0 text-slate-400 dark:text-slate-500 font-mono">
+                              <div className="flex items-center gap-1.5 shrink-0 text-slate-400 dark:text-slate-500 font-mono text-[11px]">
                                 <span>{t.time || '10:00'}</span>
-                                <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-slate-600 cursor-grab">
+                                <span className="material-symbols-outlined text-[15px] text-slate-300 dark:text-slate-600 cursor-grab group-hover:text-primary transition-colors">
                                   drag_indicator
                                 </span>
                               </div>
                             </div>
-                            <h4 className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 leading-snug">
                               {t.title}
                             </h4>
-                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                            <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   handleMoveKanbanTask(t.id, 'in_progress')
                                 }}
-                                className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer"
                                 title="Iniciar y mover a En progreso"
                               >
                                 <span>Iniciar</span>
-                                <span className="material-symbols-outlined text-[11px]">arrow_forward</span>
+                                <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
                               </button>
                               <button
                                 type="button"
@@ -1924,20 +1928,21 @@ export default function AutoOrganizerPage() {
                                   setEditingTaskId(t.id)
                                   setIsFocusModalOpen(true)
                                 }}
-                                className="text-[10px] text-slate-400 hover:text-primary transition-colors flex items-center gap-0.5 cursor-pointer"
+                                className="px-2 py-1 rounded-lg text-xs text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
                                 title="Enfocar con cronómetro"
                               >
-                                <span className="material-symbols-outlined text-[13px]">play_circle</span>
-                                <span className="hidden sm:inline">Focus</span>
+                                <span className="material-symbols-outlined text-[14px]">play_circle</span>
+                                <span>Focus</span>
                               </button>
                             </div>
                           </div>
                         )
                       })}
                       {kanbanTodoTasks.length === 0 && (
-                        <div className="h-28 flex flex-col items-center justify-center text-center p-2 text-slate-400 dark:text-slate-500 text-[11px] border border-dashed border-slate-200 dark:border-slate-700/60 rounded-xl">
-                          <span className="material-symbols-outlined text-[20px] mb-1 opacity-50">done_all</span>
-                          <span>Sin tareas por hacer hoy</span>
+                        <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
+                          <span className="material-symbols-outlined text-[28px] opacity-40">done_all</span>
+                          <span className="font-medium">Sin tareas por hacer hoy</span>
+                          <span className="text-[11px] opacity-70">Usa el buscador superior para añadir una</span>
                         </div>
                       )}
                     </div>
@@ -1953,23 +1958,25 @@ export default function AutoOrganizerPage() {
                     }}
                     onDragLeave={() => setDropOverKanbanCol(null)}
                     onDrop={() => handleKanbanDrop('in_progress')}
-                    className={`p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[220px] max-h-[380px] ${
+                    className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
                       dropOverKanbanCol === 'in_progress'
                         ? 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20'
-                        : 'border-slate-200/60 dark:border-slate-800/60'
+                        : 'border-slate-200/70 dark:border-slate-800/70'
                     }`}
                   >
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50 shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[17px] text-blue-500">timelapse</span>
-                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">En progreso</span>
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60 dark:border-slate-700/60 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[17px]">timelapse</span>
+                        </div>
+                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">En progreso</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400">
                         {kanbanInProgressTasks.length}
                       </span>
                     </div>
 
-                    <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+                    <div className="space-y-3 overflow-y-auto pr-1 flex-1">
                       {kanbanInProgressTasks.map((t) => {
                         const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
                         const isBeingDragged = draggedKanbanTaskId === t.id
@@ -1988,18 +1995,18 @@ export default function AutoOrganizerPage() {
                             onTouchStart={() => handleKanbanTouchStart(t.id)}
                             onTouchMove={handleKanbanTouchMove}
                             onTouchEnd={handleKanbanTouchEnd}
-                            className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-blue-200/80 dark:border-blue-900/60 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs flex flex-col gap-1.5 ${
+                            className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-blue-200/80 dark:border-blue-900/60 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md flex flex-col gap-2.5 group ${
                               isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-1 text-[10px]">
+                            <div className="flex items-center justify-between gap-1 text-xs">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <span
-                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  className="w-2 h-2 rounded-full shrink-0"
                                   style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
                                 />
                                 <span
-                                  className="px-1.5 py-0.2 rounded font-semibold truncate"
+                                  className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
                                   style={{
                                     backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
                                     color: roleMatch?.hex || '#0071E3',
@@ -2008,27 +2015,28 @@ export default function AutoOrganizerPage() {
                                   {roleMatch?.label || roleMatch?.name || t.context || 'General'}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 shrink-0 text-slate-400 dark:text-slate-500 font-mono">
+                              <div className="flex items-center gap-1.5 shrink-0 text-slate-400 dark:text-slate-500 font-mono text-[11px]">
                                 <span>{t.time || '10:00'}</span>
-                                <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-slate-600 cursor-grab">
+                                <span className="material-symbols-outlined text-[15px] text-slate-300 dark:text-slate-600 cursor-grab group-hover:text-primary transition-colors">
                                   drag_indicator
                                 </span>
                               </div>
                             </div>
-                            <h4 className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 leading-snug">
                               {t.title}
                             </h4>
-                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                            <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   handleMoveKanbanTask(t.id, 'todo')
                                 }}
-                                className="p-1 rounded-md text-[10px] text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                className="px-2 py-1 rounded-lg text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
                                 title="Volver a Por hacer"
                               >
                                 <span className="material-symbols-outlined text-[13px]">arrow_back</span>
+                                <span>Volver</span>
                               </button>
                               <button
                                 type="button"
@@ -2036,10 +2044,10 @@ export default function AutoOrganizerPage() {
                                   e.stopPropagation()
                                   handleMoveKanbanTask(t.id, 'done')
                                 }}
-                                className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
                                 title="Marcar como Hecho"
                               >
-                                <span className="material-symbols-outlined text-[12px]">check</span>
+                                <span className="material-symbols-outlined text-[14px]">check</span>
                                 <span>Completar</span>
                               </button>
                             </div>
@@ -2047,9 +2055,10 @@ export default function AutoOrganizerPage() {
                         )
                       })}
                       {kanbanInProgressTasks.length === 0 && (
-                        <div className="h-28 flex flex-col items-center justify-center text-center p-2 text-slate-400 dark:text-slate-500 text-[11px] border border-dashed border-slate-200 dark:border-slate-700/60 rounded-xl">
-                          <span className="material-symbols-outlined text-[20px] mb-1 opacity-50">drag_pan</span>
-                          <span>Arrastra aquí para empezar a enfocar</span>
+                        <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
+                          <span className="material-symbols-outlined text-[28px] opacity-40">drag_pan</span>
+                          <span className="font-medium">Sin actividades en curso</span>
+                          <span className="text-[11px] opacity-70">Arrastra una tarea aquí para empezar a enfocar</span>
                         </div>
                       )}
                     </div>
@@ -2065,23 +2074,25 @@ export default function AutoOrganizerPage() {
                     }}
                     onDragLeave={() => setDropOverKanbanCol(null)}
                     onDrop={() => handleKanbanDrop('done')}
-                    className={`p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[220px] max-h-[380px] ${
+                    className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
                       dropOverKanbanCol === 'done'
                         ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
-                        : 'border-slate-200/60 dark:border-slate-800/60'
+                        : 'border-slate-200/70 dark:border-slate-800/70'
                     }`}
                   >
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/50 dark:border-slate-700/50 shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[17px] text-emerald-500">task_alt</span>
-                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">Hecho</span>
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60 dark:border-slate-700/60 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[17px]">task_alt</span>
+                        </div>
+                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Hecho</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                         {kanbanDoneTasks.length}
                       </span>
                     </div>
 
-                    <div className="space-y-2 overflow-y-auto pr-1 flex-1">
+                    <div className="space-y-3 overflow-y-auto pr-1 flex-1">
                       {kanbanDoneTasks.map((t) => {
                         const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
                         const isBeingDragged = draggedKanbanTaskId === t.id
@@ -2100,18 +2111,18 @@ export default function AutoOrganizerPage() {
                             onTouchStart={() => handleKanbanTouchStart(t.id)}
                             onTouchMove={handleKanbanTouchMove}
                             onTouchEnd={handleKanbanTouchEnd}
-                            className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/60 dark:border-slate-800 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs flex flex-col gap-1.5 opacity-75 ${
+                            className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/60 dark:border-slate-800 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs flex flex-col gap-2 opacity-75 group ${
                               isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-1 text-[10px]">
+                            <div className="flex items-center justify-between gap-1 text-xs">
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <span
-                                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                                  className="w-2 h-2 rounded-full shrink-0"
                                   style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
                                 />
                                 <span
-                                  className="px-1.5 py-0.2 rounded font-semibold truncate"
+                                  className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
                                   style={{
                                     backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
                                     color: roleMatch?.hex || '#0071E3',
@@ -2120,22 +2131,22 @@ export default function AutoOrganizerPage() {
                                   {roleMatch?.label || roleMatch?.name || t.context || 'General'}
                                 </span>
                               </div>
-                              <span className="material-symbols-outlined text-[15px] text-emerald-500">check_circle</span>
+                              <span className="material-symbols-outlined text-[17px] text-emerald-500">check_circle</span>
                             </div>
-                            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 line-through line-clamp-2">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 line-through line-clamp-2 leading-snug">
                               {t.title}
                             </h4>
-                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                            <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   handleMoveKanbanTask(t.id, 'todo')
                                 }}
-                                className="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                className="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
                                 title="Reabrir tarea"
                               >
-                                <span className="material-symbols-outlined text-[12px]">undo</span>
+                                <span className="material-symbols-outlined text-[13px]">undo</span>
                                 <span>Reabrir</span>
                               </button>
                             </div>
@@ -2143,9 +2154,10 @@ export default function AutoOrganizerPage() {
                         )
                       })}
                       {kanbanDoneTasks.length === 0 && (
-                        <div className="h-28 flex flex-col items-center justify-center text-center p-2 text-slate-400 dark:text-slate-500 text-[11px] border border-dashed border-slate-200 dark:border-slate-700/60 rounded-xl">
-                          <span className="material-symbols-outlined text-[20px] mb-1 opacity-50">pending</span>
-                          <span>Sin actividades completadas hoy</span>
+                        <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
+                          <span className="material-symbols-outlined text-[28px] opacity-40">pending</span>
+                          <span className="font-medium">Sin actividades completadas hoy</span>
+                          <span className="text-[11px] opacity-70">Completa tareas para ver tu progreso</span>
                         </div>
                       )}
                     </div>

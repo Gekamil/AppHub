@@ -36,6 +36,20 @@ export default function LandingPage() {
   const orb3Ref = useRef(null)
   const orb4Ref = useRef(null)
 
+  // Garantizar que la landing page siempre tenga su estilo cinematográfico oscuro y sin interferencias
+  useEffect(() => {
+    const prevStyle = document.documentElement.getAttribute('data-theme-style')
+    document.documentElement.setAttribute('data-theme-style', 'landing')
+    document.documentElement.classList.add('dark')
+    return () => {
+      if (prevStyle && prevStyle !== 'landing') {
+        document.documentElement.setAttribute('data-theme-style', prevStyle)
+      } else {
+        document.documentElement.setAttribute('data-theme-style', 'glassify')
+      }
+    }
+  }, [])
+
   // Reloj de precisión Madrid para demo en vivo
   useEffect(() => {
     const updateTime = () => {
@@ -183,18 +197,20 @@ export default function LandingPage() {
         {/* 2. HERO PRINCIPAL CINEMATOGRÁFICO CON REVELADO PROGRESIVO */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 flex flex-col items-center text-center">
           {/* Eyebrow de Versión */}
-          <span className="reveal-elem text-xs sm:text-sm font-semibold tracking-widest text-[#86868b] uppercase mb-4">
+          <span className="reveal-elem text-xs sm:text-sm font-semibold tracking-widest text-sky-400 uppercase mb-4 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/20">
             StudentHub 0.0.8 • Multiplataforma
           </span>
 
-          {/* Titular Monumental en Blanco Puro */}
-          <h1 className="reveal-elem stagger-1 text-5xl sm:text-7xl lg:text-[84px] font-semibold tracking-tight text-white max-w-4xl leading-[1.04] mb-6">
+          {/* Titular Monumental en Blanco Puro y Gradiente Luminoso */}
+          <h1 className="reveal-elem stagger-1 text-5xl sm:text-7xl lg:text-[84px] font-bold tracking-tight text-white max-w-4xl leading-[1.04] mb-6 drop-shadow-md">
             Tu semestre.{' '}
-            <span className="text-[#86868b] block sm:inline">Bajo control absoluto.</span>
+            <span className="block sm:inline bg-gradient-to-r from-sky-400 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
+              Bajo control absoluto.
+            </span>
           </h1>
 
-          {/* Subtítulo sobrio y elegante */}
-          <p className="reveal-elem stagger-2 text-lg sm:text-2xl text-[#86868b] max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+          {/* Subtítulo nítido y legible */}
+          <p className="reveal-elem stagger-2 text-lg sm:text-2xl text-slate-200 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
             El primer centro de mando académico que combina radar inteligente de exámenes, calendario de alta densidad y tu propio mayordomo en WhatsApp.
           </p>
 
@@ -664,96 +680,130 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 5. SECCIÓN DE DESCARGAS (Estilo Tarjetas Apple con Efecto Frosted Glass) */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 scroll-mt-24" id="descargas">
+        {/* 5. SECCIÓN DE DESCARGAS (Estilo Tarjetas Apple con Efecto Frosted Glass y Acentos de Plataforma) */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20 scroll-mt-24" id="descargas">
           <div className="reveal-elem text-center max-w-2xl mx-auto mb-14">
-            <span className="text-xs font-semibold tracking-widest text-[#86868b] uppercase">
-              Multiplataforma
+            <span className="text-xs font-semibold tracking-widest text-sky-400 uppercase px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/20">
+              Multiplataforma Nativa
             </span>
-            <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white mt-2">
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white mt-3">
               Descarga StudentHub para tu equipo.
             </h2>
+            <p className="text-sm sm:text-base text-slate-300 mt-2">
+              Sincronización instantánea en todos tus dispositivos sin suscripciones ni publicidad.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-7">
             {/* Windows */}
-            <div className="reveal-elem apple-card stagger-1 p-8 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-1 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-sky-500/40 transition-all duration-300">
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-sky-500/20 transition-all duration-500" />
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white mb-6">
-                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801" />
-                  </svg>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-13 h-13 rounded-2xl bg-sky-500/10 border border-sky-400/20 flex items-center justify-center text-sky-400 shadow-inner">
+                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                      <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.949-1.801" />
+                    </svg>
+                  </div>
+                  <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/25">
+                    v0.0.8 • 64-bit
+                  </span>
                 </div>
-                <span className="text-xs text-[#86868b] uppercase tracking-wider font-semibold">Windows 10 / 11</span>
-                <h3 className="text-2xl font-semibold text-white mt-1">Windows (.EXE)</h3>
-                <p className="text-xs sm:text-sm text-[#86868b] mt-2 leading-relaxed">
-                  Instalador oficial de 64 bits con notificaciones nativas de escritorio y sincronización en segundo plano.
+                <span className="text-xs text-sky-400 uppercase tracking-wider font-semibold">Windows 10 / 11</span>
+                <h3 className="text-2xl font-bold text-white mt-1">Windows (.EXE)</h3>
+                <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+                  Instalador oficial con inicio automático, notificaciones nativas de escritorio y sincronización con tu Google Calendar.
                 </p>
               </div>
 
-              <div className="mt-8 pt-5 border-t border-white/5">
+              <div className="mt-8 pt-5 border-t border-white/10 flex flex-col gap-2">
                 <a
                   href="/download/StudentHub-Setup.exe"
                   download="StudentHub-Setup.exe"
-                  className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
+                  className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs font-semibold py-3"
                 >
-                  <span className="material-symbols-outlined text-[17px]">download</span>
-                  <span>Descargar Instalador</span>
+                  <span className="material-symbols-outlined text-[18px]">download</span>
+                  <span>Descargar Instalador (.EXE)</span>
                 </a>
+                <span className="text-[10px] text-center text-slate-400 font-mono">
+                  Instalación en 1 clic • Compatible con Windows 10 y 11
+                </span>
               </div>
             </div>
 
             {/* Android */}
-            <div className="reveal-elem apple-card stagger-2 p-8 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-2 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-300">
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-500/20 transition-all duration-500" />
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-[#30d158] mb-6">
-                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993 0 .5511-.4483.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.084 12 8.084s-3.5902.3276-5.1368.8657L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
-                  </svg>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-13 h-13 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 flex items-center justify-center text-[#30d158] shadow-inner">
+                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                      <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993 0 .5511-.4483.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.084 12 8.084s-3.5902.3276-5.1368.8657L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
+                    </svg>
+                  </div>
+                  <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/25">
+                    v0.0.8 • Widgets Nativos
+                  </span>
                 </div>
-                <span className="text-xs text-[#86868b] uppercase tracking-wider font-semibold">Android 10+</span>
-                <h3 className="text-2xl font-semibold text-white mt-1">Android (.APK)</h3>
-                <p className="text-xs sm:text-sm text-[#86868b] mt-2 leading-relaxed">
+                <span className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">Android 10+</span>
+                <h3 className="text-2xl font-bold text-white mt-1">Android (.APK)</h3>
+                <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
                   Paquete APK oficial con widgets interactivos de pantalla de inicio, modo oscuro real y alarmas sonoras.
                 </p>
               </div>
 
-              <div className="mt-8 pt-5 border-t border-white/5">
+              <div className="mt-8 pt-5 border-t border-white/10 flex flex-col gap-2">
                 <a
                   href="/download/StudentHub.apk"
                   download="StudentHub.apk"
-                  className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
+                  className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs font-semibold py-3"
                 >
-                  <span className="material-symbols-outlined text-[17px]">download</span>
+                  <span className="material-symbols-outlined text-[18px]">download</span>
                   <span>Descargar APK Oficial</span>
                 </a>
+                <span className="text-[10px] text-center text-slate-400 font-mono">
+                  Incluye widgets de semana y vista rápida de hoy
+                </span>
               </div>
             </div>
 
             {/* iPhone / Web */}
-            <div className="reveal-elem apple-card stagger-3 p-8 flex flex-col justify-between">
+            <div className="reveal-elem apple-card stagger-3 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/40 transition-all duration-300">
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/20 transition-all duration-500" />
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white mb-6">
-                  <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.61-.75 1.04-1.8 0.92-2.87-.9.04-2.02.63-2.65 1.38-.56.65-.99 1.7-0.88 2.73.99.08 2-.49 2.61-1.24Z" />
-                  </svg>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="w-13 h-13 rounded-2xl bg-purple-500/10 border border-purple-400/20 flex items-center justify-center text-purple-300 shadow-inner">
+                    <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.61-.75 1.04-1.8 0.92-2.87-.9.04-2.02.63-2.65 1.38-.56.65-.99 1.7-0.88 2.73.99.08 2-.49 2.61-1.24Z" />
+                    </svg>
+                  </div>
+                  <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-400/25">
+                    iOS PWA & Web
+                  </span>
                 </div>
-                <span className="text-xs text-[#86868b] uppercase tracking-wider font-semibold">iPhone & Web PWA</span>
-                <h3 className="text-2xl font-semibold text-white mt-1">iOS & Navegadores</h3>
-                <p className="text-xs sm:text-sm text-[#86868b] mt-2 leading-relaxed">
-                  Instalable directamente en Safari a pantalla completa como una app nativa, o accesible desde cualquier navegador.
+                <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold">iPhone & Web PWA</span>
+                <h3 className="text-2xl font-bold text-white mt-1">iOS & Navegadores</h3>
+                <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+                  Instalable directamente desde Safari a pantalla completa como una app nativa, o accesible instantáneamente sin descargas.
                 </p>
               </div>
 
-              <div className="mt-8 pt-5 border-t border-white/5 flex flex-col gap-2">
+              <div className="mt-8 pt-5 border-t border-white/10 flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={() => setIsIosModalOpen(true)}
-                  className="apple-btn-secondary w-full flex items-center justify-center gap-2 cursor-pointer text-xs"
+                  className="apple-btn-secondary w-full flex items-center justify-center gap-2 cursor-pointer text-xs font-semibold py-3 border border-white/15"
                 >
-                  <span className="material-symbols-outlined text-[17px]">phone_iphone</span>
-                  <span>Guía para iPhone</span>
+                  <span className="material-symbols-outlined text-[18px]">phone_iphone</span>
+                  <span>Ver Guía de Instalación para iPhone</span>
                 </button>
+                <a
+                  href="/app"
+                  className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs font-semibold py-2.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  <span>Abrir Versión Web Inmediata</span>
+                </a>
               </div>
             </div>
           </div>
