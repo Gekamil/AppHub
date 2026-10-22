@@ -1,0 +1,262 @@
+/* ==========================================================================
+   StudentHub Multi-Design Themes Engine (Refero Styles)
+   Transformación radical de fondos, tarjetas, botones, inputs y calendarios
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. GLASSIFY LIQUID PRO (Apple Keynote Liquid Frosted Glass)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="glassify"] body {
+  background: radial-gradient(130% 90% at 50% -10%, #15244d 0%, #0d1736 28%, #070c20 55%, #030612 100%) !important;
+  background-color: #030612 !important;
+  color: #f5f5f7 !important;
+}
+
+html[data-theme-style="glassify"] .bg-surface-subtle,
+html[data-theme-style="glassify"] main {
+  background: transparent !important;
+}
+
+/* Tarjetas de cristal esmerilado translúcido real con borde specular superior */
+html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="glassify"] div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="glassify"] .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="glassify"] .dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
+html[data-theme-style="glassify"] .dark div[class*="rounded-"][class*="dark:bg-slate-900"],
+html[data-theme-style="glassify"] div[class*="rounded-2xl"][class*="border"] {
+  background: rgba(15, 23, 42, 0.45) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.32) !important;
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.18) !important;
+  border-radius: 20px !important;
+  color: #f5f5f7 !important;
+}
+
+/* Botones estilo Apple Glass con sheen */
+html[data-theme-style="glassify"] button[class*="bg-primary"],
+html[data-theme-style="glassify"] button[class*="bg-primary-container"] {
+  background: linear-gradient(180deg, #0077ed 0%, #0062c4 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 18px rgba(0, 113, 227, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  border-radius: 980px !important;
+  color: #ffffff !important;
+}
+
+html[data-theme-style="glassify"] input,
+html[data-theme-style="glassify"] textarea {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 14px !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. OBSIDIAN LINEAR PRO (Linear & Raycast Ultra-Dark Engineering)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="linear"] body,
+html[data-theme-style="linear"] .bg-surface-subtle {
+  background: #08090a !important;
+  background-color: #08090a !important;
+  color: #ededed !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif !important;
+}
+
+html[data-theme-style="linear"] div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="linear"] div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="linear"] .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="linear"] div[class*="rounded-2xl"][class*="border"] {
+  background: #0e1015 !important;
+  background-color: #0e1015 !important;
+  border: 1px solid #1f2328 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+  color: #d1d5db !important;
+}
+
+html[data-theme-style="linear"] button[class*="bg-primary"],
+html[data-theme-style="linear"] button[class*="bg-primary-container"] {
+  background: #5e6ad2 !important;
+  background-color: #5e6ad2 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  font-weight: 500 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme-style="linear"] input,
+html[data-theme-style="linear"] textarea {
+  background: #12151c !important;
+  border: 1px solid #272d38 !important;
+  border-radius: 6px !important;
+  color: #f3f4f6 !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. NORDIC PAPER MINIMALIST (Warm Editorial Canvas)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="nordic"] body,
+html[data-theme-style="nordic"] .bg-surface-subtle {
+  background: #fbfbfa !important;
+  background-color: #fbfbfa !important;
+  color: #27272a !important;
+  font-family: "Fraunces", "Inter", Georgia, serif !important;
+}
+
+html[data-theme-style="nordic"].dark body,
+html[data-theme-style="nordic"].dark .bg-surface-subtle {
+  background: #191816 !important;
+  background-color: #191816 !important;
+  color: #f4f4f5 !important;
+}
+
+html[data-theme-style="nordic"] div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="nordic"] div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="nordic"] div[class*="rounded-2xl"][class*="border"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(44, 40, 35, 0.04) !important;
+  color: #292524 !important;
+}
+
+html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="nordic"].dark div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="nordic"].dark .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="nordic"].dark div[class*="rounded-2xl"][class*="border"] {
+  background: #242220 !important;
+  background-color: #242220 !important;
+  border: 1px solid #383531 !important;
+  color: #e7e5e4 !important;
+}
+
+html[data-theme-style="nordic"] button[class*="bg-primary"],
+html[data-theme-style="nordic"] button[class*="bg-primary-container"] {
+  background: #78350f !important;
+  background-color: #78350f !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+}
+
+html[data-theme-style="nordic"] input,
+html[data-theme-style="nordic"] textarea {
+  background: #f5f5f4 !important;
+  border: 1px solid #d6d3d1 !important;
+  border-radius: 8px !important;
+  color: #1c1917 !important;
+}
+
+html[data-theme-style="nordic"].dark input,
+html[data-theme-style="nordic"].dark textarea {
+  background: #1c1b19 !important;
+  border: 1px solid #44403c !important;
+  color: #fafaf9 !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. CYBERPUNK NEON TACTICAL (High-Voltage Matrix Grid)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="cyberpunk"] body,
+html[data-theme-style="cyberpunk"] .bg-surface-subtle {
+  background: #030712 !important;
+  background-image: 
+    linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px) !important;
+  background-size: 32px 32px !important;
+  color: #00f0ff !important;
+  font-family: "Space Grotesk", "Space Mono", monospace !important;
+}
+
+html[data-theme-style="cyberpunk"] div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="cyberpunk"] div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="cyberpunk"] .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="cyberpunk"] div[class*="rounded-2xl"][class*="border"] {
+  background: rgba(8, 14, 28, 0.88) !important;
+  border: 1px solid #00f0ff !important;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.18), inset 0 0 10px rgba(0, 240, 255, 0.08) !important;
+  border-radius: 4px !important;
+  color: #e0f2fe !important;
+}
+
+html[data-theme-style="cyberpunk"] button[class*="bg-primary"],
+html[data-theme-style="cyberpunk"] button[class*="bg-primary-container"] {
+  background: #00f0ff !important;
+  background-color: #00f0ff !important;
+  color: #030712 !important;
+  border: 1px solid #38bdf8 !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.5) !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+html[data-theme-style="cyberpunk"] input,
+html[data-theme-style="cyberpunk"] textarea {
+  background: #060d1e !important;
+  border: 1px solid #0284c7 !important;
+  border-radius: 4px !important;
+  color: #38bdf8 !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. NEO-BRUTALISTA INDUSTRIAL (Stark High-Contrast Workshop)
+   -------------------------------------------------------------------------- */
+html[data-theme-style="brutalista"] body,
+html[data-theme-style="brutalista"] .bg-surface-subtle {
+  background: #f4f4f0 !important;
+  color: #000000 !important;
+  font-family: "Space Grotesk", sans-serif !important;
+}
+
+html[data-theme-style="brutalista"].dark body,
+html[data-theme-style="brutalista"].dark .bg-surface-subtle {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme-style="brutalista"] div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="brutalista"] div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="brutalista"] div[class*="rounded-2xl"][class*="border"] {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  color: #000000 !important;
+}
+
+html[data-theme-style="brutalista"].dark div[class*="rounded-"][class*="bg-surface-pure"],
+html[data-theme-style="brutalista"].dark div[class*="rounded-"][class*="bg-white"],
+html[data-theme-style="brutalista"].dark .dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+html[data-theme-style="brutalista"].dark div[class*="rounded-2xl"][class*="border"] {
+  background: #1a1a1a !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 0px !important;
+  box-shadow: 4px 4px 0px #ffffff !important;
+  color: #ffffff !important;
+}
+
+html[data-theme-style="brutalista"] button[class*="bg-primary"],
+html[data-theme-style="brutalista"] button[class*="bg-primary-container"] {
+  background: #facc15 !important;
+  background-color: #facc15 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme-style="brutalista"].dark button[class*="bg-primary"],
+html[data-theme-style="brutalista"].dark button[class*="bg-primary-container"] {
+  background: #facc15 !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 3px 3px 0px #ffffff !important;
+  color: #000000 !important;
+}

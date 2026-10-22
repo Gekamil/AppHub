@@ -234,7 +234,7 @@ export default function MyHubPage() {
 
   useEffect(() => {
     const handleThemeChange = (e) => {
-      if (e.detail && ['clasica', 'aura', 'executive', 'brutalista'].includes(e.detail)) {
+      if (e.detail && APP_THEMES.some((t) => t.id === e.detail)) {
         setAppThemeState(e.detail)
       } else if (!e.detail) {
         setAppThemeState(getAppTheme())

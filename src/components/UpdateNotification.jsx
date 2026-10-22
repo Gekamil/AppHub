@@ -47,17 +47,29 @@ export default function UpdateNotification() {
     // 4. En dispositivos móviles (Android APK) comprobar GitHub Releases
     checkForAppUpdates().then((res) => {
       if (res?.hasUpdate) {
-        setUpdateState({
-          type: 'manual',
-          version: res.latestVersion,
-          url: res.downloadUrl,
-          isAndroid: res.isAndroid,
-        })
+        const isDismissed = localStorage.getItem(`studenthub_dismissed_update_${res.latestVersion}`)
+        if (!isDismissed) {
+          setUpdateState({
+            type: 'manual',
+            version: res.latestVersion,
+            url: res.downloadUrl,
+            isAndroid: res.isAndroid,
+          })
+        }
       }
     })
 
     return () => window.removeEventListener('studenthub_open_changelog', handleOpenChangelog)
   }, [])
+
+  const handleDismissBanner = () => {
+    if (updateState?.version) {
+      try {
+        localStorage.setItem(`studenthub_dismissed_update_${updateState.version}`, 'true')
+      } catch (e) {}
+    }
+    setUpdateState(null)
+  }
 
   const handleDismissChangelog = () => {
     try {
@@ -180,7 +192,7 @@ export default function UpdateNotification() {
               </div>
             </div>
             <button
-              onClick={() => setUpdateState(null)}
+              onClick={handleDismissBanner}
               className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-xs p-1 cursor-pointer"
               title="Cerrar aviso"
             >

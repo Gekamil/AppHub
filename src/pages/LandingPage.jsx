@@ -7,6 +7,28 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState('semanal')
   const [isIosModalOpen, setIsIosModalOpen] = useState(false)
   const [currentTimeStr, setCurrentTimeStr] = useState('16:03:07')
+  const [simulatedVoiceText, setSimulatedVoiceText] = useState('')
+  const [isSimulatingVoice, setIsSimulatingVoice] = useState(false)
+  const [hasVoiceTaskAdded, setHasVoiceTaskAdded] = useState(false)
+
+  const handleTriggerVoiceDemo = () => {
+    if (isSimulatingVoice) return
+    setIsSimulatingVoice(true)
+    setSimulatedVoiceText('')
+    setHasVoiceTaskAdded(false)
+
+    const phrase = 'Añadir examen de Redes el viernes a las 11:00'
+    let i = 0
+    const interval = setInterval(() => {
+      setSimulatedVoiceText(phrase.slice(0, i + 1))
+      i++
+      if (i >= phrase.length) {
+        clearInterval(interval)
+        setIsSimulatingVoice(false)
+        setHasVoiceTaskAdded(true)
+      }
+    }, 40)
+  }
 
   // Refs para orbes atmosféricos con Parallax 3D mediante RAF pasivo
   const orb1Ref = useRef(null)
@@ -177,7 +199,7 @@ export default function LandingPage() {
           </p>
 
           {/* Botones de Acción con Sheen y Feedback Táctil */}
-          <div className="reveal-elem stagger-3 flex flex-wrap items-center justify-center gap-4 mb-14 w-full max-w-md">
+          <div className="reveal-elem stagger-3 flex flex-wrap items-center justify-center gap-4 mb-8 w-full max-w-md">
             <a
               href="#descargas"
               className="apple-btn-blue apple-btn-sheen flex-1 min-w-[190px] text-center flex items-center justify-center gap-2 cursor-pointer shadow-lg"
@@ -192,6 +214,36 @@ export default function LandingPage() {
             >
               <span>Probar en Navegador</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </div>
+
+          {/* Píldora Interactiva de Comando por Voz IA (Demostración en Vivo) */}
+          <div className="reveal-elem stagger-3 max-w-lg w-full mb-10">
+            <button
+              type="button"
+              onClick={handleTriggerVoiceDemo}
+              className="w-full p-2.5 sm:p-3 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 hover:border-white/25 backdrop-blur-md transition-all flex items-center justify-between gap-3 text-left cursor-pointer group shadow-sm active:scale-98"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform ${
+                  isSimulatingVoice ? 'bg-[#30d158]/20 text-[#30d158] animate-pulse' : 'bg-[#2997ff]/20 text-[#2997ff] group-hover:scale-110'
+                }`}>
+                  <span className="material-symbols-outlined text-[18px]">mic</span>
+                </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] text-[#2997ff] font-semibold uppercase tracking-wider">
+                    {isSimulatingVoice ? 'Capturando audio en tiempo real...' : hasVoiceTaskAdded ? 'Comando Procesado con Éxito' : 'Dictado por Voz IA • Pruébalo'}
+                  </span>
+                  <span className="text-xs text-slate-200 truncate font-mono">
+                    {simulatedVoiceText || 'Haz clic para dictar: "Añadir examen de Redes el viernes a las 11:00"'}
+                  </span>
+                </div>
+              </div>
+              <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium shrink-0 transition-colors ${
+                hasVoiceTaskAdded ? 'bg-[#30d158]/20 text-[#30d158]' : 'bg-white/10 text-white group-hover:bg-[#2997ff]'
+              }`}>
+                {isSimulatingVoice ? 'Grabando...' : hasVoiceTaskAdded ? '¡Añadido!' : 'Dictar'}
+              </span>
             </button>
           </div>
 
@@ -293,6 +345,27 @@ export default function LandingPage() {
 
                   {/* Grid de eventos del día */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                    {hasVoiceTaskAdded && (
+                      <div className="md:col-span-2 p-3 sm:p-3.5 rounded-xl bg-[#2997ff]/10 border border-[#2997ff]/40 flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-300">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#2997ff] animate-ping shrink-0" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs text-[#2997ff] font-bold">11:00 - 12:30</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2997ff]/20 text-[#2997ff] font-semibold">
+                                Creado con Voz IA
+                              </span>
+                            </div>
+                            <span className="text-sm font-semibold text-white block truncate">Examen de Redes y Seguridad</span>
+                          </div>
+                        </div>
+                        <span className="text-xs text-[#30d158] font-mono font-medium shrink-0 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                          <span>Sincronizado</span>
+                        </span>
+                      </div>
+                    )}
+
                     {/* Tarjeta Evento 1 */}
                     <div className="p-4 rounded-xl bg-white/[0.04] border border-white/5 hover:border-white/15 transition-all">
                       <div className="flex items-center justify-between">

@@ -1,50 +1,53 @@
 import { Capacitor } from '@capacitor/core'
 
-export const CURRENT_VERSION = '0.0.4'
+export const CURRENT_VERSION = '0.0.8'
 const GITHUB_REPO = 'Gekamil/AppHub'
 
 export const APP_CHANGELOG = {
-  version: '0.0.4',
-  date: '19 de Octubre, 2026',
-  badge: 'Actualización v0.0.4',
+  version: '0.0.8',
+  date: '22 de Octubre, 2026',
+  badge: 'Actualización v0.0.8',
   title: 'StudentHub se ha actualizado con éxito',
   description: 'Hemos aplicado las siguientes mejoras y correcciones en todos tus dispositivos:',
   features: [
     {
-      title: 'Persistencia Total de Calendarios y Auto-Recuperación',
-      description: 'Los calendarios creados ahora se sincronizan en la nube (Firestore) y se recuperan automáticamente a partir de sus eventos, apareciendo siempre en el selector.',
-      icon: 'calendar_month',
+      title: 'Motor de Inteligencia Artificial Resiliente',
+      description: 'El Asistente IA ahora cuenta con failover dinámico en Groq, respuestas contextuales precisas y control total para añadir o modificar tareas al instante.',
+      icon: 'smart_toy',
     },
     {
-      title: 'Filtrado Contextual Inteligente',
-      description: 'Los eventos de universidad, deportes y proyectos se enlazan de forma inmediata a sus respectivos calendarios.',
-      icon: 'filter_alt',
+      title: '4 Nuevos Estilos Visuales de Refero',
+      description: 'Disfruta de Glassify Apple, Obsidian Linear, Nordic Paper y Cyberpunk Neon Tactical en toda la aplicación.',
+      icon: 'palette',
     },
     {
-      title: 'WhatsApp con Código de 8 dígitos 100% Estable',
-      description: 'El socket de enlace se mantiene activo y protegido mientras introduces el código en tu móvil, garantizando que WhatsApp complete la vinculación sin errores.',
-      icon: 'pin',
+      title: 'Cero Lag y Rendimiento Optimizado',
+      description: 'Carga instantánea de pestañas y memoización profunda de la vista de calendario.',
+      icon: 'speed',
     },
     {
-      title: 'Generación Inmediata de Código QR',
-      description: 'Limpieza automática de sesiones expiradas para que el código QR aparezca en pantalla al instante sin demoras ni bucles de carga.',
-      icon: 'qr_code',
-    },
-    {
-      title: 'App de Escritorio Windows con Conexión Live',
-      description: 'La app instalada en Windows ahora se conecta directamente al servidor en la nube. Cualquier cambio futuro aparecerá automáticamente al abrir la aplicación sin tener que reinstalar.',
-      icon: 'desktop_windows',
+      title: 'Widget Android de Voz 1-Tap',
+      description: 'Acceso directo desde la pantalla de inicio para hablar con la IA y programar actividades al instante.',
+      icon: 'mic',
     },
   ],
 }
 
 export async function checkForAppUpdates() {
-  // En Electron, electron-updater se encarga de la comprobacion automatica en segundo plano
-  if (typeof window !== 'undefined' && window.electronAPI?.isElectron) {
+  // En la web (navegador normal / PWA), no molestamos con descarga de binarios .exe o .apk
+  const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron
+  const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android'
+
+  if (!isElectron && !isAndroid) {
+    return { hasUpdate: false }
+  }
+
+  // En Electron, electron-updater se encarga de la comprobación automática en segundo plano
+  if (isElectron) {
     return { managedByElectron: true }
   }
 
-  // En Android u otros entornos comprobamos GitHub Releases API
+  // En Android APK nativo comprobamos GitHub Releases API
   try {
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
       headers: { Accept: 'application/vnd.github.v3+json' },
@@ -55,18 +58,14 @@ export async function checkForAppUpdates() {
     const latestVersion = (release.tag_name || '').replace(/^v/, '')
 
     if (latestVersion && latestVersion !== CURRENT_VERSION) {
-      const isAndroid = Capacitor.getPlatform() === 'android'
       const apkAsset = (release.assets || []).find((a) => a.name.endsWith('.apk'))
-      const exeAsset = (release.assets || []).find((a) => a.name.endsWith('.exe'))
 
       return {
         hasUpdate: true,
         latestVersion,
         releaseNotes: release.body || '',
-        downloadUrl: isAndroid
-          ? apkAsset?.browser_download_url || release.html_url
-          : exeAsset?.browser_download_url || release.html_url,
-        isAndroid,
+        downloadUrl: apkAsset?.browser_download_url || release.html_url,
+        isAndroid: true,
       }
     }
   } catch (err) {

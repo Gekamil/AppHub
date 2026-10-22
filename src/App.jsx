@@ -1,12 +1,22 @@
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter, createHashRouter, RouterProvider, Navigate, useRouteError } from 'react-router-dom'
 import AppShell from './layouts/AppShell'
-import AutoOrganizerPage from './pages/AutoOrganizerPage'
-import NotebooksPage from './pages/NotebooksPage'
-import CalendarPage from './pages/CalendarPage'
-import AIAssistantPage from './pages/AIAssistantPage'
-import MyHubPage from './pages/MyHubPage'
-import LandingPage from './pages/LandingPage'
 import UpdateNotification from './components/UpdateNotification'
+
+const AutoOrganizerPage = lazy(() => import('./pages/AutoOrganizerPage'))
+const NotebooksPage = lazy(() => import('./pages/NotebooksPage'))
+const CalendarPage = lazy(() => import('./pages/CalendarPage'))
+const AIAssistantPage = lazy(() => import('./pages/AIAssistantPage'))
+const MyHubPage = lazy(() => import('./pages/MyHubPage'))
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh] w-full">
+      <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+    </div>
+  )
+}
 
 const isElectronApp =
   typeof window !== 'undefined' &&
@@ -93,24 +103,67 @@ const createRouter = isElectronApp ? createHashRouter : createBrowserRouter
 const router = createRouter([
   {
     path: '/',
-    element: <RootDispatcher />,
+    element: (
+      <Suspense fallback={<PageFallback />}>
+        <RootDispatcher />
+      </Suspense>
+    ),
     errorElement: <RootErrorBoundary />,
   },
   {
     path: '/landing',
-    element: <LandingPage />,
+    element: (
+      <Suspense fallback={<PageFallback />}>
+        <LandingPage />
+      </Suspense>
+    ),
     errorElement: <RootErrorBoundary />,
   },
   {
     element: <AppShell />,
     errorElement: <RootErrorBoundary />,
     children: [
-      { path: '/app', element: <AutoOrganizerPage /> },
+      {
+        path: '/app',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <AutoOrganizerPage />
+          </Suspense>
+        ),
+      },
       { path: '/auto-organizer', element: <Navigate to="/app" replace /> },
-      { path: '/notebooks', element: <NotebooksPage /> },
-      { path: '/calendar', element: <CalendarPage /> },
-      { path: '/ai-assistant', element: <AIAssistantPage /> },
-      { path: '/my-hub', element: <MyHubPage /> },
+      {
+        path: '/notebooks',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <NotebooksPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/calendar',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <CalendarPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/ai-assistant',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <AIAssistantPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/my-hub',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <MyHubPage />
+          </Suspense>
+        ),
+      },
       { path: '*', element: <Navigate to="/app" replace /> },
     ],
   },

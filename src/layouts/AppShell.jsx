@@ -267,8 +267,8 @@ export default function AppShell() {
   // Escuchar apertura directa del Asistente de Voz Copiloto (desde widget o acción)
   useEffect(() => {
     const checkVoiceParam = () => {
-      const search = window.location.search || ''
-      if (search.includes('action=voice_copilot') || search.includes('action=voice')) {
+      const fullSearch = (location.search || '') + (window.location.search || '') + (window.location.hash || '')
+      if (fullSearch.includes('action=voice_copilot') || fullSearch.includes('action=voice')) {
         setIsVoiceCopilotOpen(true)
       }
     }
@@ -276,7 +276,7 @@ export default function AppShell() {
     const handleOpenVoice = () => setIsVoiceCopilotOpen(true)
     window.addEventListener('studenthub_open_voice_copilot', handleOpenVoice)
     return () => window.removeEventListener('studenthub_open_voice_copilot', handleOpenVoice)
-  }, [location.search])
+  }, [location.search, location.pathname])
 
   // Escuchar cambios de color de acento de widgets desde Ajustes para refrescar al instante
   useEffect(() => {
@@ -549,6 +549,28 @@ export default function AppShell() {
 
   const showSidebar = navPosition === 'sidebar'
 
+  const outletContextValue = useCallback(() => ({
+    globalTasks,
+    setGlobalTasks,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    navPosition,
+    setNavPosition,
+    aiAssistantMode,
+    setAiAssistantMode,
+    hubCategories,
+    setHubCategories,
+    notebookFolders,
+    setNotebookFolders,
+  }), [
+    globalTasks,
+    isSidebarOpen,
+    navPosition,
+    aiAssistantMode,
+    hubCategories,
+    notebookFolders,
+  ])()
+
   return (
     <div className="bg-surface-subtle font-body-md text-on-surface min-h-screen overflow-x-hidden">
       {showSidebar && (
@@ -572,22 +594,7 @@ export default function AppShell() {
             navPosition === 'top' ? 'pt-28 md:pt-22' : 'pt-20 md:pt-16'
           } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 pb-20 md:pb-margin-lg bg-surface-subtle min-h-screen transition-all`}
         >
-          <Outlet
-            context={{
-              globalTasks,
-              setGlobalTasks,
-              isSidebarOpen,
-              setIsSidebarOpen,
-              navPosition,
-              setNavPosition,
-              aiAssistantMode,
-              setAiAssistantMode,
-              hubCategories,
-              setHubCategories,
-              notebookFolders,
-              setNotebookFolders,
-            }}
-          />
+          <Outlet context={outletContextValue} />
         </main>
         {aiAssistantMode === 'floating' && (
           <FloatingAICopilot globalTasks={globalTasks} setGlobalTasks={setGlobalTasks} />

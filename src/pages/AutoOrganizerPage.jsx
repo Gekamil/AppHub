@@ -333,7 +333,7 @@ export default function AutoOrganizerPage() {
 
   useEffect(() => {
     const handleThemeChange = (e) => {
-      if (e.detail && ['clasica', 'aura', 'executive', 'brutalista'].includes(e.detail)) {
+      if (e.detail && APP_THEMES.some((t) => t.id === e.detail)) {
         setAppThemeState(e.detail)
       } else if (!e.detail) {
         setAppThemeState(getAppTheme())
@@ -1176,13 +1176,14 @@ export default function AutoOrganizerPage() {
               type="button"
               onClick={handleAutoOrganizeWithAI}
               disabled={isAiLoading}
-              className="h-8.5 px-3.5 rounded-xl bg-white dark:bg-[#161b26] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium text-xs border border-slate-200/90 dark:border-slate-800 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="h-8 px-2.5 sm:px-3.5 rounded-xl bg-white dark:bg-[#161b26] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium text-xs border border-slate-200/90 dark:border-slate-800 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Organizar automáticamente la semana con IA y enviar logs al bot"
             >
-              <span className={`material-symbols-outlined text-[16px] text-primary ${isAiLoading ? 'animate-spin' : ''}`}>
+              <span className={`material-symbols-outlined text-[15px] sm:text-[16px] text-primary ${isAiLoading ? 'animate-spin' : ''}`}>
                 {isAiLoading ? 'sync' : 'folder_open'}
               </span>
-              <span>{isAiLoading ? 'Organizando...' : 'Auto-Organizar'}</span>
+              <span className="hidden sm:inline">{isAiLoading ? 'Organizando...' : 'Auto-Organizar'}</span>
+              <span className="sm:hidden">{isAiLoading ? 'IA...' : 'Auto-IA'}</span>
             </button>
 
             <button
@@ -1209,26 +1210,27 @@ export default function AutoOrganizerPage() {
                   setIsFocusModalOpen(true)
                 }
               }}
-              className="h-8.5 px-3.5 rounded-xl bg-white dark:bg-[#161b26] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium text-xs border border-slate-200/90 dark:border-slate-800 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="h-8 px-2.5 sm:px-3.5 rounded-xl bg-white dark:bg-[#161b26] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium text-xs border border-slate-200/90 dark:border-slate-800 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
               title="Abrir reloj de concentración"
             >
-              <span className="material-symbols-outlined text-[16px] text-amber-500">timer</span>
-              <span>Modo Focus</span>
+              <span className="material-symbols-outlined text-[15px] sm:text-[16px] text-amber-500">timer</span>
+              <span>Focus</span>
             </button>
 
             <button
               type="button"
               onClick={() => setIsWhatsAppModalOpen(true)}
-              className="h-8.5 px-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-medium text-xs border border-emerald-200/80 dark:border-emerald-800/80 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="h-8 px-2.5 sm:px-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-medium text-xs border border-emerald-200/80 dark:border-emerald-800/80 shadow-2xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
               title={isGuest ? 'Inicia sesión para vincular WhatsApp Bot' : 'Bot de WhatsApp con vinculación QR y servidor local'}
             >
-              <span className="material-symbols-outlined text-[16px]">
+              <span className="material-symbols-outlined text-[15px] sm:text-[16px]">
                 {isGuest ? 'lock' : 'chat'}
               </span>
-              <span>WhatsApp Bot</span>
+              <span className="hidden sm:inline">WhatsApp Bot</span>
+              <span className="sm:hidden">WhatsApp</span>
               {isGuest ? (
-                <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.2 rounded font-semibold">
-                  Requiere cuenta
+                <span className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1 py-0.2 rounded font-semibold">
+                  Cuenta
                 </span>
               ) : baileysState.status === 'connected' ? (
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="WhatsApp Web Conectado"></span>
@@ -4067,7 +4069,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
               <span>{task.time || '10:00'}</span>
             </span>
             {task.est && (
-              <span className="inline-flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">
+              <span className="hidden sm:inline-flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">
                 <span className="material-symbols-outlined text-[13px]">hourglass_top</span>
                 <span>{task.est}</span>
               </span>
@@ -4077,10 +4079,10 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
                 • {task.date}
               </span>
             )}
-            <span className={`px-2 py-0.2 rounded-full font-semibold border ${effortBadges[task.effort] || effortBadges.Medium}`}>
+            <span className={`hidden sm:inline-block px-2 py-0.2 rounded-full font-semibold border ${effortBadges[task.effort] || effortBadges.Medium}`}>
               {task.effort === 'High' ? 'Alto' : task.effort === 'Medium' ? 'Medio' : 'Bajo'}
             </span>
-            <span className={`px-2 py-0.2 rounded-full font-medium border ${contextBadges[task.context] || 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
+            <span className={`hidden sm:inline-block px-2 py-0.2 rounded-full font-medium border ${contextBadges[task.context] || 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'}`}>
               {task.context}
             </span>
             {isSportActivity(task) && (
@@ -4105,7 +4107,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
         </div>
       </div>
 
-      <div className="flex items-center justify-center shrink-0 px-1 self-start sm:self-center">
+      <div className="hidden sm:flex items-center justify-center shrink-0 px-1">
         {!task.completed ? (
           <button
             type="button"
@@ -4125,7 +4127,7 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
         )}
       </div>
 
-      <div className="flex items-center gap-1 self-end sm:self-center shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 self-end sm:self-center shrink-0 opacity-80 sm:opacity-50 group-hover:opacity-100 transition-opacity">
         <button
           type="button"
           onClick={() => onEdit(task)}

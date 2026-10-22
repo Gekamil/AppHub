@@ -887,7 +887,7 @@ export function applyBridgeActions(actions, source = 'whatsapp') {
 
 // Llamada resiliente a Groq con failover automático de modelos ante 429
 async function callGroqWithFallback(payload) {
-  const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
+  const models = ['qwen/qwen3.8-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
   let lastError = null
 
   for (const model of models) {
@@ -920,7 +920,7 @@ async function callGroqWithFallback(payload) {
             if (jsonMatch) {
               try {
                 const extracted = JSON.parse(jsonMatch[0])
-                return { choices: [{ message: { content: JSON.stringify(extracted) } }] }
+                return { choices: [{ message: { content: JSON.stringify(extracted) } }], model }
               } catch (e) {}
             }
             const actions = []
@@ -933,13 +933,15 @@ async function callGroqWithFallback(payload) {
                 updates: { time: rectMatch[1].trim() },
               })
             }
-            return { choices: [{ message: { content: JSON.stringify({ reply: raw, actions }) } }] }
+            return { choices: [{ message: { content: JSON.stringify({ reply: raw, actions }) } }], model }
           }
         } catch (recErr) {}
         throw new Error(`Groq error (${res.status}): ${errBody}`)
       }
 
-      return await res.json()
+      const result = await res.json()
+      result.model = model
+      return result
     } catch (e) {
       lastError = e
     }
@@ -2268,17 +2270,50 @@ export function handleBaileysApiRoute(req, res) {
     })
     req.on('end', async () => {
       try {
-        const { messages, temperature = 0.2, max_tokens = 850, jsonMode = true } = JSON.parse(body || '{}')
+        const { messages = [], temperature = 0.2, max_tokens = 850, jsonMode = true } = JSON.parse(body || '{}')
+        const safeMessages = Array.isArray(messages) ? [...messages] : []
+        
+        // Groq exige que la palabra 'json' aparezca en los mensajes si response_format es json_object
+        if (jsonMode) {
+          const hasJson = safeMessages.some((m) => (m.content || '').toLowerCase().includes('json'))
+          if (!hasJson) {
+            safeMessages.unshift({
+              role: 'system',
+              content: 'You are an intelligent task and productivity AI assistant. You must respond in valid JSON format.',
+            })
+          }
+        }
+
         const payload = {
-          messages,
+          messages: safeMessages,
           temperature,
           max_tokens,
         }
         if (jsonMode) {
           payload.response_format = { type: 'json_object' }
         }
-        const groqRes = await callGroqWithFallback(payload)
-        const text = groqRes.choices?.[0]?.message?.content || ''
+
+        let groqRes
+        try {
+          groqRes = await callGroqWithFallback(payload)
+        } catch (callErr) {
+          // Si falló con json_object, reintentar sin forzar response_format
+          if (jsonMode) {
+            const fallbackPayload = { ...payload }
+            delete fallbackPayload.response_format
+            groqRes = await callGroqWithFallback(fallbackPayload)
+          } else {
+            throw callErr
+          }
+        }
+
+        let text = groqRes.choices?.[0]?.message?.content || ''
+        // Limpiar posibles bloques markdown ```json ... ```
+        if (jsonMode && text.includes('```')) {
+          const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+          if (match) text = match[1].trim()
+        }
+
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ success: true, content: text, model: groqRes.model || 'groq-proxy' }))

@@ -54,13 +54,16 @@ export default function VoiceCopilotWidget({ globalTasks, setGlobalTasks, classN
 
   // Auto-iniciar grabación si se abrió directamente desde el widget nativo de Android
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.search.includes('autoRecord=true')) {
-      const timer = setTimeout(() => {
-        if (!isListening && !isProcessing) {
-          startListening()
-        }
-      }, 400)
-      return () => clearTimeout(timer)
+    if (typeof window !== 'undefined') {
+      const fullQuery = (window.location.search || '') + (window.location.hash || '')
+      if (fullQuery.includes('autoRecord=true') || fullQuery.includes('action=voice')) {
+        const timer = setTimeout(() => {
+          if (!isListening && !isProcessing) {
+            startListening()
+          }
+        }, 350)
+        return () => clearTimeout(timer)
+      }
     }
   }, [])
 

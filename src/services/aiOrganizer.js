@@ -16,13 +16,24 @@ const RENDER_BACKEND_URL = 'https://freestudentapphub.onrender.com'
 export async function callGroqWithFallback({ messages, temperature = 0.2, max_tokens = 850, jsonMode = true }) {
   let lastError = null
 
+  const safeMessages = Array.isArray(messages) ? [...messages] : []
+  if (jsonMode) {
+    const hasJson = safeMessages.some((m) => (m.content || '').toLowerCase().includes('json'))
+    if (!hasJson) {
+      safeMessages.unshift({
+        role: 'system',
+        content: 'You are an intelligent task and productivity assistant. You must respond in valid JSON format.',
+      })
+    }
+  }
+
   // 1. Si hay clave configurada en el cliente, probar modelos de texto en Groq directamente
   if (GROQ_API_KEY) {
     for (const model of GROQ_MODELS) {
       try {
         const body = {
           model,
-          messages,
+          messages: safeMessages,
           temperature,
           max_tokens,
         }
@@ -41,7 +52,11 @@ export async function callGroqWithFallback({ messages, temperature = 0.2, max_to
 
         if (res.ok) {
           const data = await res.json()
-          const text = data.choices?.[0]?.message?.content || ''
+          let text = data.choices?.[0]?.message?.content || ''
+          if (jsonMode && text.includes('```')) {
+            const m = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+            if (m) text = m[1].trim()
+          }
           if (text && text.trim()) {
             return { success: true, content: text, model }
           }
@@ -63,7 +78,7 @@ export async function callGroqWithFallback({ messages, temperature = 0.2, max_to
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages,
+        messages: safeMessages,
         temperature,
         max_tokens,
         jsonMode,
@@ -72,9 +87,14 @@ export async function callGroqWithFallback({ messages, temperature = 0.2, max_to
     if (backendRes.ok) {
       const data = await backendRes.json()
       if (data && data.content) {
+        let text = data.content
+        if (jsonMode && text.includes('```')) {
+          const m = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+          if (m) text = m[1].trim()
+        }
         return {
           success: true,
-          content: data.content,
+          content: text,
           model: data.model || 'render-backend-groq',
         }
       }
