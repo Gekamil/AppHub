@@ -4,7 +4,7 @@ import { getUserCalendars, getCurrentUser } from './firebase.js'
 
 const GROQ_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GROQ_API_KEY) || ''
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_MODELS = ['qwen/qwen3.8-27b', 'allam-2-7b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
+const GROQ_MODELS = ['qwen/qwen3.8-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
 const RENDER_BACKEND_URL = 'https://freestudentapphub.onrender.com'
 
 /**
