@@ -362,3 +362,72 @@ html[data-theme-style="glassify"]:not(.dark) [class*="fixed"][class*="z-50"] div
 .animate-theme-switch {
   animation: themeSwitchSweep 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ==========================================================================
+   OPTIMIZACION DE RENDIMIENTO EXTREMO PARA DISPOSITIVOS MOVILES (60+ FPS)
+   Eliminacion de multi-pass Gaussian blur (backdrop-filter) y saturacion de fill-rate
+   en pantallas pequenas para garantizar scroll suave e instantaneo sin ningun tipo de lag.
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Desactivar backdrop-filter costoso en todas las tarjetas y secciones en movil */
+  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-surface-pure"],
+  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-white"],
+  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-slate-50"],
+  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
+  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
+  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-slate-900"],
+  html[data-theme-style="glassify"].dark div[class*="rounded-2xl"][class*="border"],
+  html[data-theme-style="glassify"].dark section[class*="rounded-"],
+  html[data-theme-style="glassify"].dark header[class*="border"],
+  html[data-theme-style="glassify"].dark button,
+  html[data-theme-style="glassify"].dark input,
+  html[data-theme-style="glassify"].dark select,
+  html[data-theme-style="glassify"].dark textarea {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: #111827 !important;
+    background-color: #111827 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-surface-pure"],
+  html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-white"],
+  html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"][class*="border"],
+  html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"],
+  html[data-theme-style="glassify"]:not(.dark) header[class*="border"],
+  html[data-theme-style="glassify"]:not(.dark) button,
+  html[data-theme-style="glassify"]:not(.dark) input,
+  html[data-theme-style="glassify"]:not(.dark) select,
+  html[data-theme-style="glassify"]:not(.dark) textarea {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* Fondo solido y ligero en movil sin calcular multiples radial-gradients pesados */
+  html[data-theme-style="glassify"].dark body {
+    background: #080f22 !important;
+    background-color: #080f22 !important;
+  }
+
+  html[data-theme-style="glassify"]:not(.dark) body {
+    background: #f1f5f9 !important;
+    background-color: #f1f5f9 !important;
+  }
+
+  /* Scroll nativo acelerado por hardware sin friccion */
+  body, main, div[class*="overflow-y-"], div[class*="overflow-x-"] {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Reducir composicion en listas densas */
+  [data-task-item], [data-event-item] {
+    transform: translateZ(0);
+    will-change: auto !important;
+  }
+}

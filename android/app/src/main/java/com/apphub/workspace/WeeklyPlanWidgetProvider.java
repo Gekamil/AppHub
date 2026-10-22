@@ -98,6 +98,9 @@ public class WeeklyPlanWidgetProvider extends AppWidgetProvider {
 
         // Tint footer button text
         views.setTextColor(R.id.tv_wp_btn_open_tasks, accentColor);
+        if (hasCalendarColor) {
+            views.setInt(R.id.btn_weekly_voice_add, "setBackgroundColor", accentColor);
+        }
 
         // Connect RemoteViewsService to ListView
         Intent serviceIntent = new Intent(context, WeeklyPlanWidgetService.class);
@@ -115,6 +118,16 @@ public class WeeklyPlanWidgetProvider extends AppWidgetProvider {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
         views.setOnClickPendingIntent(R.id.btn_open_tasks_app, openAppPendingIntent);
+
+        // Setup voice add button pending intent: opens MainActivity with route to voice copilot
+        Intent voiceIntent = new Intent(context, MainActivity.class);
+        voiceIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        voiceIntent.putExtra("route", "/calendar?action=voice_copilot&autoRecord=true");
+        PendingIntent voicePendingIntent = PendingIntent.getActivity(
+                context, 205, voiceIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_weekly_voice_add, voicePendingIntent);
 
         // PendingIntent template for ListView items
         Intent itemClickIntent = new Intent(context, MainActivity.class);

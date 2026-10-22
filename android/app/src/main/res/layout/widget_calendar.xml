@@ -87,6 +87,18 @@
                 android:textColor="@color/widget_pill_inactive_text"
                 android:textSize="11sp"
                 android:textStyle="bold" />
+
+            <!-- Boton de Voz para anadir eventos escuchando -->
+            <ImageView
+                android:id="@+id/btn_calendar_voice_add"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_marginLeft="6dp"
+                android:background="@drawable/widget_circle_mic_bg"
+                android:src="@drawable/ic_voice_mic"
+                android:padding="5dp"
+                android:contentDescription="Añadir evento por voz"
+                android:scaleType="centerInside" />
         </LinearLayout>
     </LinearLayout>
 

@@ -294,6 +294,30 @@ export default function AppShell() {
     return () => window.removeEventListener('studenthub_widget_accent_changed', handleWidgetAccentChange)
   }, [globalTasks])
 
+  // Escuchar cambios de tema (dark/light, estilo de tema) para sincronizar widgets de Android de inmediato
+  useEffect(() => {
+    const handleThemeChanged = () => {
+      const curUser = getCurrentUser()
+      const userCals = getUserCalendars(curUser)
+      const customWidgetAccent = localStorage.getItem('studenthub_widget_accent_color')
+      let primaryColor = customWidgetAccent || '#0071E3'
+      if (!customWidgetAccent) {
+        const activeCalId = localStorage.getItem('app_active_calendar_id')
+        const activeCal = (userCals || []).find((c) => c.id === activeCalId) || userCals[0]
+        if (activeCal && activeCal.color) primaryColor = activeCal.color
+      }
+      syncWidgetData({ tasks: globalTasks, calendars: userCals, calendarColor: primaryColor }).catch(() => {})
+    }
+    window.addEventListener('app_theme_changed', handleThemeChanged)
+    window.addEventListener('app_theme_style_changed', handleThemeChanged)
+    window.addEventListener('studenthub_theme_changed', handleThemeChanged)
+    return () => {
+      window.removeEventListener('app_theme_changed', handleThemeChanged)
+      window.removeEventListener('app_theme_style_changed', handleThemeChanged)
+      window.removeEventListener('studenthub_theme_changed', handleThemeChanged)
+    }
+  }, [globalTasks])
+
   // Comprobador en vivo de Alarmas Sonoras y Notificaciones de inicio de eventos
   useEffect(() => {
     requestNotificationPermission().catch(() => {})

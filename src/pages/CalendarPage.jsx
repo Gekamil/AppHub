@@ -900,6 +900,11 @@ export default function CalendarPage() {
   const [isCatSelectDropdownOpen, setIsCatSelectDropdownOpen] = useState(false)
   const [isRecurrenceSelectDropdownOpen, setIsRecurrenceSelectDropdownOpen] = useState(false)
   const [feedbackToast, setFeedbackToast] = useState(null)
+  const isMobileScreen = typeof window !== 'undefined' && (
+    window.innerWidth < 768 ||
+    (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')
+  )
   const [showHourlyGrid, setShowHourlyGrid] = useState(false)
   const [widgetLayout, setWidgetLayout] = useState('surround') // 'surround' | 'sidebar'
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
@@ -3189,8 +3194,8 @@ export default function CalendarPage() {
 
   return (
     <div className="flex flex-col w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto relative isolate overflow-x-clip">
-      {/* Toast de confirmación de eventos y acciones (Siempre visible en primer plano z-[9999], debajo de la navbar) */}
-      {feedbackToast && (
+      {/* Toast de confirmación de eventos y acciones (Oculto en móvil para no tapar la pantalla con avisos molestos) */}
+      {feedbackToast && !isMobileScreen && (
         <div
           onClick={() => setFeedbackToast(null)}
           className="fixed top-28 sm:top-24 md:top-20 left-1/2 -translate-x-1/2 z-[9999] max-w-[90vw] cursor-pointer bg-slate-900/95 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm font-bold backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-200 border border-white/10 dark:border-black/10 transition-transform active:scale-95"
@@ -3204,33 +3209,33 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Fondo de Diseño Dinámico Multitono (Atmosphere Aurora Mesh optimizado por GPU a 120 FPS) */}
+      {/* Fondo de Diseño Dinámico Multitono (Atmosphere Aurora Mesh optimizado por GPU a 120 FPS - desactivado en móvil para máximo rendimiento) */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden contain-strict">
         {/* Patrón de textura arquitectónica sutil */}
         <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.07] bg-[radial-gradient(#000_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#fff_1.2px,transparent_1.2px)] [background-size:20px_20px]" />
         
         {/* Aurora principal: color del calendario activo */}
         <div
-          className="absolute -top-24 -left-20 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] rounded-full blur-[64px] sm:blur-[96px] opacity-30 dark:opacity-20 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
+          className="hidden sm:block absolute -top-24 -left-20 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] rounded-full blur-[64px] sm:blur-[96px] opacity-30 dark:opacity-20 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
           style={{ backgroundColor: bgCal1 }}
         />
         
         {/* Aurora secundaria en cuadrante superior derecho: segundo calendario */}
         <div
-          className="absolute top-1/6 -right-16 w-[400px] sm:w-[580px] h-[400px] sm:h-[580px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
+          className="hidden sm:block absolute top-1/6 -right-16 w-[400px] sm:w-[580px] h-[400px] sm:h-[580px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
           style={{ backgroundColor: bgCal2 }}
         />
         
         {/* Resplandor terciario inferior: tercer calendario */}
         <div
-          className="absolute -bottom-10 left-1/4 w-[380px] sm:w-[500px] h-[380px] sm:h-[500px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
+          className="hidden sm:block absolute -bottom-10 left-1/4 w-[380px] sm:w-[500px] h-[380px] sm:h-[500px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
           style={{ backgroundColor: bgCal3 }}
         />
 
         {/* Resplandor cuaternario: cuarto calendario si existe */}
         {otherCalendars.length > 2 && (
           <div
-            className="absolute bottom-1/4 -right-20 w-[350px] sm:w-[480px] h-[350px] sm:h-[480px] rounded-full blur-[70px] sm:blur-[100px] opacity-15 dark:opacity-10 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
+            className="hidden sm:block absolute bottom-1/4 -right-20 w-[350px] sm:w-[480px] h-[350px] sm:h-[480px] rounded-full blur-[70px] sm:blur-[100px] opacity-15 dark:opacity-10 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
             style={{ backgroundColor: bgCal4 }}
           />
         )}

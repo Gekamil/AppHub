@@ -172,6 +172,11 @@ export async function syncWidgetData({ tasks = [], calendars = [], calendarColor
       ? `Próxima entrega: ${monthTasks[0].title}`
       : 'No hay entregas pendientes este mes.';
 
+    const isDark = typeof document !== 'undefined'
+      ? (document.documentElement.classList.contains('dark') || (typeof localStorage !== 'undefined' && localStorage.getItem('studenthub_theme_mode') === 'dark'))
+      : false;
+    const currentTheme = (typeof localStorage !== 'undefined' && (localStorage.getItem('studenthub_app_theme') || localStorage.getItem('studenthub_theme_style'))) || 'glassify';
+
     const payload = {
       todayEvents: JSON.stringify(todayEvents),
       todayEventsFull: JSON.stringify(todayEventsFull),
@@ -187,6 +192,8 @@ export async function syncWidgetData({ tasks = [], calendars = [], calendarColor
       monthEventsCount,
       weekSummary,
       monthHighlights,
+      isDarkMode: isDark,
+      appTheme: currentTheme,
     };
 
     // Cache locally for web or in-app preview

@@ -120,6 +120,16 @@ public class WidgetBridgePlugin extends Plugin {
             editor.putString("voice_copilot_response", voiceResponse);
         }
 
+        Boolean isDarkMode = call.getBoolean("isDarkMode");
+        if (isDarkMode != null) {
+            editor.putBoolean("is_dark_mode", isDarkMode);
+        }
+
+        String appTheme = call.getString("appTheme");
+        if (appTheme != null) {
+            editor.putString("app_theme", appTheme);
+        }
+
         editor.apply();
 
         // Refresh all widgets

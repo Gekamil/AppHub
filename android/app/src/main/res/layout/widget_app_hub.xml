@@ -14,94 +14,161 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="StudentHub • Widgets"
-            android:textColor="#0F172A"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_hub_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="StudentHub • Asistente"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_hub_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dictado por voz y acciones rápidas"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tv_hub_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_pill_active"
-            android:paddingLeft="8dp"
-            android:paddingTop="2dp"
-            android:paddingRight="8dp"
-            android:paddingBottom="2dp"
-            android:text="Activo"
+            android:paddingLeft="9dp"
+            android:paddingTop="3dp"
+            android:paddingRight="9dp"
+            android:paddingBottom="3dp"
+            android:text="Al día"
             android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
     <ImageView
+        android:id="@+id/iv_hub_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
-        android:background="#E2E8F0"
+        android:background="@color/widget_divider"
         android:contentDescription="@null" />
 
-    <!-- 4 Quick Action Widget Tiles -->
+    <!-- Hero Voice Card: Dictar evento o tarea a la IA al instante -->
+    <LinearLayout
+        android:id="@+id/btn_hub_voice_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/widget_voice_card_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <ImageView
+            android:id="@+id/iv_hub_mic_icon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/widget_circle_mic_bg"
+            android:contentDescription="Dictar evento por voz"
+            android:padding="7dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_voice_mic" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_hub_hero_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dictar evento o tarea a la IA"
+                android:textColor="@color/widget_text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_hub_hero_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="Toca para hablar y añadir a la agenda"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 4 Quick Creation and Navigation Pills -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="4">
 
-        <!-- 1. Temporizador Focus -->
+        <!-- 1. + Evento -->
         <LinearLayout
-            android:id="@+id/btn_action_timer"
+            android:id="@+id/btn_action_event"
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:layout_marginRight="4dp"
             android:background="@drawable/widget_card_item"
             android:gravity="center"
             android:orientation="vertical"
             android:padding="6dp">
 
             <TextView
+                android:id="@+id/tv_action_event_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Timer"
-                android:textColor="#0071E3"
-                android:textSize="11sp"
+                android:text="+ Evento"
+                android:textColor="@color/widget_accent_default"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tv_hub_timer_sub"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="25m"
-                android:textColor="#64748B"
+                android:text="Calendario"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <!-- 2. Nueva Tarea -->
+        <!-- 2. + Tarea -->
         <LinearLayout
             android:id="@+id/btn_action_task"
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:layout_marginRight="4dp"
             android:background="@drawable/widget_card_item"
             android:gravity="center"
             android:orientation="vertical"
             android:padding="6dp">
 
             <TextView
+                android:id="@+id/tv_action_task_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="+ Tarea"
-                android:textColor="#0071E3"
-                android:textSize="11sp"
+                android:textColor="@color/widget_accent_default"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -109,44 +176,16 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:text="Ingesta"
-                android:textColor="#64748B"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
         </LinearLayout>
 
-        <!-- 3. Nueva Nota -->
+        <!-- 3. Calendario -->
         <LinearLayout
-            android:id="@+id/btn_action_note"
+            android:id="@+id/btn_action_calendar"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:layout_marginRight="4dp"
-            android:background="@drawable/widget_card_item"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="6dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="+ Nota"
-                android:textColor="#0071E3"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Rápida"
-                android:textColor="#64748B"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <!-- 4. Mi Hub -->
-        <LinearLayout
-            android:id="@+id/btn_action_hub"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:background="@drawable/widget_card_item"
             android:gravity="center"
@@ -154,19 +193,49 @@
             android:padding="6dp">
 
             <TextView
+                android:id="@+id/tv_action_cal_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mi Hub"
-                android:textColor="#0071E3"
-                android:textSize="11sp"
+                android:text="Agenda"
+                android:textColor="@color/widget_accent_default"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Recursos"
-                android:textColor="#64748B"
+                android:text="Ver Mes"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <!-- 4. Tareas -->
+        <LinearLayout
+            android:id="@+id/btn_action_tasks_view"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_card_item"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/tv_action_view_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tareas"
+                android:textColor="@color/widget_accent_default"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Organizador"
+                android:textColor="@color/widget_text_secondary"
                 android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>

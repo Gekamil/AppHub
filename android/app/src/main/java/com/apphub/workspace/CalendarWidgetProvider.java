@@ -158,6 +158,16 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.btn_mode_week, createModePendingIntent(context, "WEEK", 102));
         views.setOnClickPendingIntent(R.id.btn_mode_day, createModePendingIntent(context, "DAY", 101));
 
+        // Setup voice add button pending intent: opens MainActivity with route to voice copilot
+        Intent voiceIntent = new Intent(context, MainActivity.class);
+        voiceIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        voiceIntent.putExtra("route", "/calendar?action=voice_copilot&autoRecord=true");
+        PendingIntent voicePendingIntent = PendingIntent.getActivity(
+                context, 105, voiceIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_calendar_voice_add, voicePendingIntent);
+
         // Open Main App when clicking footer
         Intent openAppIntent = new Intent(context, MainActivity.class);
         openAppIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -170,6 +180,9 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
 
         // Dynamic footer link text tinting
         views.setTextColor(R.id.tv_btn_open_calendar, accentColor);
+        if (hasCalendarColor) {
+            views.setInt(R.id.btn_calendar_voice_add, "setBackgroundColor", accentColor);
+        }
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
     }

@@ -447,6 +447,11 @@ export default function AutoOrganizerPage() {
   const [isAiLoading, setIsAiLoading] = useState(false)
   const [aiStrategy, setAiStrategy] = useState(null)
   const [aiNotification, setAiNotification] = useState('')
+  const isMobileScreen = typeof window !== 'undefined' && (
+    window.innerWidth < 768 ||
+    (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '')
+  )
 
   // Temporizador de Enfoque (Pomodoro)
   const [activeFocusTask, setActiveFocusTask] = useState(null)
@@ -1153,11 +1158,11 @@ export default function AutoOrganizerPage() {
 
   return (
     <div className="relative min-h-screen text-on-surface">
-      {/* Halo de Fondo Luminoso Dinámico optimizado por GPU a 120 FPS */}
+      {/* Halo de Fondo Luminoso Dinámico optimizado por GPU a 120 FPS (desactivado en móvil para máximo rendimiento) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0 contain-strict">
         {/* Color 1 - Slot Superior Izquierdo */}
         <div
-          className="absolute -top-32 left-10 w-[550px] h-[550px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
+          className="hidden sm:block absolute -top-32 left-10 w-[550px] h-[550px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
           style={{
             backgroundColor: slot0 ? slot0.hex : 'transparent',
             opacity: slot0 ? 0.16 : 0,
@@ -1166,7 +1171,7 @@ export default function AutoOrganizerPage() {
         />
         {/* Color 2 - Slot Superior Derecho */}
         <div
-          className="absolute top-10 right-10 w-[520px] h-[520px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
+          className="hidden sm:block absolute top-10 right-10 w-[520px] h-[520px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
           style={{
             backgroundColor: slot1 ? slot1.hex : 'transparent',
             opacity: slot1 ? 0.15 : 0,
@@ -1175,7 +1180,7 @@ export default function AutoOrganizerPage() {
         />
         {/* Color 3 - Slot Central Inferior */}
         <div
-          className="absolute top-1/2 left-1/4 w-[480px] h-[480px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
+          className="hidden sm:block absolute top-1/2 left-1/4 w-[480px] h-[480px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
           style={{
             backgroundColor: slot2 ? slot2.hex : 'transparent',
             opacity: slot2 ? 0.13 : 0,
@@ -1295,8 +1300,8 @@ export default function AutoOrganizerPage() {
           </div>
         )}
 
-        {/* Notificación Discreta en la cabecera */}
-        {aiNotification && (
+        {/* Notificación Discreta en la cabecera (Oculta en móvil a petición del usuario para evitar popups molestos) */}
+        {aiNotification && !isMobileScreen && (
           <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-medium animate-in fade-in duration-200">
             <span className="material-symbols-outlined text-[15px]">check_circle</span>
             <span>{aiNotification}</span>
