@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import {
   syncTasksToCloud,
@@ -601,6 +602,7 @@ export default function CalendarPage() {
   const calTouchDragRef = useRef(null)
 
   // Sistema de Múltiples Calendarios con Persistencia y Aislamiento por Cuenta
+  const isRemoteCalendarSyncRef = useRef(true)
   const [calendars, setCalendars] = useState(() => {
     return getUserCalendars(getCurrentUser())
   })
@@ -609,20 +611,37 @@ export default function CalendarPage() {
   useEffect(() => {
     const handleAuthChange = () => {
       const curUser = getCurrentUser()
+      isRemoteCalendarSyncRef.current = true
       setCalendars(getUserCalendars(curUser))
     }
     window.addEventListener('studenthub_auth_changed', handleAuthChange)
     return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
   }, [])
 
+  // Escuchar actualizaciones en tiempo real de calendarios desde la nube (ej: cambios hechos en el móvil)
+  useEffect(() => {
+    const handleRemoteCalendarsUpdated = (e) => {
+      if (e.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        isRemoteCalendarSyncRef.current = true
+        setCalendars(e.detail)
+      }
+    }
+    window.addEventListener('studenthub_calendars_updated', handleRemoteCalendarsUpdated)
+    return () => window.removeEventListener('studenthub_calendars_updated', handleRemoteCalendarsUpdated)
+  }, [])
+
   // Sincronizar calendarios de forma aislada para la cuenta activa, en la nube Firestore y con el puente WhatsApp
   useEffect(() => {
     const curUser = getCurrentUser()
     saveUserCalendars(calendars, curUser)
-    if (!isGuestUser(curUser)) {
-      syncCalendarsToCloud(calendars).catch(() => {})
+    if (!isRemoteCalendarSyncRef.current) {
+      if (!isGuestUser(curUser)) {
+        syncCalendarsToCloud(calendars).catch(() => {})
+      }
+      syncBaileysCalendars(calendars).catch(() => {})
+    } else {
+      isRemoteCalendarSyncRef.current = false
     }
-    syncBaileysCalendars(calendars).catch(() => {})
   }, [calendars])
 
   // Cargar datos remotos de calendarios al iniciar sin sobreescribir ni borrar los calendarios locales
@@ -631,23 +650,9 @@ export default function CalendarPage() {
     if (isGuestUser(curUser)) return // Un invitado sin cuenta NUNCA descarga datos de otros
     loadUserDataFromCloud().then((cloudData) => {
       if (cloudData && cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
-        setCalendars((prev) => {
-          const map = new Map()
-          ;(prev || []).forEach((c) => { if (c && c.id) map.set(c.id, c) })
-          cloudData.calendars.forEach((c) => {
-            if (c && c.id) {
-              if (!map.has(c.id)) {
-                map.set(c.id, c)
-              } else {
-                map.set(c.id, { ...c, ...map.get(c.id) })
-              }
-            }
-          })
-          const merged = Array.from(map.values())
-          saveUserCalendars(merged, curUser)
-          syncCalendarsToCloud(merged).catch(() => {})
-          return merged
-        })
+        isRemoteCalendarSyncRef.current = true
+        setCalendars(cloudData.calendars)
+        saveUserCalendars(cloudData.calendars, curUser)
       }
     }).catch(() => {})
   }, [])
@@ -706,6 +711,43 @@ export default function CalendarPage() {
   }, [activeCalendarId])
   const [calendarMode, setCalendarMode] = useState('single') // 'single' | 'cascade'
   const [isCalDropdownOpen, setIsCalDropdownOpen] = useState(false)
+  const calDropdownRef = useRef(null)
+  const calDropdownBtnRef = useRef(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, right: 0 })
+
+  const updateDropdownPos = useCallback(() => {
+    if (!calDropdownBtnRef.current) return
+    const rect = calDropdownBtnRef.current.getBoundingClientRect()
+    setDropdownPos({
+      top: rect.bottom + 8,
+      left: rect.left,
+      right: window.innerWidth - rect.right,
+    })
+  }, [])
+
+  const handleToggleCalDropdown = () => {
+    if (!isCalDropdownOpen && calDropdownBtnRef.current) {
+      const rect = calDropdownBtnRef.current.getBoundingClientRect()
+      setDropdownPos({
+        top: rect.bottom + 8,
+        left: rect.left,
+        right: window.innerWidth - rect.right,
+      })
+    }
+    setIsCalDropdownOpen((prev) => !prev)
+  }
+
+  useEffect(() => {
+    if (!isCalDropdownOpen) return
+    updateDropdownPos()
+    const handleRecalc = () => updateDropdownPos()
+    window.addEventListener('resize', handleRecalc)
+    window.addEventListener('scroll', handleRecalc, true)
+    return () => {
+      window.removeEventListener('resize', handleRecalc)
+      window.removeEventListener('scroll', handleRecalc, true)
+    }
+  }, [isCalDropdownOpen, updateDropdownPos])
   const [collapsedCalIds, setCollapsedCalIds] = useState([])
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false)
   const [editingCalendarId, setEditingCalendarId] = useState(null)
@@ -887,17 +929,30 @@ export default function CalendarPage() {
   }, [])
 
   useEffect(() => {
-    const handleGlobalClick = () => {
+    const handleGlobalClick = (e) => {
       if (roleContextMenu) setRoleContextMenu(null)
+      if (
+        isCalDropdownOpen &&
+        calDropdownRef.current &&
+        !calDropdownRef.current.contains(e.target) &&
+        calDropdownBtnRef.current &&
+        !calDropdownBtnRef.current.contains(e.target)
+      ) {
+        setIsCalDropdownOpen(false)
+      }
     }
     window.addEventListener('click', handleGlobalClick)
     return () => window.removeEventListener('click', handleGlobalClick)
-  }, [roleContextMenu])
+  }, [roleContextMenu, isCalDropdownOpen])
 
   // Soporte universal de tecla Escape para cerrar modales, selectores y menus contextuales
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
+        if (isCalDropdownOpen) {
+          setIsCalDropdownOpen(false)
+          return
+        }
         if (isIconPickerOpen) {
           setIsIconPickerOpen(false)
           return
@@ -945,6 +1000,7 @@ export default function CalendarPage() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
+    isCalDropdownOpen,
     isIconPickerOpen,
     isCalSelectDropdownOpen,
     isCatSelectDropdownOpen,
@@ -1061,7 +1117,24 @@ export default function CalendarPage() {
   }, [filteredTasks])
 
   const activeCalendar = useMemo(() => {
-    return calendars.find((c) => c.id === activeCalendarId) || calendars[0]
+    return (
+      calendars.find((c) => c.id === activeCalendarId) ||
+      calendars[0] || {
+        id: 'cal-default',
+        name: 'Personal & General',
+        color: '#3b82f6',
+        dot: 'bg-blue-500',
+        sharedFrom: [],
+        isDefault: true,
+        syncUrl: '',
+      }
+    )
+  }, [calendars, activeCalendarId])
+
+  useEffect(() => {
+    if (calendars.length > 0 && !calendars.some((c) => c.id === activeCalendarId)) {
+      setActiveCalendarId(calendars[0].id)
+    }
   }, [calendars, activeCalendarId])
 
   const currentCalendarTasks = useMemo(() => {
@@ -3164,9 +3237,9 @@ export default function CalendarPage() {
       </div>
 
       {/* Top Command & Filter Deck (Elegante y Limpio: Solo 2 filas) */}
-      <div className="w-full flex flex-col gap-space-md mb-space-xl pt-3.5 sm:pt-0.5">
+      <div className={`w-full flex flex-col gap-space-md mb-space-xl pt-3.5 sm:pt-0.5 relative ${isCalDropdownOpen ? 'z-50' : 'z-20'}`}>
         {/* Fila 1: Navegador de Fecha, Selector de Calendario y Vistas */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-white dark:bg-[#161b26] p-3 sm:p-space-md rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800">
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-white dark:bg-[#161b26] p-3 sm:p-space-md rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 relative ${isCalDropdownOpen ? 'z-50' : 'z-10'}`}>
           <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
               <button
@@ -3236,8 +3309,9 @@ export default function CalendarPage() {
             {/* Selector de Calendario Dropdown */}
             <div className="relative">
               <button
+                ref={calDropdownBtnRef}
                 type="button"
-                onClick={() => setIsCalDropdownOpen((prev) => !prev)}
+                onClick={handleToggleCalDropdown}
                 className="h-8 px-2.5 sm:px-3 rounded-xl bg-surface-muted hover:bg-surface-variant text-on-surface font-label-md text-xs sm:text-label-md flex items-center gap-1.5 transition-all cursor-pointer border border-outline-variant/30 active:scale-95 shadow-2xs"
                 title="Cambiar o configurar calendario activo"
               >
@@ -3248,159 +3322,183 @@ export default function CalendarPage() {
                 </span>
               </button>
 
-              {isCalDropdownOpen && (
-                <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 max-w-[calc(100vw-32px)] bg-surface-pure rounded-2xl shadow-xl border border-outline-variant/30 p-2.5 z-30 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-2 py-1 text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center justify-between">
-                    <span>Calendarios</span>
-                    <span className="text-[9px] font-normal opacity-70">Arrastra para ordenar</span>
-                  </div>
-                  <div className="flex flex-col gap-1 mt-1">
-                    {calendars.map((cal, idx) => {
-                      const isSelected = activeCalendarId === cal.id
-                      const isDragging = draggedCalIdx === idx
-                      const isOver = dragOverCalIdx === idx && draggedCalIdx !== idx
-                      return (
-                        <div
-                          key={cal.id}
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', String(idx))
-                            setDraggedCalIdx(idx)
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault()
-                            if (dragOverCalIdx !== idx) setDragOverCalIdx(idx)
-                          }}
-                          onDragLeave={() => {
-                            if (dragOverCalIdx === idx) setDragOverCalIdx(null)
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault()
-                            const from = draggedCalIdx ?? parseInt(e.dataTransfer.getData('text/plain'), 10)
-                            handleReorderCalendars(from, idx)
-                            setDraggedCalIdx(null)
-                            setDragOverCalIdx(null)
-                          }}
-                          onDragEnd={() => {
-                            setDraggedCalIdx(null)
-                            setDragOverCalIdx(null)
-                          }}
-                          className={`p-1.5 rounded-xl flex items-center justify-between text-left transition-all group/item ${
-                            isDragging ? 'opacity-40 scale-95 border border-dashed border-primary' : ''
-                          } ${
-                            isOver ? 'border-t-2 border-primary bg-primary/10' : ''
-                          } ${
-                            isSelected ? 'bg-primary-fixed/20 text-primary font-bold' : 'hover:bg-surface-muted text-on-surface'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            <span
-                              onTouchStart={(e) => handleTouchStartCal(idx, e)}
-                              onTouchMove={handleTouchMoveCal}
-                              onTouchEnd={handleTouchEndCal}
-                              className="material-symbols-outlined text-[16px] text-secondary cursor-grab active:cursor-grabbing hover:text-on-surface shrink-0 select-none p-0.5 touch-none"
-                              title="Arrastrar para ordenar calendario"
-                            >
-                              drag_indicator
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveCalendarId(cal.id)
-                                setIsCalDropdownOpen(false)
-                              }}
-                              className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer py-0.5"
-                            >
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cal.color }}></span>
-                              <span className="text-body-sm truncate">{cal.name}</span>
-                              {cal.syncUrl && (
-                                <span className="material-symbols-outlined text-[13px] text-secondary shrink-0" title="Enlazado a TeamUp/Google">
-                                  sync
-                                </span>
+              {isCalDropdownOpen && typeof document !== 'undefined' && createPortal(
+                <>
+                  {/* Backdrop invisible para capturar clics exteriores y cerrar instantáneamente */}
+                  <div
+                    className="fixed inset-0 z-[99998]"
+                    onClick={() => setIsCalDropdownOpen(false)}
+                  />
+                  <div
+                    ref={calDropdownRef}
+                    data-floating-menu
+                    style={{
+                      position: 'fixed',
+                      top: `${dropdownPos.top}px`,
+                      right: typeof window !== 'undefined' && window.innerWidth >= 640 ? `${Math.max(16, dropdownPos.right)}px` : 'auto',
+                      left: typeof window !== 'undefined' && window.innerWidth < 640 ? `${Math.max(16, Math.min(dropdownPos.left, window.innerWidth - 304))}px` : 'auto',
+                      zIndex: 99999,
+                    }}
+                    className="w-72 max-w-[calc(100vw-32px)] bg-white dark:bg-[#161b26] rounded-2xl shadow-2xl border border-slate-300 dark:border-slate-700 p-2.5 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="px-2 py-1 text-[10px] font-bold text-secondary uppercase tracking-wider flex items-center justify-between">
+                      <span>Calendarios</span>
+                      <span className="text-[9px] font-normal opacity-70">Arrastra para ordenar</span>
+                    </div>
+                    <div className="flex flex-col gap-1 mt-1">
+                      {calendars.map((cal, idx) => {
+                        const isSelected = activeCalendarId === cal.id
+                        const isDragging = draggedCalIdx === idx
+                        const isOver = dragOverCalIdx === idx && draggedCalIdx !== idx
+                        return (
+                          <div
+                            key={cal.id}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', String(idx))
+                              setDraggedCalIdx(idx)
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault()
+                              if (dragOverCalIdx !== idx) setDragOverCalIdx(idx)
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverCalIdx === idx) setDragOverCalIdx(null)
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              const from = draggedCalIdx ?? parseInt(e.dataTransfer.getData('text/plain'), 10)
+                              handleReorderCalendars(from, idx)
+                              setDraggedCalIdx(null)
+                              setDragOverCalIdx(null)
+                            }}
+                            onDragEnd={() => {
+                              setDraggedCalIdx(null)
+                              setDragOverCalIdx(null)
+                            }}
+                            className={`p-1.5 rounded-xl flex items-center justify-between text-left transition-all group/item ${
+                              isDragging ? 'opacity-40 scale-95 border border-dashed border-primary' : ''
+                            } ${
+                              isOver ? 'border-t-2 border-primary bg-primary/10' : ''
+                            } ${
+                              isSelected ? 'bg-primary-fixed/20 text-primary font-bold' : 'hover:bg-surface-muted text-on-surface'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <span
+                                onTouchStart={(e) => handleTouchStartCal(idx, e)}
+                                onTouchMove={handleTouchMoveCal}
+                                onTouchEnd={handleTouchEndCal}
+                                className="material-symbols-outlined text-[16px] text-secondary cursor-grab active:cursor-grabbing hover:text-on-surface shrink-0 select-none p-0.5 touch-none"
+                                title="Arrastrar para ordenar calendario"
+                              >
+                                drag_indicator
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveCalendarId(cal.id)
+                                  setIsCalDropdownOpen(false)
+                                }}
+                                className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer py-0.5"
+                              >
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cal.color }}></span>
+                                <span className="text-body-sm truncate">{cal.name}</span>
+                                {cal.syncUrl && (
+                                  <span className="material-symbols-outlined text-[13px] text-secondary shrink-0" title="Enlazado a TeamUp/Google">
+                                    sync
+                                  </span>
+                                )}
+                                {cal.isShared && (
+                                  <span className="material-symbols-outlined text-[13px] text-rose-500 shrink-0" title={`Compartido en tiempo real (${cal.shareCode || ''})`}>
+                                    hub
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 ml-1">
+                              {isSelected && (
+                                <span className="material-symbols-outlined text-[15px] text-primary">check</span>
                               )}
-                              {cal.isShared && (
-                                <span className="material-symbols-outlined text-[13px] text-rose-500 shrink-0" title={`Compartido en tiempo real (${cal.shareCode || ''})`}>
-                                  hub
-                                </span>
-                              )}
-                            </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setIsCalDropdownOpen(false)
+                                  handleOpenEditCalendar(cal, e)
+                                }}
+                                className="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                                title={`Configurar o eliminar calendario "${cal.name}"`}
+                              >
+                                <span className="material-symbols-outlined text-[15px]">settings</span>
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0 ml-1">
-                            {isSelected && (
-                              <span className="material-symbols-outlined text-[15px] text-primary">check</span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setIsCalDropdownOpen(false)
-                                handleOpenEditCalendar(cal, e)
-                              }}
-                              className="p-1 rounded-lg text-secondary hover:text-on-surface hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                              title={`Configurar o eliminar calendario "${cal.name}"`}
-                            >
-                              <span className="material-symbols-outlined text-[15px]">settings</span>
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                        )
+                      })}
+                    </div>
 
-                  <div className="mt-2 pt-2 border-t border-surface-muted flex flex-col gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCalendarMode(calendarMode === 'single' ? 'cascade' : 'single')
-                        setIsCalDropdownOpen(false)
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-surface-muted text-label-sm font-medium flex items-center justify-between text-secondary hover:text-on-surface cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px]">
-                          {calendarMode === 'single' ? 'vertical_split' : 'view_agenda'}
+                    <div className="mt-2 pt-2 border-t border-surface-muted flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCalendarMode(calendarMode === 'single' ? 'cascade' : 'single')
+                          setIsCalDropdownOpen(false)
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-surface-muted text-label-sm font-medium flex items-center justify-between text-secondary hover:text-on-surface cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[16px]">
+                            {calendarMode === 'single' ? 'vertical_split' : 'view_agenda'}
+                          </span>
+                          <span>{calendarMode === 'single' ? 'Modo Cascada' : 'Modo Único'}</span>
                         </span>
-                        <span>{calendarMode === 'single' ? 'Modo Cascada' : 'Modo Único'}</span>
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-secondary font-code-sm">
-                        {calendarMode === 'single' ? 'Activar' : 'Activo'}
-                      </span>
-                    </button>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-muted text-secondary font-code-sm">
+                          {calendarMode === 'single' ? 'Activar' : 'Activo'}
+                        </span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleOpenAddCalendar()
-                        setCalendarModalTab('edit')
-                        setIsCalDropdownOpen(false)
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-primary/10 text-primary text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">add</span>
-                      <span>+ Nuevo calendario</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleOpenAddCalendar()
+                          setCalendarModalTab('edit')
+                          setIsCalDropdownOpen(false)
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">add</span>
+                        <span>+ Nuevo calendario</span>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleOpenAddCalendar()
-                        setCalendarModalTab('import')
-                        setIsCalDropdownOpen(false)
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">hub</span>
-                      <span>Conectar con código compartido</span>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleOpenAddCalendar()
+                          setCalendarModalTab('import')
+                          setIsCalDropdownOpen(false)
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">hub</span>
+                        <span>Conectar con código compartido</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </>,
+                document.body
               )}
             </div>
 
             {/* Segmented View Toggle (Día | Sem | Mes) con Pastilla Deslizante Apple Fluida */}
-            <div className="relative inline-flex items-center bg-slate-100/90 dark:bg-[#1a2130] p-1 rounded-2xl shrink-0 border border-slate-200/60 dark:border-slate-800/80 shadow-2xs">
+            <div
+              data-calendar-view-toggle
+              data-segmented-toggle
+              className="relative inline-flex items-center bg-slate-200/90 dark:bg-slate-800/90 p-1 rounded-2xl shrink-0 border border-slate-300/80 dark:border-slate-700 shadow-inner"
+            >
               <div
-                className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-[#161b26] shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                data-slider-pill
+                className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-[#1e293b] shadow-md border border-slate-300/90 dark:border-slate-600 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                 style={{
                   width: 'calc((100% - 8px) / 3)',
                   left: '4px',
@@ -3411,33 +3509,36 @@ export default function CalendarPage() {
               />
               <button
                 type="button"
+                data-active={calendarView === 'day' ? 'true' : 'false'}
                 onClick={() => setCalendarView('day')}
                 className={`relative z-10 w-12 sm:w-14 py-1 text-center rounded-xl font-medium text-xs sm:text-label-sm transition-colors duration-200 cursor-pointer ${
                   calendarView === 'day'
-                    ? 'text-slate-900 dark:text-white font-bold'
-                    : 'text-secondary hover:text-on-surface'
+                    ? 'text-primary font-bold'
+                    : 'text-slate-700 dark:text-slate-300 font-semibold hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Día
               </button>
               <button
                 type="button"
+                data-active={calendarView === 'week' ? 'true' : 'false'}
                 onClick={() => setCalendarView('week')}
                 className={`relative z-10 w-12 sm:w-14 py-1 text-center rounded-xl font-medium text-xs sm:text-label-sm transition-colors duration-200 cursor-pointer ${
                   calendarView === 'week'
-                    ? 'text-slate-900 dark:text-white font-bold'
-                    : 'text-secondary hover:text-on-surface'
+                    ? 'text-primary font-bold'
+                    : 'text-slate-700 dark:text-slate-300 font-semibold hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Sem
               </button>
               <button
                 type="button"
+                data-active={calendarView === 'month' ? 'true' : 'false'}
                 onClick={() => setCalendarView('month')}
                 className={`relative z-10 w-12 sm:w-14 py-1 text-center rounded-xl font-medium text-xs sm:text-label-sm transition-colors duration-200 cursor-pointer ${
                   calendarView === 'month'
-                    ? 'text-slate-900 dark:text-white font-bold'
-                    : 'text-secondary hover:text-on-surface'
+                    ? 'text-primary font-bold'
+                    : 'text-slate-700 dark:text-slate-300 font-semibold hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Mes
@@ -4004,11 +4105,13 @@ export default function CalendarPage() {
             setIsEventModalOpen(false)
             setEditingTaskId(null)
           }}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-[2px] transition-all duration-200 animate-in fade-in"
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs transition-all duration-200 animate-in fade-in"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] w-full max-w-2xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col border border-slate-200/90 dark:border-slate-800 overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-150 ease-out pb-safe sm:pb-0 transform-gpu"
+            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] w-full max-w-2xl max-h-[92dvh] sm:max-h-[88vh] flex flex-col border border-slate-300 dark:border-slate-700 overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-150 ease-out pb-safe sm:pb-0 transform-gpu"
           >
             {/* Modal Header Fijo con Selector de Modo Simple vs Avanzado */}
             <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#161b26] shrink-0">
@@ -4288,7 +4391,10 @@ export default function CalendarPage() {
                       </button>
 
                       {isCalSelectDropdownOpen && (
-                        <div className="absolute left-0 right-0 top-full mt-1 z-40 bg-white dark:bg-[#1a202c] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1.5 flex flex-col gap-1 max-h-48 overflow-y-auto animate-in fade-in duration-150">
+                        <div
+                          data-floating-menu
+                          className="absolute left-0 right-0 top-full mt-1 z-[100] bg-white dark:bg-[#1a202c] border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 max-h-48 overflow-y-auto animate-in fade-in duration-150"
+                        >
                           {calendars.map((cal) => {
                             const isSelected = eventForm.calendarId === cal.id
                             return (
@@ -4457,7 +4563,10 @@ export default function CalendarPage() {
                       </button>
 
                       {isCatSelectDropdownOpen && (
-                        <div className="absolute left-0 right-0 top-full mt-1 z-40 bg-white dark:bg-[#1a202c] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1.5 flex flex-col gap-1 max-h-48 overflow-y-auto animate-in fade-in duration-150">
+                        <div
+                          data-floating-menu
+                          className="absolute left-0 right-0 top-full mt-1 z-[100] bg-white dark:bg-[#1a202c] border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 max-h-48 overflow-y-auto animate-in fade-in duration-150"
+                        >
                           {categories.map((cat) => {
                             const isSelected = eventForm.context === cat.name
                             return (
@@ -4539,7 +4648,10 @@ export default function CalendarPage() {
                       </button>
 
                       {isRecurrenceSelectDropdownOpen && (
-                        <div className="absolute left-0 right-0 top-full mt-1 z-40 bg-white dark:bg-[#1a202c] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-1.5 flex flex-col gap-1 animate-in fade-in duration-150">
+                        <div
+                          data-floating-menu
+                          className="absolute left-0 right-0 top-full mt-1 z-[100] bg-white dark:bg-[#1a202c] border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-in fade-in duration-150"
+                        >
                           {[
                             { id: 'none', label: 'No repetir (Evento único)' },
                             { id: 'daily', label: 'Todos los días (Continuo)' },
@@ -4588,7 +4700,10 @@ export default function CalendarPage() {
                       </button>
 
                       {isIconPickerOpen && (
-                        <div className="absolute left-0 right-0 top-full mt-1 z-40 p-2.5 bg-white dark:bg-[#1a202c] rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl grid grid-cols-6 gap-1 max-h-40 overflow-y-auto animate-in fade-in duration-150">
+                        <div
+                          data-floating-menu
+                          className="absolute left-0 right-0 top-full mt-1 z-[100] p-2.5 bg-white dark:bg-[#1a202c] rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xl grid grid-cols-6 gap-1 max-h-40 overflow-y-auto animate-in fade-in duration-150"
+                        >
                           {ALL_EVENT_ICONS.map((icon) => (
                             <button
                               key={icon}
@@ -4654,11 +4769,13 @@ export default function CalendarPage() {
       {selectedDetailTask && (
         <div
           onClick={() => setSelectedDetailTask(null)}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-[2px] transition-all duration-200 animate-in fade-in"
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs transition-all duration-200 animate-in fade-in"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] w-full max-w-sm max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto border border-slate-200/90 dark:border-slate-800 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 ease-out pb-safe sm:pb-0"
+            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] w-full max-w-sm max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto border border-slate-300 dark:border-slate-700 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 ease-out pb-safe sm:pb-0"
           >
             {/* Header con color de categoría */}
             <div className={`p-4.5 ${getCatScheme(selectedDetailTask.context).bg} flex items-center justify-between border-b border-black/5`}>
@@ -4771,11 +4888,13 @@ export default function CalendarPage() {
       {isCategoryModalOpen && (
         <div
           onClick={() => setIsCategoryModalOpen(false)}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-[2px] transition-all duration-200 animate-in fade-in"
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs transition-all duration-200 animate-in fade-in"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] w-full max-w-3xl max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col border border-slate-200/90 dark:border-slate-800 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 ease-out pb-safe sm:pb-0"
+            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] w-full max-w-3xl max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col border border-slate-300 dark:border-slate-700 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 ease-out pb-safe sm:pb-0"
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#161b26] shrink-0">
@@ -5244,11 +5363,13 @@ export default function CalendarPage() {
       {isCalendarModalOpen && (
         <div
           onClick={() => setIsCalendarModalOpen(false)}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-[2px] transition-all duration-200 animate-in fade-in"
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs transition-all duration-200 animate-in fade-in"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] w-full max-w-4xl max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col border border-slate-200/90 dark:border-slate-800 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 ease-out pb-safe sm:pb-0"
+            className="bg-white dark:bg-[#161b26] rounded-t-3xl sm:rounded-3xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.4)] w-full max-w-4xl max-h-[90dvh] sm:max-h-[85vh] overflow-hidden flex flex-col border border-slate-300 dark:border-slate-700 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 ease-out pb-safe sm:pb-0"
           >
             {/* Modal Header */}
             <div className="flex flex-col px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#161b26] shrink-0 gap-3">

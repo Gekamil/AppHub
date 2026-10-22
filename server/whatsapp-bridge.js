@@ -80,13 +80,25 @@ export const DEFAULT_BOT_SETTINGS = {
     proyectos: 'cal-work',
   },
   pendingSelection: null, // { taskId, taskTitle, expiresAt, from }
+  scheduledBriefings: {
+    dailyNews: { enabled: false, time: '08:30' },
+    dailyTasks: { enabled: false, time: '09:00' },
+    targetJid: null,
+  },
 }
 
 function loadBotSettings() {
   try {
     if (fs.existsSync(BOT_SETTINGS_FILE)) {
       const data = JSON.parse(fs.readFileSync(BOT_SETTINGS_FILE, 'utf-8'))
-      return { ...DEFAULT_BOT_SETTINGS, ...data }
+      return {
+        ...DEFAULT_BOT_SETTINGS,
+        ...data,
+        scheduledBriefings: {
+          ...DEFAULT_BOT_SETTINGS.scheduledBriefings,
+          ...(data.scheduledBriefings || {}),
+        },
+      }
     }
   } catch (e) {}
   return { ...DEFAULT_BOT_SETTINGS }
@@ -171,12 +183,56 @@ export function getHelpMessage() {
   _"Quiero que las cosas de deporte vayan a Salud & Deporte y las quedadas a Personal"_.
   El bot aprenderá tus preferencias y las guardará.
 
+*5. Repeticiones y Recordatorios Diarios Automáticos*:
+- *"Dime todos los días a las 08:30 las noticias"*: Programa el boletín matutino de actualidad.
+- *"Dime todos los días a las 09:00 las cosas que tenga que hacer"*: Programa tu resumen diario de agenda.
+- *"Qué ajustes tienes puestos?"* o */ajustes*: Muestra tus briefings y preferencias activas.
+- *"Cancela las noticias de todos los días"* o *"Quita las repeticiones"*: Desactiva los avisos programados.
+
 *Comandos rápidos*:
 - */help* o *ayuda*: Muestra este manual interactivo.
+- */ajustes*: Muestra tus configuraciones, recordatorios periódicos y reglas.
 - */calendarios*: Lista tus calendarios actuales y reglas activas.
+- */noticias*: Muestra los 6 titulares destacados del día.
 - */modo auto*: Activa la asignación autónoma inmediata.
 - */modo interactivo*: Activa las preguntas con selector numérico.
 - */resumen*: Resumen estructurado de tu día.`
+}
+
+export function getSettingsSummaryMessage() {
+  const briefings = botSettings.scheduledBriefings || {}
+  const newsStatus = briefings.dailyNews?.enabled
+    ? `*Activo* (Todos los días a las *${briefings.dailyNews.time}*)`
+    : `_Desactivado_`
+  const tasksStatus = briefings.dailyTasks?.enabled
+    ? `*Activo* (Todos los días a las *${briefings.dailyTasks.time}*)`
+    : `_Desactivado_`
+
+  const modeText = botSettings.mode === 'auto' ? '*Automático* (asigna sin preguntar)' : '*Interactivo* (pregunta opciones con selector)'
+  const rulesList = Object.entries(botSettings.routingRules || {})
+    .map(([kw, cId]) => {
+      const c = currentKnownCalendars.find((x) => x.id === cId)
+      return `• _${kw}_ -> *${c ? c.name : cId}*`
+    })
+    .join('\n')
+
+  return `*CONFIGURACIÓN Y AJUSTES DE TU ASISTENTE IA*
+
+*1. Repeticiones y Envíos Diarios Programados*:
+• *Noticias diarias*: ${newsStatus}
+• *Resumen de agenda/tareas*: ${tasksStatus}
+
+*2. Modo de Asignación de Calendarios*:
+• ${modeText}
+
+*3. Reglas de Asignación Aprendidas*:
+${rulesList || '• Sin reglas específicas (usa calendarios por defecto)'}
+
+*Cómo modificar tus ajustes*:
+- "Dime todos los días a las 08:30 las noticias"
+- "Dime todos los días a las 09:00 las cosas que tenga que hacer"
+- "Cancela las noticias de todos los días" o "Quita las repeticiones"
+- "/modo auto" o "/modo interactivo"`
 }
 
 export function getCalendarsSummaryMessage() {
@@ -1338,7 +1394,10 @@ ${aiStrategy}`
   }
 }
 
-// Planificador automático de las 00:00 (Medianoche)
+// Planificador automático de las 00:00 (Medianoche) y recordatorios periódicos diarios
+let lastDailyNewsDate = null
+let lastDailyTasksDate = null
+
 function startMidnightScheduler() {
   setInterval(async () => {
     try {
@@ -1347,21 +1406,64 @@ function startMidnightScheduler() {
       const hours = now.getHours()
       const minutes = now.getMinutes()
       const todayStr = now.toISOString().split('T')[0]
+      const currentHm = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 
+      // 1. Briefing de Medianoche (00:00)
       if (hours === 0 && minutes <= 2 && lastMidnightBriefingDate !== todayStr) {
         console.log(`[Baileys Midnight Scheduler]: Son las 00:00, generando briefing diario...`)
         await generateAndSendMidnightBriefing()
       }
+
+      // 2. Briefing periódico: Noticias Diarias
+      const briefings = botSettings.scheduledBriefings || {}
+      if (
+        briefings.dailyNews?.enabled &&
+        briefings.dailyNews.time === currentHm &&
+        lastDailyNewsDate !== todayStr
+      ) {
+        lastDailyNewsDate = todayStr
+        const target = briefings.targetJid || lastRecipientJid
+        if (target) {
+          console.log(`[Baileys Scheduler]: Enviando boletín de noticias programado (${currentHm}) a ${target}...`)
+          const newsText = `¡Buenos días, Jorge! Aquí tienes tu *boletín diario de noticias destacadas*:\n\n` +
+            formatNewsForWhatsApp(FALLBACK_NEWS) +
+            `\n\n_(Configurado todos los días a las ${currentHm}. Escribe /ajustes para ver o cambiar tus recordatorios)_`
+          await sock.sendMessage(target, { text: newsText }).catch((e) => console.error(e))
+        }
+      }
+
+      // 3. Briefing periódico: Resumen diario de Tareas / Agenda
+      if (
+        briefings.dailyTasks?.enabled &&
+        briefings.dailyTasks.time === currentHm &&
+        lastDailyTasksDate !== todayStr
+      ) {
+        lastDailyTasksDate = todayStr
+        const target = briefings.targetJid || lastRecipientJid
+        if (target) {
+          console.log(`[Baileys Scheduler]: Enviando resumen diario de tareas programado (${currentHm}) a ${target}...`)
+          const todayTasks = (currentKnownTasks || []).filter((t) => t.date === todayStr)
+          let tasksText = ''
+          if (todayTasks.length === 0) {
+            tasksText = `¡Buenos días, Jorge! No tienes tareas programadas en tu agenda para hoy (${todayStr}). ¡Día completamente despejado!`
+          } else {
+            tasksText = `¡Buenos días, Jorge! Tienes *${todayTasks.length} ${todayTasks.length === 1 ? 'actividad' : 'actividades'}* para hoy (${todayStr}):\n\n` +
+              todayTasks.map((t, idx) => `*${idx + 1}. ${t.title}* [${t.time || 'Sin hora'}] - _${t.context || 'General'}_\n${t.completed ? '• Estado: Completada' : '• Estado: Pendiente'}`).join('\n\n')
+          }
+          tasksText += `\n\n_(Configurado todos los días a las ${currentHm}. Escribe /ajustes para gestionar tus opciones)_`
+          await sock.sendMessage(target, { text: tasksText }).catch((e) => console.error(e))
+        }
+      }
     } catch (e) {
       console.error('[Baileys Midnight Scheduler Error]:', e.message)
     }
-  }, 40000)
+  }, 35000)
 }
 
 // Iniciar conexión con Baileys (Soporta Código QR y Código de Vinculación de 8 Dígitos para el mismo móvil)
 export async function startBaileysConnection(phoneNumber = null, forceRefresh = false) {
-  let cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '') : null
-  if (cleanPhone && cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('7'))) {
+  let cleanPhone = phoneNumber ? String(phoneNumber).replace(/[^0-9]/g, '').replace(/^00/, '') : null
+  if (cleanPhone && cleanPhone.length === 9 && (cleanPhone.startsWith('6') || cleanPhone.startsWith('7') || cleanPhone.startsWith('8') || cleanPhone.startsWith('9'))) {
     cleanPhone = '34' + cleanPhone
   }
 
@@ -1387,10 +1489,44 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
   // Si ya existía un socket previo no conectado o se pide un modo/número nuevo, cerrarlo limpiamente
   if (sock) {
     try {
+      sock.ev.removeAllListeners()
       sock.end(undefined)
     } catch (e) {}
     sock = null
   }
+
+  // Comprobar si existen credenciales registradas válidas en el almacenamiento local
+  const credsPath = path.join(AUTH_DIR, 'creds.json')
+  let hasRegisteredSession = false
+  if (fs.existsSync(credsPath)) {
+    try {
+      const rawCreds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'))
+      if (rawCreds && (rawCreds.registered || rawCreds.me?.id)) {
+        hasRegisteredSession = true
+      }
+    } catch (e) {}
+  }
+
+  // Limpiar credenciales previas SOLO cuando el usuario solicita refresco forzado explícito
+  // o cuando no hay sesión registrada y se solicita un teléfono diferente
+  if (forceRefresh) {
+    try {
+      fs.rmSync(AUTH_DIR, { recursive: true, force: true })
+      await clearAuthFromFirestore().catch(() => {})
+    } catch (e) {}
+  } else if (!hasRegisteredSession && cleanPhone && fs.existsSync(credsPath)) {
+    try {
+      const rawCreds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'))
+      const existingPhone = (rawCreds?.me?.id || '').split(':')[0].split('@')[0]
+      if (existingPhone && existingPhone !== cleanPhone) {
+        fs.rmSync(AUTH_DIR, { recursive: true, force: true })
+      }
+    } catch (e) {}
+  }
+
+  try {
+    fs.mkdirSync(AUTH_DIR, { recursive: true })
+  } catch (e) {}
 
   currentStatus = {
     status: 'connecting',
@@ -1404,43 +1540,65 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
   broadcastStatusUpdate(currentStatus)
 
   try {
-    // Limpiar credenciales previas si no estábamos conectados para que Baileys entre en modo emparejamiento limpio
-    try {
-      fs.rmSync(AUTH_DIR, { recursive: true, force: true })
-      await clearAuthFromFirestore().catch(() => {})
-      fs.mkdirSync(AUTH_DIR, { recursive: true })
-    } catch (e) {}
-
     const { state, saveCreds } = await initMultiFileAuthState(AUTH_DIR)
 
     sock = makeWASocket({
       auth: state,
       logger: pino({ level: 'silent' }),
       printQRInTerminal: false,
-      browser: Browsers.ubuntu('Chrome'),
+      browser: Browsers.macOS('Desktop'),
       markOnlineOnConnect: false,
       generateHighQualityLinkPreview: true,
       syncFullHistory: false,
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 60000,
+      keepAliveIntervalMs: 30000,
     })
 
     // Si se solicita emparejamiento por código de teléfono en el mismo móvil
     if (cleanPhone && !sock.authState.creds.registered) {
-      setTimeout(async () => {
+      ;(async () => {
         try {
-          if (sock && !sock.authState.creds.registered) {
-            let code = await sock.requestPairingCode(cleanPhone)
-            code = code?.match(/.{1,4}/g)?.join('-') || code
-            currentStatus = {
-              status: 'pairing_code_ready',
-              pairingCode: code,
-              qrCode: null,
-              user: null,
-              phone: `+${cleanPhone}`,
-              error: null,
-              lastUpdated: Date.now(),
+          // Esperar activamente hasta que el websocket esté abierto
+          let wsReady = false
+          for (let i = 0; i < 40; i++) {
+            if (!sock) return
+            if (sock.ws?.isOpen) {
+              wsReady = true
+              break
             }
-            broadcastStatusUpdate(currentStatus)
-            console.log(`[Baileys]: Código de vinculación generado para +${cleanPhone}: ${code}`)
+            await new Promise((r) => setTimeout(r, 250))
+          }
+
+          // Margen de seguridad para completar la negociación inicial del canal de transporte
+          await new Promise((r) => setTimeout(r, 500))
+
+          if (sock && !sock.authState.creds.registered) {
+            let code = null
+            try {
+              code = await sock.requestPairingCode(cleanPhone)
+            } catch (firstErr) {
+              console.warn('[Baileys]: Primer intento de código de vinculación, reintentando...', firstErr.message)
+              await new Promise((r) => setTimeout(r, 1200))
+              if (sock && !sock.authState.creds.registered) {
+                code = await sock.requestPairingCode(cleanPhone)
+              }
+            }
+
+            if (code) {
+              code = code?.match(/.{1,4}/g)?.join('-') || code
+              currentStatus = {
+                status: 'pairing_code_ready',
+                pairingCode: code,
+                qrCode: null,
+                user: null,
+                phone: `+${cleanPhone}`,
+                error: null,
+                lastUpdated: Date.now(),
+              }
+              broadcastStatusUpdate(currentStatus)
+              console.log(`[Baileys]: Código de vinculación generado para +${cleanPhone}: ${code}`)
+            }
           }
         } catch (pairingErr) {
           console.error('[Baileys Pairing Code Error]:', pairingErr)
@@ -1448,12 +1606,12 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
             ...currentStatus,
             status: 'disconnected',
             pairingCode: null,
-            error: `Error al generar código: ${pairingErr.message}`,
+            error: `Error al generar código: ${pairingErr.message || 'Error de conexión con WhatsApp'}`,
             lastUpdated: Date.now(),
           }
           broadcastStatusUpdate(currentStatus)
         }
-      }, 1500)
+      })()
     }
 
     // Actualizaciones de Conexión (QR, Conectado, Desconectado)
@@ -1483,26 +1641,60 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
 
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut
+        const isRestartRequired = statusCode === DisconnectReason.restartRequired
 
+        console.log(`[Baileys]: Conexión cerrada. Código: ${statusCode}. isRestartRequired: ${isRestartRequired}, isLoggedOut: ${isLoggedOut}`)
+
+        // 1. Si WhatsApp desvinculó la sesión explícitamente (401 loggedOut)
+        if (isLoggedOut) {
+          console.log('[Baileys]: Sesión desvinculada por WhatsApp (loggedOut 401). Limpiando credenciales...')
+          try {
+            fs.rmSync(AUTH_DIR, { recursive: true, force: true })
+          } catch (e) {}
+          await clearAuthFromFirestore().catch(() => {})
+          sock = null
+          currentStatus = {
+            status: 'disconnected',
+            qrCode: null,
+            pairingCode: null,
+            user: null,
+            phone: null,
+            error: 'Dispositivo desvinculado desde WhatsApp.',
+            lastUpdated: Date.now(),
+          }
+          broadcastStatusUpdate(currentStatus)
+          return
+        }
+
+        // 2. Si la sesión ya estaba registrada O es un reinicio requerido tras introducir el código (515)
+        const isRegistered = Boolean(sock?.authState?.creds?.registered)
+        if (isRegistered || isRestartRequired) {
+          console.log(`[Baileys]: Reiniciando socket para sesión registrada (Código: ${statusCode})...`)
+          currentStatus = {
+            ...currentStatus,
+            status: 'connecting',
+            reconnecting: true,
+            lastUpdated: Date.now(),
+          }
+          broadcastStatusUpdate(currentStatus)
+          setTimeout(() => {
+            startBaileysConnection(null, false)
+          }, isRestartRequired ? 600 : 2500)
+          return
+        }
+
+        // 3. Si no estaba registrado (estaba esperando QR o código de 8 dígitos y se interrumpió)
         currentStatus = {
           status: 'disconnected',
           qrCode: null,
           pairingCode: null,
           user: null,
           phone: null,
+          error: statusCode === 408 ? 'Tiempo de espera agotado. Vuelve a intentarlo.' : null,
           lastUpdated: Date.now(),
-          reconnecting: shouldReconnect,
         }
         broadcastStatusUpdate(currentStatus)
-
-        console.log(`[Baileys]: Conexión cerrada (Código: ${statusCode}). Reconectar: ${shouldReconnect}`)
-
-        // Solo autoreconectar si ya estaba previamente autenticado/registrado.
-        // Si no estaba registrado (estaba esperando QR o código), no reintentar en bucle para evitar rate-limits de WhatsApp.
-        if (shouldReconnect && sock?.authState?.creds?.registered) {
-          setTimeout(() => startBaileysConnection(), 3000)
-        }
       } else if (connection === 'open') {
         const userJid = sock.user?.id || ''
         const rawPhone = userJid.split(':')[0] || userJid.split('@')[0]
@@ -1525,8 +1717,12 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
     })
 
     sock.ev.on('creds.update', async () => {
-      await saveCreds()
-      backupAuthToFirestore()
+      try {
+        await saveCreds()
+        backupAuthToFirestore()
+      } catch (saveErr) {
+        console.warn('[Baileys Creds Save Error]:', saveErr.message)
+      }
     })
 
     // Escucha de mensajes entrantes (Texto y Notas de Voz)
@@ -1724,6 +1920,113 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
             if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
           } catch (e) {
             await sock.sendMessage(from, { text: newsReply }).catch(() => {})
+          }
+          continue
+        }
+
+        // 4.2c. COMANDO /ajustes o consulta de configuración activa
+        if (
+          /^(\/|!|\.)?(ajustes|configuracion|settings)$/i.test(cleanInstruction) ||
+          /(?:qu[eé]\s+ajustes\s+(?:tienes|hay|est[aá]n)|ver\s+ajustes|mis\s+ajustes|qu[eé]\s+recordatorios\s+tengo)/i.test(lowerInstruction)
+        ) {
+          const settingsReply = getSettingsSummaryMessage()
+          try {
+            const sent = await sock.sendMessage(from, { text: settingsReply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: settingsReply }).catch(() => {})
+          }
+          continue
+        }
+
+        // 4.2d. PROGRAMAR REPETICIÓN DIARIA DE NOTICIAS ("dime todos los días a las [hora] las noticias")
+        const dailyNewsMatch = lowerInstruction.match(
+          /(?:dime|ponme|av[ií]same|env[ií]ame|m[aá]ndame|quiero)?.*todos los d[ií]as.*(?:las )?noticias.*?(?:a las? )?(\d{1,2}(?::\d{2})?)/i
+        ) || lowerInstruction.match(
+          /(?:dime|ponme|av[ií]same|env[ií]ame|m[aá]ndame|quiero)?.*(?:las )?noticias.*todos los d[ií]as.*?(?:a las? )?(\d{1,2}(?::\d{2})?)/i
+        )
+        if (dailyNewsMatch) {
+          let rawTime = dailyNewsMatch[1] || '08:30'
+          if (!rawTime.includes(':')) {
+            rawTime = `${rawTime.padStart(2, '0')}:00`
+          } else {
+            const parts = rawTime.split(':')
+            rawTime = `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`
+          }
+
+          if (!botSettings.scheduledBriefings) botSettings.scheduledBriefings = {}
+          botSettings.scheduledBriefings.dailyNews = { enabled: true, time: rawTime }
+          botSettings.scheduledBriefings.targetJid = from
+          saveBotSettings(botSettings)
+
+          const reply = `¡Ajustes actualizados, Jorge!\n\nHe configurado tu *boletín de noticias diarias* para todos los días a las *${rawTime}*. Recibirás puntualmente los 6 titulares más destacados de la jornada.\n\n_(Para consultar tus ajustes en cualquier momento escribe /ajustes o /help)_`
+          try {
+            const sent = await sock.sendMessage(from, { text: reply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: reply }).catch(() => {})
+          }
+          continue
+        }
+
+        // 4.2e. PROGRAMAR REPETICIÓN DIARIA DE TAREAS / AGENDA ("dime todos los días a las [hora] las cosas que tenga que hacer")
+        const dailyTasksMatch = lowerInstruction.match(
+          /(?:dime|ponme|recu[eé]rdame|env[ií]ame|m[aá]ndame|quiero)?.*todos los d[ií]as.*(?:las cosas|tareas|agenda|qu[eé] tengo que hacer|lo que tengo).*?(?:a las? )?(\d{1,2}(?::\d{2})?)/i
+        ) || lowerInstruction.match(
+          /(?:dime|ponme|recu[eé]rdame|env[ií]ame|m[aá]ndame|quiero)?.*(?:las cosas|tareas|agenda|qu[eé] tengo que hacer|lo que tengo).*todos los d[ií]as.*?(?:a las? )?(\d{1,2}(?::\d{2})?)/i
+        )
+        if (dailyTasksMatch) {
+          let rawTime = dailyTasksMatch[1] || '09:00'
+          if (!rawTime.includes(':')) {
+            rawTime = `${rawTime.padStart(2, '0')}:00`
+          } else {
+            const parts = rawTime.split(':')
+            rawTime = `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`
+          }
+
+          if (!botSettings.scheduledBriefings) botSettings.scheduledBriefings = {}
+          botSettings.scheduledBriefings.dailyTasks = { enabled: true, time: rawTime }
+          botSettings.scheduledBriefings.targetJid = from
+          saveBotSettings(botSettings)
+
+          const reply = `¡Ajustes actualizados, Jorge!\n\nHe configurado tu *resumen diario de tareas y agenda* para todos los días a las *${rawTime}*. Te enviaré cada mañana tus compromisos del día para que nunca se te pase nada.\n\n_(Para consultar tus ajustes escribe /ajustes o /help)_`
+          try {
+            const sent = await sock.sendMessage(from, { text: reply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: reply }).catch(() => {})
+          }
+          continue
+        }
+
+        // 4.2f. CANCELAR REPETICIONES / RECORDATORIOS DIARIOS
+        if (
+          /(?:cancela|quita|elimina|desactiva|borra).*(?:las noticias|las tareas|los recordatorios|las repeticiones|los briefings|los avisos)/i.test(lowerInstruction)
+        ) {
+          const isNews = lowerInstruction.includes('noticia')
+          const isTasks = lowerInstruction.includes('tarea') || lowerInstruction.includes('agenda') || lowerInstruction.includes('cosas')
+
+          if (!botSettings.scheduledBriefings) botSettings.scheduledBriefings = {}
+
+          let cancelMsg = ''
+          if (isNews && !isTasks) {
+            botSettings.scheduledBriefings.dailyNews = { enabled: false, time: '08:30' }
+            cancelMsg = `¡Hecho! He cancelado el envío diario de noticias. Ya no recibirás el boletín matutino automático.`
+          } else if (isTasks && !isNews) {
+            botSettings.scheduledBriefings.dailyTasks = { enabled: false, time: '09:00' }
+            cancelMsg = `¡Hecho! He cancelado el recordatorio diario de tareas. Ya no recibirás el resumen matutino automático.`
+          } else {
+            botSettings.scheduledBriefings.dailyNews = { enabled: false, time: '08:30' }
+            botSettings.scheduledBriefings.dailyTasks = { enabled: false, time: '09:00' }
+            cancelMsg = `¡Hecho, Jorge! He desactivado todas tus repeticiones y recordatorios diarios (noticias y tareas). Puedes volver a configurarlos cuando quieras diciéndomelo en lenguaje natural.`
+          }
+          saveBotSettings(botSettings)
+
+          try {
+            const sent = await sock.sendMessage(from, { text: cancelMsg }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: cancelMsg }).catch(() => {})
           }
           continue
         }
@@ -2160,14 +2463,16 @@ export function handleBaileysApiRoute(req, res) {
     req.on('data', (chunk) => { body += chunk })
     req.on('end', () => {
       let phoneNumber = null
+      let forceRefresh = false
       try {
         if (body) {
           const parsed = JSON.parse(body)
           phoneNumber = parsed.phoneNumber || null
+          forceRefresh = Boolean(parsed.forceRefresh)
         }
       } catch (e) {}
 
-      startBaileysConnection(phoneNumber)
+      startBaileysConnection(phoneNumber, forceRefresh)
         .then((st) => {
           res.statusCode = 200
           res.setHeader('Content-Type', 'application/json')
@@ -2188,13 +2493,14 @@ export function handleBaileysApiRoute(req, res) {
       try {
         const parsed = JSON.parse(body || '{}')
         const phoneNumber = parsed.phoneNumber
+        const forceRefresh = Boolean(parsed.forceRefresh)
         if (!phoneNumber) {
           res.statusCode = 400
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify({ error: 'Falta phoneNumber' }))
           return
         }
-        startBaileysConnection(phoneNumber)
+        startBaileysConnection(phoneNumber, forceRefresh)
           .then((st) => {
             res.statusCode = 200
             res.setHeader('Content-Type', 'application/json')

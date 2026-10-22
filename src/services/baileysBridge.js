@@ -41,12 +41,12 @@ export async function getBaileysStatus() {
   return null
 }
 
-export async function requestBaileysConnect(phoneNumber = null) {
+export async function requestBaileysConnect(phoneNumber = null, forceRefresh = false) {
   try {
     const res = await fetch(`${API_BASE}/api/baileys/connect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phoneNumber }),
+      body: JSON.stringify({ phoneNumber, forceRefresh }),
     })
     if (res.ok) {
       return await res.json()
@@ -55,12 +55,12 @@ export async function requestBaileysConnect(phoneNumber = null) {
   return { status: 'connecting', qrCode: null, pairingCode: null }
 }
 
-export async function requestBaileysPairingCode(phoneNumber) {
+export async function requestBaileysPairingCode(phoneNumber, forceRefresh = false) {
   try {
     const res = await fetch(`${API_BASE}/api/baileys/pairing-code`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phoneNumber }),
+      body: JSON.stringify({ phoneNumber, forceRefresh }),
     })
     if (res.ok) {
       return await res.json()

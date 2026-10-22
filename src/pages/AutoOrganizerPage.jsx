@@ -206,12 +206,12 @@ export default function AutoOrganizerPage() {
 
   const [selectedRadarDate, setSelectedRadarDate] = useState(() => getTodayInfo().todayYmd)
 
-  // Vista del bloque superior derecho: 'week' (Plan Semanal) o 'kanban' (Tablero Kanban de Hoy)
+  // Vista principal unificada de trabajo: 'kanban' (Tablero Ágil) | 'week' (Plan Semanal) | 'list' (Lista Completa)
   const [planViewMode, setPlanViewMode] = useState(() => {
     try {
-      return localStorage.getItem('auto_plan_view_mode') || 'week'
+      return localStorage.getItem('auto_plan_view_mode') || 'kanban'
     } catch (e) {
-      return 'week'
+      return 'kanban'
     }
   })
   const handleSetPlanViewMode = (mode) => {
@@ -221,9 +221,13 @@ export default function AutoOrganizerPage() {
     } catch (e) {}
   }
 
-  // Estado de Drag and Drop para el Tablero Kanban de Hoy
+  // Pestaña activa en vista móvil para el Tablero Kanban (Por hacer | En progreso | Hecho)
+  const [mobileKanbanTab, setMobileKanbanTab] = useState('todo') // 'todo' | 'in_progress' | 'done'
+
+  // Estado de Drag and Drop optimizado para el Tablero Kanban de Hoy (60 FPS sin lag)
   const [draggedKanbanTaskId, setDraggedKanbanTaskId] = useState(null)
   const [dropOverKanbanCol, setDropOverKanbanCol] = useState(null) // 'todo' | 'in_progress' | 'done'
+  const kanbanTouchRafRef = useRef(null)
 
   const handleMoveKanbanTask = (taskId, targetStatus) => {
     setGlobalTasks((prev) =>
@@ -256,19 +260,27 @@ export default function AutoOrganizerPage() {
     if (!draggedKanbanTaskId) return
     const touch = e.touches[0]
     if (!touch) return
-    const elem = document.elementFromPoint(touch.clientX, touch.clientY)
-    if (elem) {
-      const colElem = elem.closest('[data-kanban-col]')
-      if (colElem) {
-        const col = colElem.getAttribute('data-kanban-col')
-        if (col && dropOverKanbanCol !== col) {
-          setDropOverKanbanCol(col)
+    if (kanbanTouchRafRef.current) return
+    kanbanTouchRafRef.current = requestAnimationFrame(() => {
+      kanbanTouchRafRef.current = null
+      const elem = document.elementFromPoint(touch.clientX, touch.clientY)
+      if (elem) {
+        const colElem = elem.closest('[data-kanban-col]')
+        if (colElem) {
+          const col = colElem.getAttribute('data-kanban-col')
+          if (col && dropOverKanbanCol !== col) {
+            setDropOverKanbanCol(col)
+          }
         }
       }
-    }
+    })
   }
 
   const handleKanbanTouchEnd = () => {
+    if (kanbanTouchRafRef.current) {
+      cancelAnimationFrame(kanbanTouchRafRef.current)
+      kanbanTouchRafRef.current = null
+    }
     if (draggedKanbanTaskId && dropOverKanbanCol) {
       handleMoveKanbanTask(draggedKanbanTaskId, dropOverKanbanCol)
     }
@@ -615,10 +627,21 @@ export default function AutoOrganizerPage() {
     setIsAiLoading(false)
   }
 
-  // Conmutar estado de completada
+  // Conmutar estado de completada con sincronización total de estado para Kanban y Lista
   const toggleTaskCompleted = useCallback((id) => {
     setGlobalTasks((prev) =>
-      (prev || []).map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+      (prev || []).map((t) => {
+        if (t.id === id) {
+          const nextCompleted = !t.completed
+          return {
+            ...t,
+            completed: nextCompleted,
+            status: nextCompleted ? 'done' : 'todo',
+            inProgress: false,
+          }
+        }
+        return t
+      })
     )
   }, [setGlobalTasks])
 
@@ -770,7 +793,7 @@ export default function AutoOrganizerPage() {
   }
 
   // Control de Conexión de WhatsApp Web (Baileys)
-  const handleConnectBaileys = async (phone = null) => {
+  const handleConnectBaileys = async (phone = null, forceRefresh = false) => {
     if (isGuest) {
       window.dispatchEvent(
         new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
@@ -780,8 +803,8 @@ export default function AutoOrganizerPage() {
 
     let cleanPhone = null
     if (phone) {
-      let digits = String(phone).replace(/[^0-9]/g, '')
-      if (digits.length === 9 && (digits.startsWith('6') || digits.startsWith('7'))) {
+      let digits = String(phone).replace(/[^0-9]/g, '').replace(/^00/, '')
+      if (digits.length === 9 && (digits.startsWith('6') || digits.startsWith('7') || digits.startsWith('8') || digits.startsWith('9'))) {
         digits = '34' + digits
       }
       cleanPhone = '+' + digits
@@ -801,7 +824,7 @@ export default function AutoOrganizerPage() {
     }))
 
     try {
-      const res = await requestBaileysConnect(cleanPhone)
+      const res = await requestBaileysConnect(cleanPhone, forceRefresh)
       if (res) {
         setBaileysState((prev) => ({ ...prev, ...res }))
       }
@@ -836,6 +859,9 @@ export default function AutoOrganizerPage() {
               setTimeout(() => setWhatsAppNotificationMsg(''), 4000)
               clearInterval(pollTimer)
               return
+            }
+            if (latest.reconnecting) {
+              setBaileysState((prev) => ({ ...prev, ...latest }))
             }
             if (latest.error) {
               setBaileysState((prev) => ({ ...prev, ...latest }))
@@ -1314,936 +1340,117 @@ export default function AutoOrganizerPage() {
           </div>
         )}
 
-        {/* 2. Disposición Dividida: 2 Columnas para Plan Semanal / 1 Columna Panorámica para Kanban */}
-        <div className={`grid grid-cols-1 ${planViewMode === 'kanban' ? 'lg:grid-cols-1' : 'lg:grid-cols-2'} gap-6 items-start`}>
-          {/* COLUMNA IZQUIERDA: Barra de Ingesta Rápida + Centro de Enfoque de Hoy (En modo Kanban se optimiza en cabecera) */}
-          <div className="w-full space-y-4">
-            {/* 1. Barra de Entrada Rápida con Ingesta Directa por IA */}
-            <div className={`p-1.5 sm:p-2 border transition-all ${
-              appTheme === 'brutalista'
-                ? 'rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]'
-                : appTheme === 'executive'
-                ? 'rounded-xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-slate-800 shadow-2xs focus-within:border-slate-400'
-                : appTheme === 'aura'
-                ? 'rounded-2xl bg-white dark:bg-[#1c1020] border border-pink-200/90 dark:border-pink-900/40 shadow-xs focus-within:border-pink-400'
-                : 'rounded-2xl bg-white dark:bg-[#161b26] border-slate-200/80 dark:border-slate-800 shadow-2xs focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20'
-            }`}>
-              <form onSubmit={handleDirectSmartIngestion} className="flex items-center gap-2">
-                <span className={`text-[20px] ml-2 shrink-0 ${
-                  appTheme === 'aura'
-                    ? 'material-symbols-outlined text-pink-500'
-                    : appTheme === 'executive'
-                    ? 'material-symbols-outlined text-slate-600 dark:text-slate-300'
-                    : appTheme === 'brutalista'
-                    ? 'material-symbols-outlined text-black dark:text-white'
-                    : 'material-symbols-outlined text-slate-400 dark:text-slate-500'
-                }`}>
-                  {appTheme === 'brutalista' ? 'terminal' : 'add_task'}
+        {/* 2. Ingesta Inteligente a Ancho Completo */}
+        <section className={`p-3 sm:p-4 border transition-all ${
+          appTheme === 'brutalista'
+            ? 'rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]'
+            : appTheme === 'executive'
+            ? 'rounded-2xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-slate-800 shadow-2xs'
+            : appTheme === 'aura'
+            ? 'rounded-3xl bg-white dark:bg-[#1c1020] border border-pink-200/90 dark:border-pink-900/40 shadow-xs'
+            : 'rounded-2xl bg-white dark:bg-[#161b26] border border-slate-200/80 dark:border-slate-800 shadow-xs'
+        }`}>
+          <form onSubmit={handleDirectSmartIngestion} className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[22px] text-primary shrink-0">
+                {appTheme === 'brutalista' ? 'terminal' : 'add_task'}
+              </span>
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder={
+                  appTheme === 'brutalista'
+                    ? '// INGRESO DE PROTOCOLO O MISIÓN OPERATIVA...'
+                    : '¿Qué necesitas hacer? (ej. Repasar examen de redes el viernes a las 10:00, Gimnasio martes y jueves...)'
+                }
+                className="flex-1 bg-transparent text-sm sm:text-base text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none py-1.5 px-1 min-w-0 font-medium"
+              />
+              <button
+                type="button"
+                onClick={handleOpenCreateModal}
+                className="h-8 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0"
+                title="Configuración manual con todos los campos"
+              >
+                <span className="material-symbols-outlined text-[15px]">tune</span>
+                <span className="hidden sm:inline">Avanzado</span>
+              </button>
+              <button
+                type="submit"
+                disabled={isAiLoading || !newTaskTitle.trim()}
+                className="h-8 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shrink-0 shadow-2xs disabled:opacity-50"
+                title="Añadir directamente con IA (Enter)"
+              >
+                <span>{isAiLoading ? 'Procesando...' : 'Añadir Tarea'}</span>
+                <kbd className="hidden sm:inline-block px-1 py-0.2 rounded bg-black/20 text-[10px] font-mono leading-none">
+                  ↵
+                </kbd>
+              </button>
+            </div>
+
+            {/* Selector Rápido de Contexto & Filtros */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1 hidden sm:inline">
+                  Contexto:
                 </span>
-                <input
-                  type="text"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder={
-                    appTheme === 'brutalista'
-                      ? '// INGRESO DE PROTOCOLO O MISIÓN OPERATIVA...'
-                      : '¿Qué necesitas hacer? (ej. Deberes de sistemas el viernes, Gimnasio todos los martes...)'
-                  }
-                  className={`flex-1 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none py-1.5 px-1 min-w-0 ${
-                    appTheme === 'brutalista' ? 'font-mono' : ''
-                  }`}
-                />
                 <button
                   type="button"
-                  onClick={handleOpenCreateModal}
-                  className={`h-7 px-2.5 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0 ${
-                    appTheme === 'brutalista'
-                      ? 'rounded-none bg-slate-100 hover:bg-yellow-200 text-black border border-black'
-                      : appTheme === 'executive'
-                      ? 'rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-medium'
-                      : appTheme === 'aura'
-                      ? 'rounded-full bg-pink-50 hover:bg-pink-100 text-pink-700 dark:bg-pink-950/60 dark:text-pink-200 border border-pink-200'
-                      : 'rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  onClick={() => setSelectedContextFilter('All')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    selectedContextFilter === 'All'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
                   }`}
-                  title="Configuración manual con todos los campos"
                 >
-                  <span className="material-symbols-outlined text-[13px]">tune</span>
-                  <span className="hidden sm:inline">Avanzado</span>
+                  Todos ({getUniqueTaskCount(globalTasks)})
                 </button>
-                <button
-                  type="submit"
-                  disabled={isAiLoading || !newTaskTitle.trim()}
-                  className={`h-7 px-3.5 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0 disabled:opacity-50 ${
-                    appTheme === 'brutalista'
-                      ? 'rounded-none bg-yellow-300 hover:bg-yellow-400 text-black font-mono font-bold uppercase border-2 border-black shadow-[2px_2px_0px_#000]'
-                      : appTheme === 'executive'
-                      ? 'rounded-md bg-slate-800 hover:bg-slate-900 text-white font-medium border border-slate-700 shadow-xs'
-                      : appTheme === 'aura'
-                      ? 'rounded-full bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-xs'
-                      : 'rounded-lg bg-primary hover:bg-primary/90 text-white shadow-2xs'
-                  }`}
-                  title="Añadir directamente con IA (Enter)"
-                >
-                  <span>
-                    {isAiLoading
-                      ? 'Procesando...'
-                      : appTheme === 'brutalista'
-                      ? '[+] ASIGNAR'
-                      : 'Añadir'}
-                  </span>
-                  <kbd className="hidden sm:inline-block px-1 py-0.2 rounded bg-black/20 text-[10px] font-mono leading-none">
-                    ↵
-                  </kbd>
-                </button>
-              </form>
-            </div>
-
-            {/* 2. Centro de Enfoque y Momentum de Hoy (Visible en Vista Semanal para equilibrar la composición) */}
-            {planViewMode !== 'kanban' && (
-              <div className="bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
-                {/* Cabecera del Panel de Enfoque */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[19px]">bolt</span>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
-                      Enfoque de Hoy
-                    </h3>
-                    <p className="text-[10px] text-slate-500">
-                      {todayInfo.todayLabelStr} • {tasksToday.length} {tasksToday.length === 1 ? 'actividad' : 'actividades'}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                  {completedTodayCount}/{tasksToday.length} hechas
-                </span>
-              </div>
-
-              {/* Tarjeta de Próxima Actividad */}
-              {nextTaskToday ? (
-                <div className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">
-                    <span className="material-symbols-outlined text-[20px]">{nextTaskToday.icon || 'event'}</span>
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                        Próxima actividad
-                      </span>
-                      <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                        {nextTaskToday.time || '10:00'}
-                      </span>
-                    </div>
-                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate pt-0.5">
-                      {nextTaskToday.title}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex items-center gap-2.5 text-xs text-slate-500">
-                  <span className="material-symbols-outlined text-[20px] text-emerald-500 shrink-0">check_circle</span>
-                  <span>No tienes tareas pendientes para hoy. Todo al día.</span>
-                </div>
-              )}
-
-              {/* Atajos Rápidos de Contexto / Rol */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  {themeTokens?.labels?.filterContext || 'Filtrar por contexto'}
-                </span>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedContextFilter('All')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                      selectedContextFilter === 'All'
-                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold shadow-2xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                    }`}
-                  >
-                    {themeTokens?.labels?.allContexts || 'Todos'} ({getUniqueTaskCount(globalTasks)})
-                  </button>
-                  {roles.map((r) => {
-                    const roleTasks = (globalTasks || []).filter((t) => t.context === r.name || t.context === r.id || t.context === r.label)
-                    const count = getUniqueTaskCount(roleTasks)
-                    const isSelected = selectedContextFilter === r.name || selectedContextFilter === r.id
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedContextFilter(isSelected ? 'All' : r.name)}
-                        onContextMenu={(e) => {
-                          e.preventDefault()
-                          setRoleContextMenu({ x: e.clientX, y: e.clientY, role: r })
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
-                          isSelected
-                            ? 'ring-2 ring-primary bg-white dark:bg-[#161b26] text-slate-900 dark:text-white font-bold shadow-2xs'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                        }`}
-                        title="Click para filtrar • Click derecho para editar o eliminar rol"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: r.hex }} />
-                        <span>{r.label || r.name}</span>
-                        <span className="text-[10px] opacity-75 font-mono">({count})</span>
-                      </button>
-                    )
-                  })}
-                  {(() => {
-                    const extCount = (globalTasks || []).filter((t) =>
-                      selectedContextFilter === 'All'
-                        ? t.isExternalSync
-                        : (t.context === selectedContextFilter ||
-                            (selectedContextFilter === 'Personal' && (!t.context || t.context === 'Personal'))) &&
-                          t.isExternalSync
-                    ).length
-                    if (extCount === 0) return null
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => handlePurgeImportedFromContext(selectedContextFilter)}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ml-auto"
-                        title="Eliminar actividades importadas por sincronización externa"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">cleaning_services</span>
-                        <span>Limpiar {extCount} importadas</span>
-                      </button>
-                    )
-                  })()}
-                </div>
-              </div>
-
-              {/* Barra de Progreso y Tiempo de Hoy */}
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
-                <div className="flex items-center gap-2">
-                  <div className="w-20 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${tasksToday.length > 0 ? Math.round((completedTodayCount / tasksToday.length) * 100) : 0}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-[11px] font-mono">
-                    {tasksToday.length > 0 ? Math.round((completedTodayCount / tasksToday.length) * 100) : 0}% hoy
-                  </span>
-                </div>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  {estimatedTodayMins > 0 ? `~${Math.round(estimatedTodayMins / 60)}h ${estimatedTodayMins % 60}m estimadas` : ''}
-                </span>
-              </div>
-            </div>
-            )}
-          </div>
-
-          {/* COLUMNA DERECHA: PLAN SEMANAL O TABLERO KANBAN PANORÁMICO */}
-          <div className="w-full bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
-            {/* Cabecera Apple del Plan Semanal con Switcher Kanban */}
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-[#0071E3] dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[19px]">
-                    {planViewMode === 'kanban' ? 'view_kanban' : 'view_week'}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
-                    {planViewMode === 'kanban' ? 'Tablero Kanban de Hoy' : 'Plan Semanal'}
-                  </h3>
-                  <p className="text-[10px] text-slate-500">
-                    {planViewMode === 'kanban'
-                      ? `${todayInfo.headerDateStr} • Flujo ágil de actividades`
-                      : `${todayInfo.weekRangeLabel} • Agenda de la semana`}
-                  </p>
-                </div>
-              </div>
-
-              {/* Selector de Pestaña: Semana vs Kanban Hoy */}
-              <div className="flex items-center gap-2">
-                <div className="inline-flex p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
-                  <button
-                    type="button"
-                    onClick={() => handleSetPlanViewMode('week')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      planViewMode === 'week'
-                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[14px]">view_week</span>
-                    <span>Semana</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetPlanViewMode('kanban')}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      planViewMode === 'kanban'
-                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-2xs'
-                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[14px]">view_kanban</span>
-                    <span>Kanban Hoy</span>
-                  </button>
-                </div>
-
-                {planViewMode === 'week' ? (
-                  <span className="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium font-mono">
-                    {tasksThisWeek.length} {tasksThisWeek.length === 1 ? 'tarea' : 'tareas'}
-                  </span>
-                ) : (
-                  <span className="text-xs px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium font-mono">
-                    {tasksToday.length} {tasksToday.length === 1 ? 'actividad' : 'actividades'}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* VISTA 1: RUNWAY DE 7 DÍAS ESTILO APPLE + AGENDA DIARIA */}
-            {planViewMode === 'week' && (
-              <div className="space-y-3">
-              {/* Runway Compacto de 7 Días Estilo Apple */}
-              <div className="grid grid-cols-7 gap-1 sm:gap-1.5 pt-0.5">
-                {weekDays.map((day) => {
-                  const dayTasks = (globalTasks || []).filter((t) => t.date === day.date)
-                  const isSelected = selectedRadarDate === day.date
-                  const isToday = day.isToday
-
-                  // Obtener hasta 3 colores únicos de rol para los puntos indicadores de tareas
-                  const uniqueDayColors = Array.from(
-                    new Set(
-                      dayTasks.map((t) => {
-                        const role = roles.find((r) => r.name === t.context || r.id === t.context)
-                        return role ? role.hex : '#0071E3'
-                      })
-                    )
-                  ).slice(0, 3)
-
+                {roles.map((r) => {
+                  const roleTasks = (globalTasks || []).filter((t) => t.context === r.name || t.context === r.id || t.context === r.label)
+                  const count = getUniqueTaskCount(roleTasks)
+                  const isSelected = selectedContextFilter === r.name || selectedContextFilter === r.id
                   return (
                     <button
-                      key={day.date}
+                      key={r.id}
                       type="button"
-                      onClick={() => setSelectedRadarDate(day.date)}
-                      className={`flex flex-col items-center py-2 px-1 transition-all cursor-pointer relative ${
-                        appTheme === 'brutalista'
-                          ? `rounded-none border-2 border-black dark:border-white ${
-                              isSelected
-                                ? 'bg-yellow-300 text-black font-bold'
-                                : isToday
-                                ? 'bg-yellow-100 dark:bg-yellow-950/40 text-black dark:text-white'
-                                : 'hover:bg-slate-100 dark:hover:bg-slate-800'
-                            }`
-                          : appTheme === 'executive'
-                          ? `rounded-md ${
-                              isSelected
-                                ? 'bg-slate-900 text-white shadow-xs'
-                                : isToday
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700'
-                                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`
-                          : appTheme === 'aura'
-                          ? `rounded-2xl ${
-                              isSelected
-                                ? 'bg-pink-100 text-pink-900 dark:bg-pink-950/80 dark:text-pink-100 ring-2 ring-pink-400 shadow-xs'
-                                : isToday
-                                ? 'bg-pink-50/80 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border border-pink-200/60'
-                                : 'hover:bg-pink-50/50 text-slate-500'
-                            }`
-                          : isSelected
-                          ? 'rounded-2xl bg-blue-500/10 dark:bg-blue-500/15 ring-2 ring-[#0071E3]/50 shadow-xs'
-                          : isToday
-                          ? 'rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 hover:bg-slate-200/70'
-                          : 'rounded-2xl hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
+                      onClick={() => setSelectedContextFilter(isSelected ? 'All' : r.name)}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        setRoleContextMenu({ x: e.clientX, y: e.clientY, role: r })
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? 'ring-2 ring-primary bg-white dark:bg-[#161b26] text-slate-900 dark:text-white shadow-2xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
                       }`}
+                      title="Click para filtrar • Click derecho para editar rol"
                     >
-                      <span
-                        className={`text-[10px] font-semibold tracking-wider uppercase ${
-                          appTheme === 'executive'
-                            ? isSelected ? 'text-white font-medium' : isToday ? 'text-slate-950 dark:text-white font-bold' : 'text-slate-400'
-                            : isToday
-                            ? appTheme === 'aura' ? 'text-pink-600 font-bold' : appTheme === 'brutalista' ? 'text-black dark:text-white font-bold' : 'text-[#0071E3] dark:text-blue-400 font-bold'
-                            : 'text-slate-400 dark:text-slate-500'
-                        }`}
-                      >
-                        {day.label}
-                      </span>
-
-                      {/* Círculo / Forma del número del día */}
-                      <div
-                        className={`w-7 h-7 flex items-center justify-center text-xs my-1 transition-all ${
-                          appTheme === 'brutalista'
-                            ? `rounded-none font-mono font-black ${
-                                isSelected
-                                  ? 'bg-black text-yellow-300'
-                                  : isToday
-                                  ? 'bg-yellow-300 text-black border border-black'
-                                  : 'text-black dark:text-white'
-                              }`
-                            : appTheme === 'executive'
-                            ? `rounded-md font-sans ${
-                                isSelected
-                                  ? 'bg-white text-slate-950 font-bold'
-                                  : isToday
-                                  ? 'bg-slate-900 text-white font-bold'
-                                  : 'text-slate-800 dark:text-slate-200 font-medium'
-                              }`
-                            : appTheme === 'aura'
-                            ? `rounded-full ${
-                                isToday
-                                  ? 'bg-pink-500 text-white font-bold shadow-xs'
-                                  : isSelected
-                                  ? 'bg-pink-300/70 text-pink-950 font-bold'
-                                  : 'text-slate-700 dark:text-slate-300 font-medium'
-                              }`
-                            : isToday
-                            ? 'rounded-full bg-[#0071E3] text-white shadow-xs font-bold'
-                            : isSelected
-                            ? 'rounded-full bg-blue-500/20 text-[#0071E3] dark:text-blue-400 font-bold'
-                            : 'rounded-full text-slate-700 dark:text-slate-300 font-medium'
-                        }`}
-                      >
-                        {day.dayNum}
-                      </div>
-
-                      {/* Puntos de tareas estilo Apple Calendar */}
-                      <div className="h-2 flex items-center justify-center gap-0.5">
-                        {uniqueDayColors.length > 0 ? (
-                          uniqueDayColors.map((hex, i) => (
-                            <span
-                              key={i}
-                              className="w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: hex }}
-                            />
-                          ))
-                        ) : (
-                          <span className="w-1 h-1 rounded-full bg-transparent" />
-                        )}
-                      </div>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: r.hex }} />
+                      <span>{r.label || r.name}</span>
+                      <span className="text-[10px] opacity-75 font-mono">({count})</span>
                     </button>
                   )
                 })}
-              </div>
-
-              {/* Tarjeta de Agenda del Día Seleccionado (Estilo Apple Reminders/Calendar) */}
-              <div className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800/70 space-y-2.5">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-[#0071E3] dark:text-blue-400 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[15px]">event</span>
-                    </div>
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {weekDays.find((d) => d.date === selectedRadarDate)?.label || 'Día'}, {weekDays.find((d) => d.date === selectedRadarDate)?.dayNum || ''} {selectedRadarDate ? new Date(selectedRadarDate + 'T12:00:00').toLocaleDateString('es-ES', { month: 'long' }) : ''}
-                      {selectedRadarDate === todayYmd && (
-                        <span className="ml-1.5 px-1.5 py-0.2 rounded-md bg-[#0071E3]/15 text-[#0071E3] dark:text-blue-400 text-[10px] font-bold">
-                          HOY
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-medium text-slate-500">
-                    {(globalTasks || []).filter((t) => t.date === selectedRadarDate).length}{' '}
-                    {(globalTasks || []).filter((t) => t.date === selectedRadarDate).length === 1 ? 'tarea' : 'tareas'}
-                  </span>
-                </div>
-
-                {(globalTasks || []).filter((t) => t.date === selectedRadarDate).length > 0 ? (
-                  <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                    {(globalTasks || []).filter((t) => t.date === selectedRadarDate).map((t) => {
-                      const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
-                      return (
-                        <div
-                          key={t.id}
-                          className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-2.5 transition-all shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 ${
-                            t.completed ? 'opacity-50' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: roleMatch ? roleMatch.hex : '#0071E3' }}
-                            />
-                            <span className="font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded shrink-0">
-                              {t.time || '10:00'}
-                            </span>
-                            <span className={`text-xs font-medium text-slate-900 dark:text-white truncate ${t.completed || isEventFinished(t) ? 'line-through opacity-50' : ''}`}>
-                              {t.title}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span
-                              className="px-2 py-0.5 rounded-md text-[10px] font-semibold"
-                              style={{
-                                backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
-                                color: roleMatch?.hex || '#0071E3',
-                              }}
-                            >
-                              {roleMatch?.label || roleMatch?.name || t.context}
-                            </span>
-                            {t.est && (
-                              <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
-                                {t.est}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">
-                    Día despejado. No hay tareas programadas para esta fecha.
-                  </div>
-                )}
-              </div>
-
-              {/* Barra Segmentada de Balance de Enfoque Semanal */}
-              <div className="p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
-                  <span className="font-semibold text-slate-900 dark:text-white">Balance de Enfoque Semanal</span>
-                  <span className="font-mono">{tasksThisWeek.length} tareas</span>
-                </div>
-
-                {/* Barra Continua Segmentada */}
-                <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-200/80 dark:bg-slate-700/80 gap-0.5">
-                  {roleDistribution.map((rd) => {
-                    if (rd.percent === 0) return null
-                    return (
-                      <div
-                        key={rd.role.id}
-                        style={{ width: `${rd.percent}%`, backgroundColor: rd.role.hex }}
-                        className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500"
-                        title={`${rd.role.label || rd.role.name}: ${rd.count} tareas (${rd.percent}%)`}
-                      />
-                    )
-                  })}
-                </div>
-
-                {/* Leyenda Gráfica con Colores */}
-                <div className="flex items-center gap-2.5 flex-wrap text-[10px]">
-                  {roles.map((r) => {
-                    const count = tasksThisWeek.filter(
-                      (t) => t.context === r.name || t.context === r.id || t.context === r.label
-                    ).length
-                    if (count === 0) return null
-                    return (
-                      <div key={r.id} className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: r.hex }} />
-                        <span className="font-medium">{r.label || r.name}:</span>
-                        <span className="font-mono text-slate-900 dark:text-white font-semibold">{count}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-            )}
-
-            {/* VISTA 2: TABLERO KANBAN DE HOY (POR HACER • EN PROGRESO • HECHO) - PANORÁMICO EXPANDIDO */}
-            {planViewMode === 'kanban' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-                  {/* Columna 1: Por hacer */}
-                  <div
-                    data-kanban-col="todo"
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      e.dataTransfer.dropEffect = 'move'
-                      if (dropOverKanbanCol !== 'todo') setDropOverKanbanCol('todo')
-                    }}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      handleKanbanDrop('todo')
-                    }}
-                    className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
-                      dropOverKanbanCol === 'todo'
-                        ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20'
-                        : 'border-slate-200/70 dark:border-slate-800/70'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60 dark:border-slate-700/60 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[17px]">pending_actions</span>
-                        </div>
-                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Por hacer</span>
-                      </div>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                        {kanbanTodoTasks.length}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3 overflow-y-auto pr-1 flex-1">
-                      {kanbanTodoTasks.map((t) => {
-                        const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
-                        const isBeingDragged = draggedKanbanTaskId === t.id
-                        return (
-                          <div
-                            key={t.id}
-                            draggable="true"
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData('text/plain', t.id)
-                              setDraggedKanbanTaskId(t.id)
-                            }}
-                            onDragEnd={() => {
-                              setDraggedKanbanTaskId(null)
-                              setDropOverKanbanCol(null)
-                            }}
-                            onTouchStart={() => handleKanbanTouchStart(t.id)}
-                            onTouchMove={handleKanbanTouchMove}
-                            onTouchEnd={handleKanbanTouchEnd}
-                            className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/80 dark:border-slate-700/80 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 flex flex-col gap-2.5 group ${
-                              isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1 text-xs">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span
-                                  className="w-2 h-2 rounded-full shrink-0"
-                                  style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
-                                />
-                                <span
-                                  className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
-                                  style={{
-                                    backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
-                                    color: roleMatch?.hex || '#0071E3',
-                                  }}
-                                >
-                                  {roleMatch?.label || roleMatch?.name || t.context || 'General'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0 text-slate-400 dark:text-slate-500 font-mono text-[11px]">
-                                <span>{t.time || '10:00'}</span>
-                                <span className="material-symbols-outlined text-[15px] text-slate-300 dark:text-slate-600 cursor-grab group-hover:text-primary transition-colors">
-                                  drag_indicator
-                                </span>
-                              </div>
-                            </div>
-                            <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 leading-snug">
-                              {t.title}
-                            </h4>
-                            <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMoveKanbanTask(t.id, 'in_progress')
-                                }}
-                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer"
-                                title="Iniciar y mover a En progreso"
-                              >
-                                <span>Iniciar</span>
-                                <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setEditingTaskId(t.id)
-                                  setIsFocusModalOpen(true)
-                                }}
-                                className="px-2 py-1 rounded-lg text-xs text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
-                                title="Enfocar con cronómetro"
-                              >
-                                <span className="material-symbols-outlined text-[14px]">play_circle</span>
-                                <span>Focus</span>
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                      {kanbanTodoTasks.length === 0 && (
-                        <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
-                          <span className="material-symbols-outlined text-[28px] opacity-40">done_all</span>
-                          <span className="font-medium">Sin tareas por hacer hoy</span>
-                          <span className="text-[11px] opacity-70">Usa el buscador superior para añadir una</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Columna 2: En progreso */}
-                  <div
-                    data-kanban-col="in_progress"
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      e.dataTransfer.dropEffect = 'move'
-                      if (dropOverKanbanCol !== 'in_progress') setDropOverKanbanCol('in_progress')
-                    }}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      handleKanbanDrop('in_progress')
-                    }}
-                    className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
-                      dropOverKanbanCol === 'in_progress'
-                        ? 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20'
-                        : 'border-slate-200/70 dark:border-slate-800/70'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60 dark:border-slate-700/60 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[17px]">timelapse</span>
-                        </div>
-                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">En progreso</span>
-                      </div>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400">
-                        {kanbanInProgressTasks.length}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3 overflow-y-auto pr-1 flex-1">
-                      {kanbanInProgressTasks.map((t) => {
-                        const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
-                        const isBeingDragged = draggedKanbanTaskId === t.id
-                        return (
-                          <div
-                            key={t.id}
-                            draggable="true"
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData('text/plain', t.id)
-                              setDraggedKanbanTaskId(t.id)
-                            }}
-                            onDragEnd={() => {
-                              setDraggedKanbanTaskId(null)
-                              setDropOverKanbanCol(null)
-                            }}
-                            onTouchStart={() => handleKanbanTouchStart(t.id)}
-                            onTouchMove={handleKanbanTouchMove}
-                            onTouchEnd={handleKanbanTouchEnd}
-                            className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-blue-200/80 dark:border-blue-900/60 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md flex flex-col gap-2.5 group ${
-                              isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1 text-xs">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span
-                                  className="w-2 h-2 rounded-full shrink-0"
-                                  style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
-                                />
-                                <span
-                                  className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
-                                  style={{
-                                    backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
-                                    color: roleMatch?.hex || '#0071E3',
-                                  }}
-                                >
-                                  {roleMatch?.label || roleMatch?.name || t.context || 'General'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0 text-slate-400 dark:text-slate-500 font-mono text-[11px]">
-                                <span>{t.time || '10:00'}</span>
-                                <span className="material-symbols-outlined text-[15px] text-slate-300 dark:text-slate-600 cursor-grab group-hover:text-primary transition-colors">
-                                  drag_indicator
-                                </span>
-                              </div>
-                            </div>
-                            <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 leading-snug">
-                              {t.title}
-                            </h4>
-                            <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMoveKanbanTask(t.id, 'todo')
-                                }}
-                                className="px-2 py-1 rounded-lg text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
-                                title="Volver a Por hacer"
-                              >
-                                <span className="material-symbols-outlined text-[13px]">arrow_back</span>
-                                <span>Volver</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMoveKanbanTask(t.id, 'done')
-                                }}
-                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
-                                title="Marcar como Hecho"
-                              >
-                                <span className="material-symbols-outlined text-[14px]">check</span>
-                                <span>Completar</span>
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                      {kanbanInProgressTasks.length === 0 && (
-                        <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
-                          <span className="material-symbols-outlined text-[28px] opacity-40">drag_pan</span>
-                          <span className="font-medium">Sin actividades en curso</span>
-                          <span className="text-[11px] opacity-70">Arrastra una tarea aquí para empezar a enfocar</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Columna 3: Hecho */}
-                  <div
-                    data-kanban-col="done"
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      e.dataTransfer.dropEffect = 'move'
-                      if (dropOverKanbanCol !== 'done') setDropOverKanbanCol('done')
-                    }}
-                    onDragLeave={(e) => {
-                      if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      handleKanbanDrop('done')
-                    }}
-                    className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
-                      dropOverKanbanCol === 'done'
-                        ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
-                        : 'border-slate-200/70 dark:border-slate-800/70'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/60 dark:border-slate-700/60 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[17px]">task_alt</span>
-                        </div>
-                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">Hecho</span>
-                      </div>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                        {kanbanDoneTasks.length}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3 overflow-y-auto pr-1 flex-1">
-                      {kanbanDoneTasks.map((t) => {
-                        const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
-                        const isBeingDragged = draggedKanbanTaskId === t.id
-                        return (
-                          <div
-                            key={t.id}
-                            draggable="true"
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData('text/plain', t.id)
-                              setDraggedKanbanTaskId(t.id)
-                            }}
-                            onDragEnd={() => {
-                              setDraggedKanbanTaskId(null)
-                              setDropOverKanbanCol(null)
-                            }}
-                            onTouchStart={() => handleKanbanTouchStart(t.id)}
-                            onTouchMove={handleKanbanTouchMove}
-                            onTouchEnd={handleKanbanTouchEnd}
-                            className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/60 dark:border-slate-800 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs flex flex-col gap-2 opacity-75 group ${
-                              isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-1 text-xs">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span
-                                  className="w-2 h-2 rounded-full shrink-0"
-                                  style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
-                                />
-                                <span
-                                  className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
-                                  style={{
-                                    backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
-                                    color: roleMatch?.hex || '#0071E3',
-                                  }}
-                                >
-                                  {roleMatch?.label || roleMatch?.name || t.context || 'General'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
-                                <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                                <span>{t.completed ? 'Hecho' : 'Finalizado'}</span>
-                              </div>
-                            </div>
-                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 line-through line-clamp-2 leading-snug">
-                              {t.title}
-                            </h4>
-                            <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMoveKanbanTask(t.id, 'todo')
-                                }}
-                                className="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
-                                title="Reabrir tarea"
-                              >
-                                <span className="material-symbols-outlined text-[13px]">undo</span>
-                                <span>Reabrir</span>
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                      {kanbanDoneTasks.length === 0 && (
-                        <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
-                          <span className="material-symbols-outlined text-[28px] opacity-40">pending</span>
-                          <span className="font-medium">Sin actividades completadas hoy</span>
-                          <span className="text-[11px] opacity-70">Completa tareas para ver tu progreso</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isGuest
-                      ? 'bg-amber-400'
-                      : baileysState.status === 'connected'
-                      ? 'bg-emerald-500 animate-pulse'
-                      : 'bg-slate-400'
-                  }`}
-                />
-                <span>
-                  WhatsApp Bot:{' '}
-                  <strong className="font-medium text-slate-900 dark:text-white">
-                    {isGuest
-                      ? 'Requiere cuenta registrada'
-                      : baileysState.status === 'connected'
-                      ? baileysState.phone || 'Dispositivo Vinculado'
-                      : 'Listo para conectar'}
-                  </strong>
-                </span>
-              </div>
-              {isGuest ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    window.dispatchEvent(
-                      new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
-                    )
-                  }}
-                  className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  onClick={() => setIsManageRolesModalOpen(true)}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-0.5 cursor-pointer"
+                  title="Crear o personalizar roles"
                 >
-                  <span>Iniciar sesión</span>
-                  <span className="material-symbols-outlined text-[14px]">login</span>
+                  <span className="material-symbols-outlined text-[14px]">add</span>
+                  <span>Rol</span>
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSendDailyBriefing}
-                  className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Enviar briefing</span>
-                  <span className="material-symbols-outlined text-[14px]">send</span>
-                </button>
-              )}
+              </div>
+
+              {/* Conteo Rápido en la barra */}
+              <div className="flex items-center gap-2.5 text-xs text-slate-500 font-mono ml-auto">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{tasksToday.length} hoy</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span>{tasksThisWeek.length} esta semana</span>
+              </div>
             </div>
-          </div>
-        </div>
+          </form>
+        </section>
 
         {/* 3. Sesión de Enfoque Activa (Dynamic Island Bar) */}
         {activeFocusTask && !isFocusModalOpen && (
@@ -2283,246 +1490,1036 @@ export default function AutoOrganizerPage() {
           </div>
         )}
 
-        {/* 4. Lista de Tareas (Buscador rápido + selector de estado: Todas | Pendientes | Hechas) */}
+        {/* 4. SELECTOR UNIFICADO DE VISTA DE TRABAJO */}
         <section className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-base sm:text-lg text-slate-900 dark:text-white font-bold tracking-tight">
-                Tareas
-              </h2>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono font-semibold">
-                {filteredTasks.length}
+            {/* 3 Modos de Espacio de Trabajo */}
+            <div
+              data-segmented-toggle
+              className="relative inline-flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs self-start"
+            >
+              <div
+                data-slider-pill
+                className="absolute top-1 bottom-1 rounded-xl bg-white dark:bg-[#161b26] shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                style={{
+                  width: 'calc((100% - 8px) / 3)',
+                  left: '4px',
+                  transform: `translateX(${
+                    planViewMode === 'kanban' ? '0%' : planViewMode === 'week' ? '100%' : '200%'
+                  })`,
+                }}
+              />
+              <button
+                type="button"
+                data-active={planViewMode === 'kanban'}
+                onClick={() => handleSetPlanViewMode('kanban')}
+                className={`relative z-10 px-3.5 sm:px-5 py-2 text-center rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  planViewMode === 'kanban' ? 'text-primary' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[17px]">view_kanban</span>
+                <span>Tablero Kanban</span>
+                <span className="text-[11px] font-mono opacity-80">({tasksToday.length})</span>
+              </button>
+              <button
+                type="button"
+                data-active={planViewMode === 'week'}
+                onClick={() => handleSetPlanViewMode('week')}
+                className={`relative z-10 px-3.5 sm:px-5 py-2 text-center rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  planViewMode === 'week' ? 'text-primary' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[17px]">view_week</span>
+                <span>Plan Semanal</span>
+                <span className="text-[11px] font-mono opacity-80">({tasksThisWeek.length})</span>
+              </button>
+              <button
+                type="button"
+                data-active={planViewMode === 'list'}
+                onClick={() => handleSetPlanViewMode('list')}
+                className={`relative z-10 px-3.5 sm:px-5 py-2 text-center rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  planViewMode === 'list' ? 'text-primary' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[17px]">checklist</span>
+                <span>Lista Completa</span>
+                <span className="text-[11px] font-mono opacity-80">({filteredTasks.length})</span>
+              </button>
+            </div>
+
+            {/* Buscador de tareas rápido disponible en todas las vistas */}
+            <div className="relative flex-1 max-w-md sm:ml-auto">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-slate-400">
+                search
               </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 max-w-xl sm:ml-auto">
-              {/* Buscador de tareas por nombre o contexto */}
-              <div className="relative flex-1">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-slate-400">
-                  search
-                </span>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar tareas por nombre o contexto..."
-                  className="w-full h-9 pl-9 pr-8 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-100/90 focus:bg-white dark:focus:bg-[#161b26] rounded-xl text-xs sm:text-body-sm text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-200 flex items-center justify-center text-[10px] hover:bg-slate-400 cursor-pointer"
-                    title="Limpiar búsqueda"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              {/* UN ÚNICO SELECTOR LIMPIO: Todas | Pendientes | Hechas */}
-              <div className="relative inline-flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start sm:self-auto">
-                <div
-                  className="absolute top-0.5 bottom-0.5 rounded-lg bg-white dark:bg-[#161b26] shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
-                  style={{
-                    width: 'calc((100% - 4px) / 3)',
-                    left: '2px',
-                    transform: `translateX(${
-                      filterStatus === 'all' ? '0%' : filterStatus === 'pending' ? '100%' : '200%'
-                    })`,
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setFilterStatus('all')}
-                  className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
-                    filterStatus === 'all' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
-                  }`}
-                >
-                  Todas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterStatus('pending')}
-                  className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
-                    filterStatus === 'pending' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
-                  }`}
-                >
-                  Pendientes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilterStatus('completed')}
-                  className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
-                    filterStatus === 'completed' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
-                  }`}
-                >
-                  Hechas
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {searchQuery.trim() ? (
-            /* Vista de Resultados Filtrados por Búsqueda con Acciones Completas */
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-primary">search</span>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                    Resultados para "{searchQuery}" • {filteredTasks.length} {filteredTasks.length === 1 ? 'tarea encontrada' : 'tareas encontradas'}
-                  </h3>
-                </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar actividades por nombre o contexto..."
+                className="w-full h-9 pl-9 pr-8 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-100/90 focus:bg-white dark:focus:bg-[#161b26] rounded-xl text-xs sm:text-body-sm text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-200/70 dark:border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all shadow-inner"
+              />
+              {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-200 flex items-center justify-center text-[10px] hover:bg-slate-400 cursor-pointer"
+                  title="Limpiar búsqueda"
                 >
-                  Limpiar búsqueda
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* --------------------------------------------------------------------------
+              VISTA 1: TABLERO KANBAN DE HOY (PANORÁMICO Y RESPONSIVO)
+              -------------------------------------------------------------------------- */}
+          {planViewMode === 'kanban' && (
+            <div className="bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+              {/* Cabecera del Tablero Kanban */}
+              <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-primary flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[19px]">view_kanban</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
+                      Tablero Kanban de Hoy
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      {todayInfo.headerDateStr} • Arrastra o pulsa los botones de acción para avanzar el estado
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-medium font-mono">
+                    {tasksToday.length} {tasksToday.length === 1 ? 'actividad' : 'actividades'} hoy
+                  </span>
+                </div>
+              </div>
+
+              {/* Selector de Columna para Móvil (sm:hidden) para evitar columnas apretadas */}
+              <div className="sm:hidden flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setMobileKanbanTab('todo')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg text-center transition-all ${
+                    mobileKanbanTab === 'todo'
+                      ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-xs'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  Por hacer ({kanbanTodoTasks.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileKanbanTab('in_progress')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg text-center transition-all ${
+                    mobileKanbanTab === 'in_progress'
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  En progreso ({kanbanInProgressTasks.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileKanbanTab('done')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg text-center transition-all ${
+                    mobileKanbanTab === 'done'
+                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                      : 'text-slate-500'
+                  }`}
+                >
+                  Hecho ({kanbanDoneTasks.length})
                 </button>
               </div>
 
-              <div className="flex flex-col gap-2.5">
-                {filteredTasks.map((task) => (
-                  <TaskCardItem
-                    key={task.id}
-                    task={task}
-                    onToggle={toggleTaskCompleted}
-                    onEdit={handleOpenEditModal}
-                    onDelete={handleDeleteTask}
-                    onStartFocus={startFocusTimer}
-                    appTheme={appTheme}
-                  />
-                ))}
-                {filteredTasks.length === 0 && (
-                  <div className="p-8 bg-white/60 dark:bg-[#161b26]/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
-                    <span className="material-symbols-outlined text-[32px] text-slate-400 mb-1">search_off</span>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">No se encontraron tareas</p>
-                    <p className="text-xs text-secondary mt-0.5">No hay tareas que coincidan con tu búsqueda. Prueba con otro término.</p>
+              {/* Grid de 3 Columnas (En móvil muestra la activa a ancho completo; en escritorio las 3) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+                {/* COLUMNA 1: Por hacer */}
+                <div
+                  data-kanban-col="todo"
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    if (dropOverKanbanCol !== 'todo') setDropOverKanbanCol('todo')
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleKanbanDrop('todo')
+                  }}
+                  className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[420px] sm:min-h-[560px] ${
+                    mobileKanbanTab !== 'todo' ? 'hidden sm:flex' : 'flex'
+                  } ${
+                    dropOverKanbanCol === 'todo'
+                      ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20'
+                      : 'border-slate-200/70 dark:border-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                      <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">Por hacer</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                      {kanbanTodoTasks.length}
+                    </span>
                   </div>
-                )}
+
+                  <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+                    {kanbanTodoTasks.map((t) => {
+                      const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
+                      const isBeingDragged = draggedKanbanTaskId === t.id
+                      return (
+                        <div
+                          key={t.id}
+                          draggable="true"
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', t.id)
+                            setDraggedKanbanTaskId(t.id)
+                          }}
+                          onDragEnd={() => {
+                            setDraggedKanbanTaskId(null)
+                            setDropOverKanbanCol(null)
+                          }}
+                          onTouchStart={() => handleKanbanTouchStart(t.id)}
+                          onTouchMove={handleKanbanTouchMove}
+                          onTouchEnd={handleKanbanTouchEnd}
+                          className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/80 dark:border-slate-700/70 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md flex flex-col gap-2.5 group ${
+                            isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 text-xs">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
+                              />
+                              <span
+                                className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
+                                style={{
+                                  backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
+                                  color: roleMatch?.hex || '#0071E3',
+                                }}
+                              >
+                                {roleMatch?.label || roleMatch?.name || t.context || 'General'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0 text-slate-400 dark:text-slate-500 font-mono text-[11px]">
+                              <span>{t.time || '10:00'}</span>
+                              <span className="material-symbols-outlined text-[15px] text-slate-300 dark:text-slate-600 cursor-grab group-hover:text-primary transition-colors">
+                                drag_indicator
+                              </span>
+                            </div>
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 leading-snug">
+                            {t.title}
+                          </h4>
+                          <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMoveKanbanTask(t.id, 'in_progress')
+                              }}
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Iniciar y mover a En progreso"
+                            >
+                              <span>Iniciar</span>
+                              <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingTaskId(t.id)
+                                setIsFocusModalOpen(true)
+                              }}
+                              className="px-2 py-1 rounded-lg text-xs text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Enfocar con cronómetro"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">play_circle</span>
+                              <span>Focus</span>
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {kanbanTodoTasks.length === 0 && (
+                      <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
+                        <span className="material-symbols-outlined text-[28px] opacity-40">done_all</span>
+                        <span className="font-medium">Sin tareas por hacer hoy</span>
+                        <span className="text-[11px] opacity-70">Usa la barra superior para añadir una</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* COLUMNA 2: En progreso */}
+                <div
+                  data-kanban-col="in_progress"
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    if (dropOverKanbanCol !== 'in_progress') setDropOverKanbanCol('in_progress')
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleKanbanDrop('in_progress')
+                  }}
+                  className={`p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[420px] sm:min-h-[560px] ${
+                    mobileKanbanTab !== 'in_progress' ? 'hidden sm:flex' : 'flex'
+                  } ${
+                    dropOverKanbanCol === 'in_progress'
+                      ? 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/70 dark:bg-blue-950/30'
+                      : 'border-blue-200/60 dark:border-blue-900/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between pb-3 mb-2 border-b border-blue-200/60 dark:border-blue-900/40">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+                      <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">En progreso</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                      {kanbanInProgressTasks.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+                    {kanbanInProgressTasks.map((t) => {
+                      const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
+                      const isBeingDragged = draggedKanbanTaskId === t.id
+                      return (
+                        <div
+                          key={t.id}
+                          draggable="true"
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', t.id)
+                            setDraggedKanbanTaskId(t.id)
+                          }}
+                          onDragEnd={() => {
+                            setDraggedKanbanTaskId(null)
+                            setDropOverKanbanCol(null)
+                          }}
+                          onTouchStart={() => handleKanbanTouchStart(t.id)}
+                          onTouchMove={handleKanbanTouchMove}
+                          onTouchEnd={handleKanbanTouchEnd}
+                          className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-blue-200/80 dark:border-blue-900/60 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-md flex flex-col gap-2.5 group ${
+                            isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 text-xs">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
+                              />
+                              <span
+                                className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
+                                style={{
+                                  backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
+                                  color: roleMatch?.hex || '#0071E3',
+                                }}
+                              >
+                                {roleMatch?.label || roleMatch?.name || t.context || 'General'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></span>
+                              <span>En marcha</span>
+                            </div>
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 leading-snug">
+                            {t.title}
+                          </h4>
+                          <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMoveKanbanTask(t.id, 'todo')
+                              }}
+                              className="px-2 py-1 rounded-lg text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Volver a Por hacer"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">arrow_back</span>
+                              <span>Pausar</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMoveKanbanTask(t.id, 'done')
+                              }}
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Marcar como hecha"
+                            >
+                              <span>Hecho</span>
+                              <span className="material-symbols-outlined text-[14px]">check</span>
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {kanbanInProgressTasks.length === 0 && (
+                      <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-blue-200/60 dark:border-blue-900/40 rounded-2xl gap-2">
+                        <span className="material-symbols-outlined text-[28px] opacity-40">play_circle</span>
+                        <span className="font-medium">Ninguna tarea en progreso</span>
+                        <span className="text-[11px] opacity-70">Pulsa 'Iniciar' en una tarea para comenzar</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* COLUMNA 3: Hecho */}
+                <div
+                  data-kanban-col="done"
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'move'
+                    if (dropOverKanbanCol !== 'done') setDropOverKanbanCol('done')
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleKanbanDrop('done')
+                  }}
+                  className={`p-3.5 sm:p-4 rounded-2xl bg-emerald-50/30 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[420px] sm:min-h-[560px] ${
+                    mobileKanbanTab !== 'done' ? 'hidden sm:flex' : 'flex'
+                  } ${
+                    dropOverKanbanCol === 'done'
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-950/30'
+                      : 'border-emerald-200/60 dark:border-emerald-900/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between pb-3 mb-2 border-b border-emerald-200/60 dark:border-emerald-900/40">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                      <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200">Hecho</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                      {kanbanDoneTasks.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+                    {kanbanDoneTasks.map((t) => {
+                      const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
+                      const isBeingDragged = draggedKanbanTaskId === t.id
+                      return (
+                        <div
+                          key={t.id}
+                          draggable="true"
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', t.id)
+                            setDraggedKanbanTaskId(t.id)
+                          }}
+                          onDragEnd={() => {
+                            setDraggedKanbanTaskId(null)
+                            setDropOverKanbanCol(null)
+                          }}
+                          onTouchStart={() => handleKanbanTouchStart(t.id)}
+                          onTouchMove={handleKanbanTouchMove}
+                          onTouchEnd={handleKanbanTouchEnd}
+                          className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/60 dark:border-slate-800 transition-all duration-200 cursor-grab active:cursor-grabbing hover:shadow-xs flex flex-col gap-2 opacity-80 group ${
+                            isBeingDragged ? 'opacity-40 scale-95 border-dashed border-primary ring-2 ring-primary/40' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 text-xs">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: roleMatch?.hex || '#0071E3' }}
+                              />
+                              <span
+                                className="px-2 py-0.5 rounded-md font-semibold text-[11px] truncate"
+                                style={{
+                                  backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
+                                  color: roleMatch?.hex || '#0071E3',
+                                }}
+                              >
+                                {roleMatch?.label || roleMatch?.name || t.context || 'General'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                              <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                              <span>{t.completed ? 'Hecho' : 'Finalizado'}</span>
+                            </div>
+                          </div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 line-through line-clamp-2 leading-snug">
+                            {t.title}
+                          </h4>
+                          <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMoveKanbanTask(t.id, 'todo')
+                              }}
+                              className="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+                              title="Reabrir tarea"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">undo</span>
+                              <span>Reabrir</span>
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {kanbanDoneTasks.length === 0 && (
+                      <div className="h-44 sm:h-52 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-slate-500 text-xs border-2 border-dashed border-slate-200/80 dark:border-slate-700/60 rounded-2xl gap-2">
+                        <span className="material-symbols-outlined text-[28px] opacity-40">pending</span>
+                        <span className="font-medium">Sin actividades completadas hoy</span>
+                        <span className="text-[11px] opacity-70">Completa tareas para ver tu progreso</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          ) : (
-            <>
-          {/* Bloque 1: Tareas de Hoy */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 px-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                Hoy ({todayInfo.todayLabelStr}) • {tasksToday.length} tareas
-              </h3>
-            </div>
+          )}
 
-            <div className="flex flex-col gap-2.5">
-              {tasksToday.map((task) => (
-                <TaskCardItem
-                  key={task.id}
-                  task={task}
-                  onToggle={toggleTaskCompleted}
-                  onEdit={handleOpenEditModal}
-                  onDelete={handleDeleteTask}
-                  onStartFocus={startFocusTimer}
-                  appTheme={appTheme}
-                />
-              ))}
-              {tasksToday.length === 0 && (
-                <div className="p-4 bg-white/60 dark:bg-[#161b26]/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-secondary">
-                  No hay tareas pendientes para hoy. Puedes añadir una arriba desde la barra de entrada rápida.
+          {/* --------------------------------------------------------------------------
+              VISTA 2: PLAN SEMANAL ESTILO APPLE (RUNWAY 7 DÍAS + BALANCE + TIMELINE)
+              -------------------------------------------------------------------------- */}
+          {planViewMode === 'week' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* Columna Izquierda: Enfoque de Hoy & Balance */}
+              <div className="w-full space-y-4">
+                <div className="bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[19px]">bolt</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
+                          Enfoque de Hoy
+                        </h3>
+                        <p className="text-[10px] text-slate-500">
+                          {todayInfo.todayLabelStr} • {tasksToday.length} {tasksToday.length === 1 ? 'actividad' : 'actividades'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      {completedTodayCount}/{tasksToday.length} hechas
+                    </span>
+                  </div>
+
+                  {/* Tarjeta de Próxima Actividad */}
+                  {nextTaskToday ? (
+                    <div className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold">
+                        <span className="material-symbols-outlined text-[20px]">{nextTaskToday.icon || 'event'}</span>
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                            Próxima actividad
+                          </span>
+                          <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                            {nextTaskToday.time || '10:00'}
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate pt-0.5">
+                          {nextTaskToday.title}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 flex items-center gap-2.5 text-xs text-slate-500">
+                      <span className="material-symbols-outlined text-[20px] text-emerald-500 shrink-0">check_circle</span>
+                      <span>No tienes tareas pendientes para hoy. Todo al día.</span>
+                    </div>
+                  )}
+
+                  {/* Barra de Progreso y Tiempo de Hoy */}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${tasksToday.length > 0 ? Math.round((completedTodayCount / tasksToday.length) * 100) : 0}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-mono">
+                        {tasksToday.length > 0 ? Math.round((completedTodayCount / tasksToday.length) * 100) : 0}% hoy
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      {estimatedTodayMins > 0 ? `~${Math.round(estimatedTodayMins / 60)}h ${estimatedTodayMins % 60}m estimadas` : ''}
+                    </span>
+                  </div>
+
+                  {/* Balance de Enfoque Semanal */}
+                  <div className="p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
+                      <span className="font-semibold text-slate-900 dark:text-white">Balance de Enfoque Semanal</span>
+                      <span className="font-mono">{tasksThisWeek.length} tareas</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-200/80 dark:bg-slate-700/80 gap-0.5">
+                      {roleDistribution.map((rd) => {
+                        if (rd.percent === 0) return null
+                        return (
+                          <div
+                            key={rd.role.id}
+                            style={{ width: `${rd.percent}%`, backgroundColor: rd.role.hex }}
+                            className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-500"
+                            title={`${rd.role.label || rd.role.name}: ${rd.count} tareas (${rd.percent}%)`}
+                          />
+                        )
+                      })}
+                    </div>
+                    <div className="flex items-center gap-2.5 flex-wrap text-[10px]">
+                      {roles.map((r) => {
+                        const count = tasksThisWeek.filter(
+                          (t) => t.context === r.name || t.context === r.id || t.context === r.label
+                        ).length
+                        if (count === 0) return null
+                        return (
+                          <div key={r.id} className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: r.hex }} />
+                            <span className="font-medium">{r.label || r.name}:</span>
+                            <span className="font-mono text-slate-900 dark:text-white font-semibold">{count}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Bloque 2: Esta Semana */}
-          <div className="space-y-3 pt-3">
-            <div className="flex items-center gap-2 px-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                Esta Semana ({todayInfo.restOfWeekLabelStr}) • {tasksRestOfWeek.length} tareas
-              </h3>
-            </div>
-
-            <div className="flex flex-col gap-2.5">
-              {tasksRestOfWeek.map((task) => (
-                <TaskCardItem
-                  key={task.id}
-                  task={task}
-                  onToggle={toggleTaskCompleted}
-                  onEdit={handleOpenEditModal}
-                  onDelete={handleDeleteTask}
-                  onStartFocus={startFocusTimer}
-                  appTheme={appTheme}
-                />
-              ))}
-              {tasksRestOfWeek.length === 0 && (
-                <div className="p-4 bg-white/60 dark:bg-[#161b26]/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-secondary">
-                  No hay tareas adicionales programadas para el resto de esta semana.
+              {/* Columna Derecha: Runway 7 Días + Timeline del Día Seleccionado */}
+              <div className="w-full bg-white dark:bg-[#161b26] rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-primary flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[19px]">view_week</span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">
+                        Agenda Semanal
+                      </h3>
+                      <p className="text-[10px] text-slate-500">
+                        {todayInfo.weekRangeLabel} • Haz clic en un día para explorar sus actividades
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium font-mono">
+                    {tasksThisWeek.length} {tasksThisWeek.length === 1 ? 'tarea' : 'tareas'}
+                  </span>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Bloque 3: Tareas de Próximas Semanas (Con paginación progresiva 'Ver más') */}
-          {tasksFutureWeeks.length > 0 && (
-            <div className="space-y-3 pt-3">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
-                    Próximas Semanas ({todayInfo.nextMondayStr ? `A partir del ${todayInfo.nextMondayStr}` : 'Futuras'}) • {tasksFutureWeeks.length} tareas
-                  </h3>
+                {/* Runway de 7 Días */}
+                <div className="grid grid-cols-7 gap-1 sm:gap-1.5 pt-0.5">
+                  {weekDays.map((day) => {
+                    const dayTasks = (globalTasks || []).filter((t) => t.date === day.date)
+                    const isSelected = selectedRadarDate === day.date
+                    const isToday = day.isToday
+                    const uniqueDayColors = Array.from(
+                      new Set(
+                        dayTasks.map((t) => {
+                          const role = roles.find((r) => r.name === t.context || r.id === t.context)
+                          return role ? role.hex : '#0071E3'
+                        })
+                      )
+                    ).slice(0, 3)
+
+                    return (
+                      <button
+                        key={day.date}
+                        type="button"
+                        onClick={() => setSelectedRadarDate(day.date)}
+                        className={`flex flex-col items-center py-2 px-1 rounded-2xl transition-all cursor-pointer relative ${
+                          isSelected
+                            ? 'bg-blue-500/10 dark:bg-blue-500/15 ring-2 ring-primary shadow-xs'
+                            : isToday
+                            ? 'bg-slate-100/90 dark:bg-slate-800/80 hover:bg-slate-200/70'
+                            : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
+                        }`}
+                      >
+                        <span className={`text-[10px] font-semibold tracking-wider uppercase ${
+                          isToday ? 'text-primary font-bold' : 'text-slate-400 dark:text-slate-500'
+                        }`}>
+                          {day.label}
+                        </span>
+                        <div className={`w-7 h-7 flex items-center justify-center text-xs my-1 rounded-full transition-all ${
+                          isToday
+                            ? 'bg-primary text-white shadow-xs font-bold'
+                            : isSelected
+                            ? 'bg-blue-500/20 text-primary font-bold'
+                            : 'text-slate-700 dark:text-slate-300 font-medium'
+                        }`}>
+                          {day.dayNum}
+                        </div>
+                        <div className="h-2 flex items-center justify-center gap-0.5">
+                          {uniqueDayColors.length > 0 ? (
+                            uniqueDayColors.map((hex, i) => (
+                              <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: hex }} />
+                            ))
+                          ) : (
+                            <span className="w-1 h-1 rounded-full bg-transparent" />
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
-                {visibleFutureLimit > 6 && (
+
+                {/* Tarjeta de Agenda del Día Seleccionado */}
+                <div className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800/70 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[15px]">event</span>
+                      </div>
+                      <span className="font-semibold text-slate-900 dark:text-white">
+                        {weekDays.find((d) => d.date === selectedRadarDate)?.label || 'Día'}, {weekDays.find((d) => d.date === selectedRadarDate)?.dayNum || ''} {selectedRadarDate ? new Date(selectedRadarDate + 'T12:00:00').toLocaleDateString('es-ES', { month: 'long' }) : ''}
+                        {selectedRadarDate === todayYmd && (
+                          <span className="ml-1.5 px-1.5 py-0.2 rounded-md bg-primary/15 text-primary text-[10px] font-bold">
+                            HOY
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-500">
+                      {(globalTasks || []).filter((t) => t.date === selectedRadarDate).length}{' '}
+                      {(globalTasks || []).filter((t) => t.date === selectedRadarDate).length === 1 ? 'tarea' : 'tareas'}
+                    </span>
+                  </div>
+
+                  {(globalTasks || []).filter((t) => t.date === selectedRadarDate).length > 0 ? (
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                      {(globalTasks || []).filter((t) => t.date === selectedRadarDate).map((t) => {
+                        const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
+                        return (
+                          <div
+                            key={t.id}
+                            className={`p-2.5 rounded-xl bg-white dark:bg-[#161b26] border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-2.5 transition-all shadow-2xs hover:border-slate-300 dark:hover:border-slate-600 ${
+                              t.completed ? 'opacity-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: roleMatch ? roleMatch.hex : '#0071E3' }}
+                              />
+                              <span className="font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded shrink-0">
+                                {t.time || '10:00'}
+                              </span>
+                              <span className={`text-xs font-medium text-slate-900 dark:text-white truncate ${t.completed || isEventFinished(t) ? 'line-through opacity-50' : ''}`}>
+                                {t.title}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span
+                                className="px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                                style={{
+                                  backgroundColor: `${roleMatch?.hex || '#0071E3'}15`,
+                                  color: roleMatch?.hex || '#0071E3',
+                                }}
+                              >
+                                {roleMatch?.label || roleMatch?.name || t.context}
+                              </span>
+                              {t.est && (
+                                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                                  {t.est}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                      Día despejado. No hay tareas programadas para esta fecha.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --------------------------------------------------------------------------
+              VISTA 3: LISTA COMPLETA ORGANIZADA (TODAS | PENDIENTES | HECHAS)
+              -------------------------------------------------------------------------- */}
+          {planViewMode === 'list' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-base sm:text-lg text-slate-900 dark:text-white font-bold tracking-tight">
+                    Lista de Tareas
+                  </h2>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono font-semibold">
+                    {filteredTasks.length}
+                  </span>
+                </div>
+
+                {/* Selector de estado: Todas | Pendientes | Hechas */}
+                <div className="relative inline-flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start sm:self-auto">
+                  <div
+                    className="absolute top-0.5 bottom-0.5 rounded-lg bg-white dark:bg-[#161b26] shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                    style={{
+                      width: 'calc((100% - 4px) / 3)',
+                      left: '2px',
+                      transform: `translateX(${
+                        filterStatus === 'all' ? '0%' : filterStatus === 'pending' ? '100%' : '200%'
+                      })`,
+                    }}
+                  />
                   <button
                     type="button"
-                    onClick={() => setVisibleFutureLimit(6)}
-                    className="text-xs text-primary font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                    onClick={() => setFilterStatus('all')}
+                    className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
+                      filterStatus === 'all' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
+                    }`}
                   >
-                    <span>Recoger</span>
-                    <span className="material-symbols-outlined text-[15px]">expand_less</span>
+                    Todas
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setFilterStatus('pending')}
+                    className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
+                      filterStatus === 'pending' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
+                    }`}
+                  >
+                    Pendientes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterStatus('completed')}
+                    className={`relative z-10 w-16 sm:w-20 py-1 text-center rounded-lg text-xs transition-colors cursor-pointer ${
+                      filterStatus === 'completed' ? 'text-primary font-bold' : 'text-secondary hover:text-on-surface'
+                    }`}
+                  >
+                    Hechas
+                  </button>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-2.5">
-                {tasksFutureWeeks.slice(0, visibleFutureLimit).map((task) => (
-                  <TaskCardItem
-                    key={task.id}
-                    task={task}
-                    onToggle={toggleTaskCompleted}
-                    onEdit={handleOpenEditModal}
-                    onDelete={handleDeleteTask}
-                    onStartFocus={startFocusTimer}
-                    appTheme={appTheme}
-                  />
-                ))}
-              </div>
+              {searchQuery.trim() ? (
+                /* Resultados de Búsqueda */
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px] text-primary">search</span>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
+                        Resultados para "${searchQuery}" • ${filteredTasks.length} ${filteredTasks.length === 1 ? 'tarea encontrada' : 'tareas encontradas'}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                    >
+                      Limpiar búsqueda
+                    </button>
+                  </div>
 
-              {visibleFutureLimit < tasksFutureWeeks.length ? (
-                <button
-                  type="button"
-                  onClick={() => setVisibleFutureLimit((prev) => prev + 8)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                >
-                  <span className="material-symbols-outlined text-[16px] text-primary">expand_more</span>
-                  <span>Ver más ({Math.min(8, tasksFutureWeeks.length - visibleFutureLimit)} más de {tasksFutureWeeks.length - visibleFutureLimit} restantes)</span>
-                </button>
-              ) : tasksFutureWeeks.length > 6 ? (
-                <button
-                  type="button"
-                  onClick={() => setVisibleFutureLimit(6)}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-50/50 hover:bg-slate-100 dark:bg-slate-800/30 dark:hover:bg-slate-800/60 border border-dashed border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-500 flex items-center justify-center gap-1 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[15px]">expand_less</span>
-                  <span>Recoger lista (mostrando las {tasksFutureWeeks.length} tareas futuras)</span>
-                </button>
-              ) : null}
+                  <div className="flex flex-col gap-2.5">
+                    {filteredTasks.map((task) => (
+                      <TaskCardItem
+                        key={task.id}
+                        task={task}
+                        onToggle={toggleTaskCompleted}
+                        onEdit={handleOpenEditModal}
+                        onDelete={handleDeleteTask}
+                        onStartFocus={startFocusTimer}
+                        appTheme={appTheme}
+                      />
+                    ))}
+                    {filteredTasks.length === 0 && (
+                      <div className="p-8 bg-white/60 dark:bg-[#161b26]/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                        <span className="material-symbols-outlined text-[32px] text-slate-400 mb-1">search_off</span>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">No se encontraron tareas</p>
+                        <p className="text-xs text-secondary mt-0.5">No hay tareas que coincidan con tu búsqueda. Prueba con otro término.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Bloque 1: Tareas de Hoy */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
+                        Hoy ({todayInfo.todayLabelStr}) • {tasksToday.length} tareas
+                      </h3>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5">
+                      {tasksToday.map((task) => (
+                        <TaskCardItem
+                          key={task.id}
+                          task={task}
+                          onToggle={toggleTaskCompleted}
+                          onEdit={handleOpenEditModal}
+                          onDelete={handleDeleteTask}
+                          onStartFocus={startFocusTimer}
+                          appTheme={appTheme}
+                        />
+                      ))}
+                      {tasksToday.length === 0 && (
+                        <div className="p-4 bg-white/60 dark:bg-[#161b26]/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-secondary">
+                          No hay tareas pendientes para hoy. Puedes añadir una arriba desde la barra de entrada rápida.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bloque 2: Esta Semana */}
+                  <div className="space-y-3 pt-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
+                        Esta Semana ({todayInfo.restOfWeekLabelStr}) • {tasksRestOfWeek.length} tareas
+                      </h3>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5">
+                      {tasksRestOfWeek.map((task) => (
+                        <TaskCardItem
+                          key={task.id}
+                          task={task}
+                          onToggle={toggleTaskCompleted}
+                          onEdit={handleOpenEditModal}
+                          onDelete={handleDeleteTask}
+                          onStartFocus={startFocusTimer}
+                          appTheme={appTheme}
+                        />
+                      ))}
+                      {tasksRestOfWeek.length === 0 && (
+                        <div className="p-4 bg-white/60 dark:bg-[#161b26]/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-secondary">
+                          No hay tareas adicionales programadas para el resto de esta semana.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bloque 3: Tareas de Próximas Semanas */}
+                  {tasksFutureWeeks.length > 0 && (
+                    <div className="space-y-3 pt-3">
+                      <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-secondary">
+                            Próximas Semanas ({todayInfo.nextMondayStr ? `A partir del ${todayInfo.nextMondayStr}` : 'Futuras'}) • {tasksFutureWeeks.length} tareas
+                          </h3>
+                        </div>
+                        {visibleFutureLimit > 6 && (
+                          <button
+                            type="button"
+                            onClick={() => setVisibleFutureLimit(6)}
+                            className="text-xs text-primary font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>Recoger</span>
+                            <span className="material-symbols-outlined text-[15px]">expand_less</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2.5">
+                        {tasksFutureWeeks.slice(0, visibleFutureLimit).map((task) => (
+                          <TaskCardItem
+                            key={task.id}
+                            task={task}
+                            onToggle={toggleTaskCompleted}
+                            onEdit={handleOpenEditModal}
+                            onDelete={handleDeleteTask}
+                            onStartFocus={startFocusTimer}
+                            appTheme={appTheme}
+                          />
+                        ))}
+                      </div>
+
+                      {visibleFutureLimit < tasksFutureWeeks.length ? (
+                        <button
+                          type="button"
+                          onClick={() => setVisibleFutureLimit((prev) => prev + 8)}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-primary">expand_more</span>
+                          <span>Ver más ({Math.min(8, tasksFutureWeeks.length - visibleFutureLimit)} más de {tasksFutureWeeks.length - visibleFutureLimit} restantes)</span>
+                        </button>
+                      ) : tasksFutureWeeks.length > 6 ? (
+                        <button
+                          type="button"
+                          onClick={() => setVisibleFutureLimit(6)}
+                          className="w-full py-2 px-3 rounded-xl bg-slate-50/50 hover:bg-slate-100 dark:bg-slate-800/30 dark:hover:bg-slate-800/60 border border-dashed border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-500 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">expand_less</span>
+                          <span>Recoger lista (mostrando las {tasksFutureWeeks.length} tareas futuras)</span>
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
-            </>
-          )}
 
+          {/* Footer del Espacio de Trabajo: Estado de WhatsApp Bot */}
+          <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isGuest
+                    ? 'bg-amber-400'
+                    : baileysState.status === 'connected'
+                    ? 'bg-emerald-500 animate-pulse'
+                    : 'bg-slate-400'
+                }`}
+              />
+              <span>
+                WhatsApp Bot:{' '}
+                <strong className="font-medium text-slate-900 dark:text-white">
+                  {isGuest
+                    ? 'Requiere cuenta registrada'
+                    : baileysState.status === 'connected'
+                    ? baileysState.phone || 'Dispositivo Vinculado'
+                    : 'Listo para conectar'}
+                </strong>
+              </span>
+            </div>
+            {isGuest ? (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('studenthub_open_account_modal', { detail: { tab: 'login' } })
+                  )
+                }}
+                className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <span>Iniciar sesión</span>
+                <span className="material-symbols-outlined text-[14px]">login</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSendDailyBriefing}
+                className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <span>Enviar briefing ahora</span>
+                <span className="material-symbols-outlined text-[14px]">send</span>
+              </button>
+            )}
+          </div>
         </section>
       </div>
 
@@ -2532,11 +2529,13 @@ export default function AutoOrganizerPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsWhatsAppModalOpen(false)
           }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[200] flex items-center justify-center p-4 animate-in fade-in duration-150"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] w-full max-w-xl rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto text-xs"
+            className="bg-white dark:bg-[#161b26] w-full max-w-xl rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-300 dark:border-slate-700 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto text-xs"
           >
             {/* Cabecera del Modal */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -2809,10 +2808,14 @@ export default function AutoOrganizerPage() {
                           <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                             <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                             <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                              Solicitando código de vinculación a WhatsApp...
+                              {baileysState.reconnecting
+                                ? 'Finalizando vinculación con WhatsApp...'
+                                : 'Solicitando código de vinculación a WhatsApp...'}
                             </p>
                             <span className="text-[11px] text-slate-500 text-center max-w-sm">
-                              Generando el código de 8 dígitos. En unos segundos aparecerá aquí para que lo introduzcas en tu app de WhatsApp.
+                              {baileysState.reconnecting
+                                ? 'Verificando el código introducido y estableciendo el túnel cifrado seguro. Tu bot estará activo enseguida.'
+                                : 'Generando el código de 8 dígitos. En unos segundos aparecerá aquí para que lo introduzcas en tu app de WhatsApp.'}
                             </span>
                             <button
                               type="button"
@@ -2891,7 +2894,7 @@ export default function AutoOrganizerPage() {
 
                             <button
                               type="button"
-                              onClick={() => handleConnectBaileys(null)}
+                              onClick={() => handleConnectBaileys(null, true)}
                               disabled={isBaileysActionLoading}
                               className="py-1.5 px-3 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                             >
@@ -2903,10 +2906,14 @@ export default function AutoOrganizerPage() {
                           <div className="flex flex-col items-center justify-center py-10 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
                             <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                             <p className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                              Generando código QR de WhatsApp...
+                              {baileysState.reconnecting
+                                ? 'Finalizando vinculación con WhatsApp...'
+                                : 'Generando código QR de WhatsApp...'}
                             </p>
                             <span className="text-[11px] text-slate-500 text-center max-w-sm">
-                              Conectando con el servidor seguro y preparando la imagen QR. En unos segundos aparecerá aquí para escanear.
+                              {baileysState.reconnecting
+                                ? 'Código QR escaneado con éxito. Estableciendo conexión cifrada...'
+                                : 'Conectando con el servidor seguro y preparando la imagen QR. En unos segundos aparecerá aquí para escanear.'}
                             </span>
                             <button
                               type="button"
@@ -3038,11 +3045,13 @@ export default function AutoOrganizerPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsManageRolesModalOpen(false)
           }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[200] flex items-center justify-center p-4 animate-in fade-in duration-150"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto text-xs"
+            className="bg-white dark:bg-[#161b26] w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-300 dark:border-slate-700 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto text-xs"
           >
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
@@ -3226,8 +3235,12 @@ export default function AutoOrganizerPage() {
         const extCount = roleTasks.filter((t) => t.isExternalSync).length
 
         return (
-          <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-white dark:bg-[#161b26] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150">
+          <div className="fixed inset-0 z-[220] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div
+              role="dialog"
+              data-floating-menu
+              className="bg-white dark:bg-[#161b26] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-300 dark:border-slate-700 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+            >
               <div className="flex items-start gap-3">
                 <div className="w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-2xl">delete_sweep</span>
@@ -3324,11 +3337,13 @@ export default function AutoOrganizerPage() {
       {roleToEdit && (
         <div
           onClick={() => setRoleToEdit(null)}
-          className="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-[220] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
+            className="bg-white dark:bg-[#161b26] rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border border-slate-300 dark:border-slate-700 flex flex-col gap-4 animate-in zoom-in-95 duration-150"
           >
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
@@ -3473,11 +3488,13 @@ export default function AutoOrganizerPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsTaskModalOpen(false)
           }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[200] flex items-center justify-center p-4 animate-in fade-in duration-150"
         >
           <div
+            role="dialog"
+            data-floating-menu
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-[#161b26] w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200/90 dark:border-slate-800 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-[#161b26] w-full max-w-lg rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-300 dark:border-slate-700 flex flex-col gap-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto"
           >
             {/* Header del Modal con Selector Deslizante Simple vs Avanzado */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">

@@ -3,6 +3,14 @@
 import { getUserCalendars, getCurrentUser } from './firebase.js'
 import { isEventFinished } from './sharedRoles.js'
 import { FALLBACK_NEWS } from './newsService.js'
+import {
+  getScheduledBriefings,
+  setDailyNewsBriefing,
+  setDailyTasksBriefing,
+  cancelDailyNewsBriefing,
+  cancelDailyTasksBriefing,
+  cancelAllBriefings,
+} from './scheduledBriefingsService.js'
 
 /**
  * Formatea el contexto diario de noticias para enriquecer el systemPrompt de Groq/LLM.
@@ -768,6 +776,112 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     ? currentCalendars
     : getUserCalendars(getCurrentUser())
 
+  // 0a. Comandos de Ayuda y Configuración de Ajustes (/help, /ajustes)
+  const isHelpOrSettingsQuery =
+    lower === '/help' ||
+    lower === '/ajustes' ||
+    /^(?:ayuda|comandos|\/comandos|qu[eé]\s+puedes\s+hacer|qu[eé]\s+ajustes\s+tienes|ver\s+ajustes|ajustes\s+de\s+la\s+ia|mis\s+recordatorios|configuraci[oó]n|opciones)[!.,\s]*$/i.test(lower) ||
+    /(?:qu[eé]\s+ajustes\s+(?:tienes|hay|est[aá]n\s+puestos)|ver\s+(?:mis\s+)?recordatorios\s+peri[oó]dicos|cu[aá]les\s+son\s+los\s+ajustes)/i.test(lower)
+
+  if (isHelpOrSettingsQuery) {
+    const briefings = getScheduledBriefings()
+    const newsStatus = briefings.dailyNews?.enabled
+      ? `Activo (Todos los días a las ${briefings.dailyNews.time})`
+      : 'Desactivado'
+    const tasksStatus = briefings.dailyTasks?.enabled
+      ? `Activo (Todos los días a las ${briefings.dailyTasks.time})`
+      : 'Desactivado'
+
+    return {
+      reply: `📋 **Ajustes y Automatizaciones de StudentHub Copilot**\n\n` +
+        `⏰ **Avisos y Recordatorios Periódicos:**\n` +
+        `• **Resumen de Noticias**: ${newsStatus}\n` +
+        `• **Resumen de Agenda / Tareas**: ${tasksStatus}\n\n` +
+        `📅 **Tus Calendarios Conectados:**\n` +
+        calendarsList.map((c) => `• ${c.name}`).join('\n') + `\n\n` +
+        `💬 **Comandos y Ejemplos de Voz / Chat:**\n` +
+        `• *"Dime todos los días a las 09:00 las noticias"*: Programa briefing diario de noticias.\n` +
+        `• *"Dime todos los días a las 08:30 mis tareas"*: Programa recordatorio matutino de agenda.\n` +
+        `• *"Quita las noticias de todos los días"* o *"Cancela las repeticiones"*: Desactiva avisos periódicos.\n` +
+        `• *"/noticias"* o *"¿Qué noticias hay hoy?"*: Resumen de las 6 noticias más importantes.\n` +
+        `• *"¿Qué actividades tengo hoy?"*: Revisa todas las tareas y clases en tus calendarios.\n` +
+        `• *"Mueve [tarea] a [calendario]"*: Reasignación directa de eventos.\n` +
+        `• *"/help"* o *"/ajustes"*: Vuelve a abrir este panel de control.`,
+      actions: [],
+    }
+  }
+
+  // 0b. Programar briefing periódico de noticias
+  const isSettingDailyNews =
+    /(?:dime|manda|env[ií]a|pon|recu[eé]rdame|activa).*?(?:todos\s+los\s+d[ií]as|diariamente).*?(?:noticias|actualidad|titulares)/i.test(lower) ||
+    /(?:todos\s+los\s+d[ií]as|diariamente).*?(?:a\s+las?\s*\d{1,2}(?::\d{2})?).*?(?:noticias|actualidad|titulares)/i.test(lower)
+
+  if (isSettingDailyNews) {
+    const timeMatch = lower.match(/(?:a\s+las?|alas?)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i)
+    let timeStr = '09:00'
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10)
+      const m = timeMatch[2] || '00'
+      const mod = (timeMatch[3] || '').toLowerCase()
+      if (mod === 'pm' && h < 12) h += 12
+      timeStr = `${String(h).padStart(2, '0')}:${m}`
+    }
+    setDailyNewsBriefing(timeStr, true)
+    return {
+      reply: `He configurado tu resumen diario de noticias todos los días a las ${timeStr}. A esa hora tendrás preparadas las 6 novedades más destacadas adaptadas a tus intereses. Puedes cancelarlo en cualquier momento diciendo "quita las noticias de todos los días".`,
+      actions: [{ type: 'set_briefing', briefingType: 'dailyNews', time: timeStr }],
+    }
+  }
+
+  // 0c. Programar briefing periódico de tareas / agenda
+  const isSettingDailyTasks =
+    /(?:dime|manda|env[ií]a|pon|recu[eé]rdame|activa).*?(?:todos\s+los\s+d[ií]as|diariamente).*?(?:cosas\s+que\s+tenga|tareas|agenda|actividades|pendientes)/i.test(lower) ||
+    /(?:todos\s+los\s+d[ií]as|diariamente).*?(?:a\s+las?\s*\d{1,2}(?::\d{2})?).*?(?:cosas\s+que\s+tenga|tareas|agenda|actividades|pendientes)/i.test(lower)
+
+  if (isSettingDailyTasks) {
+    const timeMatch = lower.match(/(?:a\s+las?|alas?)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i)
+    let timeStr = '08:30'
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1], 10)
+      const m = timeMatch[2] || '00'
+      const mod = (timeMatch[3] || '').toLowerCase()
+      if (mod === 'pm' && h < 12) h += 12
+      timeStr = `${String(h).padStart(2, '0')}:${m}`
+    }
+    setDailyTasksBriefing(timeStr, true)
+    return {
+      reply: `He configurado tu recordatorio diario de tareas todos los días a las ${timeStr}. Cada mañana revisaré tus calendarios para detallarte las actividades y clases programadas. Puedes cancelarlo cuando desees diciendo "cancela el aviso diario de tareas".`,
+      actions: [{ type: 'set_briefing', briefingType: 'dailyTasks', time: timeStr }],
+    }
+  }
+
+  // 0d. Cancelar o eliminar recordatorios periódicos
+  const isCancelingBriefing =
+    /(?:quita|cancela|elimina|desactiva|borra).*?(?:noticias|tareas|agenda|aviso|avisos|recordatorio|recordatorios|repeticiones?).*?(?:todos\s+los\s+d[ií]as|diarias?|peri[oó]dicas?)/i.test(lower) ||
+    /(?:quita|cancela|elimina|desactiva|borra)\s+(?:las\s+noticias\s+de\s+todos\s+los\s+d[ií]as|el\s+resumen\s+diario|los\s+avisos\s+diarios|las\s+repeticiones|los\s+recordatorios)/i.test(lower)
+
+  if (isCancelingBriefing) {
+    const isNews = /noticia|actualidad|titular/i.test(lower)
+    const isTasks = /tarea|agenda|actividad|pendiente/i.test(lower)
+    let replyMsg = ''
+
+    if (isNews && !isTasks) {
+      cancelDailyNewsBriefing()
+      replyMsg = 'He desactivado el resumen diario de noticias. Ya no recibirás avisos periódicos de noticias.'
+    } else if (isTasks && !isNews) {
+      cancelDailyTasksBriefing()
+      replyMsg = 'He desactivado el resumen diario de tareas y agenda. Ya no recibirás el recordatorio matutino de actividades.'
+    } else {
+      cancelAllBriefings()
+      replyMsg = 'He cancelado todas las repeticiones y avisos periódicos programados (noticias y agenda).'
+    }
+
+    return {
+      reply: replyMsg,
+      actions: [{ type: 'cancel_briefing', target: isNews ? 'dailyNews' : isTasks ? 'dailyTasks' : 'all' }],
+    }
+  }
+
   // Detección robusta de consultas sobre Noticias Diarias y Actualidad
   const isTaskActionCommand = /(?:a[ñn]ad|crea|pon|programa|apunta|borra|elimina|quita|suprime|cambia|(?<!qu[eé]\s+)\bpasa\b(?!\s*do)|mueve|asigna|terminad|completad|marcar|aplaza|retrasa)/i.test(lower)
   const isCalendarQuery = /(?:qu[eé]\s+(?:actividades|tareas|eventos|planes|cosas|clases)\s+(?:tengo|hay|tenemos)|mi\s+d[ií]a|mi\s+agenda|mi\s+calendario)/i.test(lower)
@@ -852,18 +966,18 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     // Respuesta general con los 6 titulares destacados
     return {
       reply: `📰 **Titulares destacados de hoy en StudentHub**:\n\n` +
-        `1. 🤖 **[IA] Groq y la inferencia LPU a 300+ tok/s**: Cómo los nuevos procesadores LPU revolucionan los asistentes en tiempo real sin la latencia de GPUs.\n` +
+        `1. 🤖 **[IA] La revolución de los asistentes multimodales en el móvil**: Cómo los nuevos modelos de voz y visión en tiempo real transforman el estudio y el día a día.\n` +
         `   _Fuente: Xataka (3 min de lectura)_ — [Enlace](https://www.xataka.com/categoria/inteligencia-artificial)\n\n` +
-        `2. 💻 **[Tech] Herramientas de productividad para estudiantes**: Genbeta analiza las mejores utilidades open-source y plataformas locales para apuntes y código.\n` +
-        `   _Fuente: Genbeta (4 min de lectura)_ — [Enlace](https://www.genbeta.com/herramientas/mejores-aplicaciones-estudiantes)\n\n` +
-        `3. 🔬 **[Ciencia] Cúbits cuánticos lógicos contra el ruido experimental**: Reducción de fallos en superconductores hacia la computación cuántica práctica.\n` +
-        `   _Fuente: Agencia SINC / Nature (5 min de lectura)_ — [Enlace](https://www.agenciasinc.es/Noticias/computacion-cuantica)\n\n` +
-        `4. ⏱️ **[Productividad] El protocolo Pomodoro 50/10 y timeboxing**: Evidencia cognitiva para optimizar la atención sostenida y consolidar memoria.\n` +
+        `2. 🔋 **[Tecnología] Baterías de silicio-carbono con 2 días de autonomía**: Nueva densidad energética para smartphones y portátiles sin aumentar su grosor.\n` +
+        `   _Fuente: Genbeta (4 min de lectura)_ — [Enlace](https://www.genbeta.com/tecnologia/baterias-silicio-carbono-moviles)\n\n` +
+        `3. 🚀 **[Ciencia] Misiones espaciales a lunas heladas de Júpiter**: La ciencia confirma la travesía de Europa Clipper en busca de océanos habitables.\n` +
+        `   _Fuente: Agencia SINC / Nature (5 min de lectura)_ — [Enlace](https://www.agenciasinc.es/Noticias/exploracion-espacial-lunas-jupiter)\n\n` +
+        `4. 🧠 **[Salud] La ciencia del sueño y el rendimiento académico**: Dormir 7-8 horas consolida la memoria de trabajo mucho más que trasnochar antes de un examen.\n` +
         `   _Fuente: Xataka Ciencia (3 min de lectura)_ — [Enlace](https://www.xataka.com/tag/productividad)\n\n` +
-        `5. 🎓 **[Universidad] Convocatorias Erasmus+ y becas STEM**: Ampliación de fondos para movilidad e investigación internacional en grado y máster.\n` +
+        `5. 🎓 **[Universidad] Nuevas becas Erasmus+ y movilidad internacional**: Ayudas de estancia y manutención ampliadas para universitarios y máster.\n` +
         `   _Fuente: El País Educación (4 min de lectura)_ — [Enlace](https://elpais.com/educacion/universidad/)\n\n` +
-        `6. ⚡ **[Desarrollo] Vite y los bundlers nativos basados en Rust**: Compilación ultrarrápida y recarga instantánea HMR fluida a 60 FPS.\n` +
-        `   _Fuente: Genbeta Dev (3 min de lectura)_ — [Enlace](https://www.genbeta.com/desarrollo/vite-herramientas-frontend)\n\n` +
+        `6. 💻 **[Software] El auge de las aplicaciones locales y sin suscripción**: Movimiento hacia software ligero, 100% offline y centrado en la privacidad.\n` +
+        `   _Fuente: Genbeta Dev (3 min de lectura)_ — [Enlace](https://www.genbeta.com/desarrollo/software-local-offline-first)\n\n` +
         `¿Te gustaría que te resuma alguna de estas noticias con mayor detalle?`,
       actions: [],
     }

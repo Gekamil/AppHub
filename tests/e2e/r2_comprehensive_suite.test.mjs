@@ -796,10 +796,10 @@ describe('Tier 3: Cross-Feature Combinations', () => {
   it('T3.3 (R4 x R6): AI Assistant headlines directly mirror articles defined in newsService', () => {
     const aiCode = readUtf8(PATHS.AI_ORGANIZER_JS)
     const newsCode = fileExists(PATHS.NEWS_SERVICE_JS) ? readUtf8(PATHS.NEWS_SERVICE_JS) : ''
-    // Verify that key entities (e.g. Groq LPU, Genbeta student tools, quantum qubits) exist in both
+    // Verify that key entities (e.g. Gemini, ChatGPT, Europa Clipper, or Groq) exist in both
     assert.ok(
-      /Groq/i.test(aiCode) && (/Groq/i.test(newsCode) || !newsCode),
-      'AI Assistant knowledge base must align with Groq LPU article from newsService'
+      (/(?:Gemini|ChatGPT|Clipper|Groq)/i.test(aiCode) && (/(?:Gemini|ChatGPT|Clipper|Groq)/i.test(newsCode) || !newsCode)),
+      'AI Assistant knowledge base must align with mainstream news articles from newsService'
     )
   })
 

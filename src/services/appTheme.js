@@ -44,8 +44,8 @@ export const APP_THEMES = [
     previewBadge: 'rounded-full px-2.5 py-0.5 bg-sky-500/15 text-sky-400 border border-sky-400/30 text-xs font-semibold backdrop-blur-md',
     labels: {
       appTitle: 'Glassify Hub',
-      autoOrganizer: 'Línea Temporal Esmerilada',
-      autoOrganizerSubtitle: 'Enfoque cognitivo sobre cristal líquido translúcido',
+      autoOrganizer: 'Planificador & Tareas',
+      autoOrganizerSubtitle: 'Organización inteligente y gestión de tiempo sin fricción',
       smartIngestion: 'Captura Rápida de Tareas',
       smartIngestionDesc: 'Priorización reactiva con refracción óptica',
       timeline: 'Línea de Tiempo de Alta Fidelidad',

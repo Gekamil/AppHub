@@ -93,7 +93,7 @@ html[data-theme-style="glassify"]:not(.dark) header[class*="border"] {
   color: #0f172a !important;
 }
 
-/* Contenedores y Vistas del Calendario en Glassify Oscuro */
+/* Contenedores y Vistas del Calendario en Glassify Oscuro (Optimizado sin backdrop-filter en zonas de scroll continuo) */
 html[data-theme-style="glassify"].dark [class*="min-h-"][class*="cursor-pointer"],
 html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="bg-white"],
 html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="dark:bg-"],
@@ -102,12 +102,14 @@ html[data-theme-style="glassify"].dark .bg-slate-100\/80,
 html[data-theme-style="glassify"].dark .bg-slate-100\/60,
 html[data-theme-style="glassify"].dark div[class*="h-\[1440px\]"],
 html[data-theme-style="glassify"].dark div[class*="overflow-y-scroll"] {
-  background: rgba(14, 23, 44, 0.52) !important;
-  background-color: rgba(14, 23, 44, 0.52) !important;
+  background: rgba(14, 23, 44, 0.72) !important;
+  background-color: rgba(14, 23, 44, 0.72) !important;
   border: 1px solid rgba(255, 255, 255, 0.09) !important;
   color: #f1f5f9 !important;
-  backdrop-filter: blur(18px) !important;
-  -webkit-backdrop-filter: blur(18px) !important;
+  /* Eliminado backdrop-filter en scroll para evitar lag y caídas de frames */
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Celdas del Calendario Mensual (Optimizado sin backdrop-filter individual para evitar fill-rate exhaustion) */
@@ -118,21 +120,25 @@ html[data-theme-style="glassify"].dark [class*="grid-cols-7"] > div {
   color: #f1f5f9 !important;
 }
 
-/* Contenedores y Vistas del Calendario en Glassify Claro: Cristal translúcido suave */
+/* Contenedores y Vistas del Calendario en Glassify Claro: Alto contraste, fluido y sin lag de scroll */
 html[data-theme-style="glassify"]:not(.dark) [class*="min-h-"][class*="cursor-pointer"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="min-h-"][class*="bg-white"] {
-  background: rgba(255, 255, 255, 0.58) !important;
-  background-color: rgba(255, 255, 255, 0.58) !important;
-  border: 1px solid rgba(255, 255, 255, 0.75) !important;
-  backdrop-filter: blur(18px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+html[data-theme-style="glassify"]:not(.dark) div[class*="min-h-"][class*="bg-white"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="h-\[1440px\]"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="overflow-y-scroll"] {
+  background: rgba(255, 255, 255, 0.82) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
   color: #0f172a !important;
+  /* Scroll ultra-fluido a 60 FPS */
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 html[data-theme-style="glassify"]:not(.dark) [class*="grid-cols-7"] > div {
-  background: rgba(255, 255, 255, 0.65) !important;
-  background-color: rgba(255, 255, 255, 0.65) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
   color: #0f172a !important;
 }
 
@@ -271,33 +277,70 @@ html[data-theme-style="glassify"]:not(.dark) select {
   color: #0f172a !important;
 }
 
-/* Modales, dropdowns y selectores flotantes en Glassify */
+/* Segmented Toggles (Día | Sem | Mes y Semana | Kanban) en Glassify Claro: Alto Contraste */
+html[data-theme-style="glassify"]:not(.dark) [data-segmented-toggle],
+html[data-theme-style="glassify"]:not(.dark) [data-calendar-view-toggle] {
+  background: rgba(226, 232, 240, 0.95) !important;
+  border: 1px solid rgba(203, 213, 225, 1) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) [data-segmented-toggle] [data-slider-pill],
+html[data-theme-style="glassify"]:not(.dark) [data-calendar-view-toggle] [data-slider-pill] {
+  background: #ffffff !important;
+  border: 1px solid rgba(148, 163, 184, 0.5) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) [data-segmented-toggle] button[data-active="true"],
+html[data-theme-style="glassify"]:not(.dark) [data-calendar-view-toggle] button[data-active="true"] {
+  color: var(--app-accent-color, #1d4ed8) !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) [data-segmented-toggle] button:not([data-active="true"]),
+html[data-theme-style="glassify"]:not(.dark) [data-calendar-view-toggle] button:not([data-active="true"]) {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+/* Modales, dropdowns y selectores flotantes en Glassify: 100% opacos para que nada del fondo atraviese */
+html[data-theme-style="glassify"].dark div[data-floating-menu],
+html[data-theme-style="glassify"].dark [data-floating-menu],
 html[data-theme-style="glassify"].dark [role="dialog"],
 html[data-theme-style="glassify"].dark .modal-content,
 html[data-theme-style="glassify"].dark [role="menu"],
 html[data-theme-style="glassify"].dark [role="listbox"],
 html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class*="bg-white"],
 html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class*="dark:bg-"] {
-  background: rgba(14, 22, 42, 0.92) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
-  backdrop-filter: blur(36px) saturate(200%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.38) !important;
-  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7) !important;
+  background: #111827 !important;
+  background-color: #111827 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
   color: #f8fafc !important;
+  z-index: 99999 !important;
 }
 
+html[data-theme-style="glassify"]:not(.dark) div[data-floating-menu],
+html[data-theme-style="glassify"]:not(.dark) [data-floating-menu],
 html[data-theme-style="glassify"]:not(.dark) [role="dialog"],
 html[data-theme-style="glassify"]:not(.dark) .modal-content,
 html[data-theme-style="glassify"]:not(.dark) [role="menu"],
 html[data-theme-style="glassify"]:not(.dark) [role="listbox"],
 html[data-theme-style="glassify"]:not(.dark) [class*="fixed"][class*="z-50"] div[class*="bg-white"] {
-  background: rgba(255, 255, 255, 0.88) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
-  backdrop-filter: blur(36px) saturate(200%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.16) !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  opacity: 1 !important;
+  border: 1px solid rgba(203, 213, 225, 0.95) !important;
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
   color: #0f172a !important;
+  z-index: 99999 !important;
 }
 
 /* --------------------------------------------------------------------------

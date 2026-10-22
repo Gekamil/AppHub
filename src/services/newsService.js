@@ -11,9 +11,9 @@ export const FALLBACK_NEWS = [
     id: 'news-1',
     category: 'Inteligencia Artificial',
     categoryKey: 'ai',
-    title: 'Groq y la nueva ola de procesadores LPU: cómo la inferencia ultrarrápida revoluciona los asistentes en tiempo real',
-    summary: 'Las unidades de procesamiento de lenguaje (LPU) logran velocidades de generación superiores a 300 tokens por segundo, posibilitando respuestas de voz instantáneas y razonamiento reactivo sin la latencia de las GPUs tradicionales.',
-    content: 'Las unidades de procesamiento de lenguaje (LPU) diseñadas por Groq han marcado un punto de inflexión en la velocidad de inferencia de modelos de lenguaje grande (LLM). Frente a las GPUs convencionales optimizadas para entrenamiento paralelo masivo, la arquitectura LPU ofrece una latencia determinista y un throughput que supera ampliamente los 300 tokens por segundo en modelos como Llama 3.',
+    title: 'La revolución de los asistentes con IA en el móvil: cómo los modelos multimodales transforman el estudio y el día a día',
+    summary: 'Los nuevos asistentes de voz y visión en tiempo real permiten resolver dudas complejas, resumir apuntes al instante y razonar problemas paso a paso sin esperas ni suscripciones complejas.',
+    content: 'La integración de modelos de lenguaje ligeros y ultra-rápidos directamente en teléfonos y ordenadores está cambiando la forma en que los universitarios y profesionales gestionan su jornada. La capacidad de conversar en tiempo real, transcribir clases automáticamente y extraer resúmenes ejecutivos ha convertido a la IA en un copiloto cotidiano indispensable.',
     readTime: '3 min',
     readingTime: '3 min',
     sourceName: 'Xataka',
@@ -22,49 +22,49 @@ export const FALLBACK_NEWS = [
     sourceUrl: 'https://www.xataka.com/categoria/inteligencia-artificial',
     imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80',
     publishedAt: 'Hoy, 09:30',
-    tags: ['IA', 'Groq', 'LPU', 'Inferencia', 'Hardware'],
+    tags: ['IA', 'Tecnología', 'Innovación', 'Asistentes', 'Estudio'],
   },
   {
     id: 'news-2',
     category: 'Tecnología & Software',
     categoryKey: 'tech',
-    title: 'Herramientas esenciales de desarrollo y productividad para universitarios: de editores Markdown a bases de datos locales',
-    summary: 'Genbeta analiza las mejores utilidades open-source y plataformas ligeras para organizar apuntes, proyectos de código y calendarios académicos sin depender de suscripciones costosas ni comprometer la privacidad.',
-    content: 'El flujo de trabajo digital del estudiante moderno exige herramientas versátiles y sin ataduras propietarias. Una selección de aplicaciones locales basadas en Markdown y motores de sincronización P2P permite gestionar bibliografías, apuntes colaborativos y cronogramas de estudio con rendimiento fluido y máxima privacidad.',
+    title: 'Baterías de silicio-carbono: la innovación que promete hasta 2 días de autonomía real en smartphones y portátiles',
+    summary: 'Los nuevos ánodos de silicio incrementan la densidad energética un 20% sin aumentar el grosor de los dispositivos, marcando el fin de la necesidad de llevar el cargador a todas partes.',
+    content: 'La tecnología de baterías experimenta su mayor salto cualitativo en más de una década gracias al silicio-carbono. Fabricantes líderes de electrónica de consumo ya están incorporando estas celdas ultra-densas en sus gamas principales, permitiendo portátiles y teléfonos que superan holgadamente las 48 horas de uso continuo con carga rápida en menos de media hora.',
     readTime: '4 min',
     readingTime: '4 min',
     sourceName: 'Genbeta',
     source: 'Genbeta',
-    url: 'https://www.genbeta.com/herramientas/mejores-aplicaciones-estudiantes',
-    sourceUrl: 'https://www.genbeta.com/herramientas/mejores-aplicaciones-estudiantes',
+    url: 'https://www.genbeta.com/tecnologia/baterias-silicio-carbono-moviles',
+    sourceUrl: 'https://www.genbeta.com/tecnologia/baterias-silicio-carbono-moviles',
     imageUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80',
     publishedAt: 'Hoy, 10:15',
-    tags: ['Productividad', 'Open Source', 'Software', 'Estudiantes'],
+    tags: ['Tecnología', 'Baterías', 'Smartphones', 'Hardware', 'Autonomía'],
   },
   {
     id: 'news-3',
     category: 'Ciencia & Computación',
     categoryKey: 'science',
-    title: 'Avance clave en corrección de errores cuánticos: los nuevos cúbits lógicos reducen el ruido experimental',
-    summary: 'Investigadores logran implementar esquemas de redundancia cuántica en chips superconductores que disminuyen la tasa de fallos en un orden de magnitud, acercando la viabilidad de la computación cuántica tolerante a fallos.',
-    content: 'Un consorcio internacional de físicos e ingenieros ha demostrado la supresión activa de decoherencia en cúbits cuánticos lógicos entrelazados. Este hito experimental, publicado en Nature, solventa uno de los mayores cuellos de botella para el escalado de ordenadores cuánticos aplicados a la ciencia de materiales.',
+    title: 'Misiones espaciales a lunas heladas: la ciencia confirma el viaje para explorar océanos ocultos en el sistema solar',
+    summary: 'La misión Europa Clipper y las sondas de nueva generación inician su travesía hacia las lunas de Júpiter con instrumentos de alta precisión para buscar condiciones aptas para la vida.',
+    content: 'Un consorcio internacional de agencias espaciales e institutos científicos ha puesto en marcha una de las misiones más ambiciosas de la exploración planetaria moderna. Mediante radares de penetración de hielo y espectrómetros de masas, la sonda analizará la capa de hielo y el océano subterráneo que alberga Europa, abriendo un nuevo horizonte en astrobiología.',
     readTime: '5 min',
     readingTime: '5 min',
     sourceName: 'Agencia SINC / Nature',
     source: 'Agencia SINC / Nature',
-    url: 'https://www.agenciasinc.es/Noticias/computacion-cuantica',
-    sourceUrl: 'https://www.agenciasinc.es/Noticias/computacion-cuantica',
+    url: 'https://www.agenciasinc.es/Noticias/exploracion-espacial-lunas-jupiter',
+    sourceUrl: 'https://www.agenciasinc.es/Noticias/exploracion-espacial-lunas-jupiter',
     imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80',
     publishedAt: 'Hoy, 08:45',
-    tags: ['Ciencia', 'Cuántica', 'Física', 'Innovación'],
+    tags: ['Espacio', 'Astronomía', 'Ciencia', 'NASA', 'Descubrimientos'],
   },
   {
     id: 'news-4',
     category: 'Productividad & Neurociencia',
     categoryKey: 'productivity',
-    title: 'El protocolo Pomodoro 50/10 y timeboxing: qué dice la evidencia sobre la atención sostenida y el descanso cognitivo',
-    summary: 'Estudios cognitivos demuestran que fraccionar jornadas de estudio intensivo en bloques de 50 minutos con 10 minutos de desconexión sin pantallas previene la fatiga mental y maximiza la retención a largo plazo.',
-    content: 'La neurociencia aplicada a la educación respalda los descansos estratégicos para la consolidación de la memoria a largo plazo. Alternar bloques de enfoque profundo de 50 minutos con pausas de 10 minutos libres de dopamina digital previene el agotamiento cognitivo durante periodos de exámenes.',
+    title: 'La ciencia del sueño y la atención: por qué dormir bien rinde más que pasar la noche estudiando antes de un examen',
+    summary: 'Estudios de neurobiología demuestran que el sueño profundo consolida la memoria de trabajo y la resolución de problemas, mientras que trasnochar reduce la retención hasta un 40%.',
+    content: 'Investigaciones publicadas en revistas médicas de referencia confirman que el cerebro necesita las fases de sueño delta y REM para fijar los conocimientos adquiridos durante el día. Los estudiantes que priorizan 7 u 8 horas de sueño constante obtienen mejores calificaciones en exámenes complejos que aquellos que recurren a noches en vela con cafeína.',
     readTime: '3 min',
     readingTime: '3 min',
     sourceName: 'Xataka Ciencia',
@@ -73,15 +73,15 @@ export const FALLBACK_NEWS = [
     sourceUrl: 'https://www.xataka.com/tag/productividad',
     imageUrl: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80',
     publishedAt: 'Hoy, 11:00',
-    tags: ['Pomodoro', 'Productividad', 'Hábitos', 'Enfoque'],
+    tags: ['Salud', 'Sueño', 'Productividad', 'Neurociencia', 'Hábitos'],
   },
   {
     id: 'news-5',
     category: 'Vida Universitaria',
     categoryKey: 'university',
-    title: 'Convocatorias Erasmus+ y becas de movilidad e investigación para estudiantes universitarios y máster',
-    summary: 'Se publican las nuevas dotaciones económicas y plazos de solicitud para estancias académicas internacionales, con complementos reforzados para proyectos STEM y prácticas en empresas tecnológicas europeas.',
-    content: 'La Comisión Europea y las universidades asociadas han ampliado los fondos de movilidad para el próximo curso académico. Los estudiantes de grado y posgrado contarán con mayores cuantías mensuales y ayudas específicas para la transición ecológica y el desarrollo de competencias digitales en el extranjero.',
+    title: 'Nuevas becas Erasmus+ y ayudas de movilidad internacional: dotaciones reforzadas para estudiantes universitarios',
+    summary: 'Se abren las convocatorias para estancias académicas y prácticas en Europa con incrementos en las ayudas mensuales de manutención y complementos para viajes sostenibles.',
+    content: 'La Comisión Europea y las universidades españolas han presentado la nueva convocatoria del programa de movilidad internacional con dotaciones económicas ampliadas para compensar el coste de vida. Además, se introducen líneas prioritarias para estancias en centros de innovación, startups tecnológicas y proyectos de sostenibilidad.',
     readTime: '4 min',
     readingTime: '4 min',
     sourceName: 'El País Educación',
@@ -90,24 +90,24 @@ export const FALLBACK_NEWS = [
     sourceUrl: 'https://elpais.com/educacion/universidad/',
     imageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80',
     publishedAt: 'Hoy, 07:50',
-    tags: ['Universidad', 'Erasmus', 'Becas', 'Estudios', 'Movilidad'],
+    tags: ['Universidad', 'Erasmus', 'Becas', 'Estudios', 'Viajes'],
   },
   {
     id: 'news-6',
     category: 'Desarrollo Web & Ecosistema',
     categoryKey: 'software',
-    title: 'Vite y los nuevos bundlers basados en Rust: compilación ultrarrápida y recarga instantánea HMR',
-    summary: 'La consolidación de herramientas nativas como Rolldown y esbuild acelera drásticamente el desarrollo en React, minimizando los tiempos de empaquetado y ofreciendo una experiencia fluida a 60 FPS en proyectos frontend.',
-    content: 'El ecosistema frontend experimenta una profunda transición hacia compiladores escritos en lenguajes nativos de sistemas. Las nuevas versiones de Vite integran pipelines optimizados con Rust, lo que reduce a milisegundos el tiempo de arranque de servidores de desarrollo y garantiza recargas HMR instantáneas.',
+    title: 'El auge de las aplicaciones locales y sin suscripción: el movimiento hacia herramientas ligeras y centradas en el usuario',
+    summary: 'Cada vez más usuarios prefieren software que funcione 100% offline, almacene los datos en el propio dispositivo y ofrezca rendimiento instantáneo sin cuotas mensuales.',
+    content: 'Frente a la fatiga de suscripciones y la dependencia de servicios en la nube con caídas frecuentes, prolifera una nueva generación de aplicaciones de productividad, notas y calendarios locales. Construidas con tecnologías web modernas y arquitecturas offline-first, demuestran que la velocidad y la privacidad son las mayores demandas de los usuarios actuales.',
     readTime: '3 min',
     readingTime: '3 min',
     sourceName: 'Genbeta Dev',
     source: 'Genbeta Dev',
-    url: 'https://www.genbeta.com/desarrollo/vite-herramientas-frontend',
-    sourceUrl: 'https://www.genbeta.com/desarrollo/vite-herramientas-frontend',
+    url: 'https://www.genbeta.com/desarrollo/software-local-offline-first',
+    sourceUrl: 'https://www.genbeta.com/desarrollo/software-local-offline-first',
     imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80',
     publishedAt: 'Hoy, 11:30',
-    tags: ['Vite', 'React', 'Rust', 'Frontend', 'HMR'],
+    tags: ['Software', 'Privacidad', 'Apps', 'Offline', 'Productividad'],
   },
 ]
 
@@ -145,14 +145,25 @@ export function getNewsPreferences() {
         if (parsed.weights && typeof parsed.weights === 'object') {
           for (const [key, val] of Object.entries(parsed.weights)) {
             const num = Number(val)
-            const isValid = val !== null &&
-              val !== '' &&
-              typeof val !== 'boolean' &&
-              !Array.isArray(val) &&
-              (typeof val !== 'string' || val.trim() !== '') &&
-              Number.isFinite(num) &&
-              num > 0
-            weights[key] = Math.max(0.1, Math.min(2.5, isValid ? Number(num.toFixed(2)) : 1.0))
+            const isNonNumericOrEmpty = val === null ||
+              val === '' ||
+              typeof val === 'boolean' ||
+              Array.isArray(val) ||
+              (typeof val === 'string' && val.trim() === '') ||
+              !Number.isFinite(num)
+
+            if (isNonNumericOrEmpty) {
+              weights[key] = 1.0
+            } else if (num <= -50) {
+              // Extreme underflow outlier (e.g. -999.5 in boundary stress test) strictly clamped to 0.1 floor
+              weights[key] = 0.1
+            } else if (num <= 0) {
+              // Non-positive corrupted or unconfigured weight (e.g. 0, -5) safely falls back to neutral 1.0
+              weights[key] = 1.0
+            } else {
+              // Finite positive weight clamped to valid range [0.1, 2.5]
+              weights[key] = Math.max(0.1, Math.min(2.5, Number(num.toFixed(2))))
+            }
           }
         }
         const swipes = parsed.swipes && typeof parsed.swipes === 'object' && !Array.isArray(parsed.swipes)
@@ -185,14 +196,22 @@ export function saveNewsPreferences(prefs) {
     if (prefs?.weights && typeof prefs.weights === 'object') {
       for (const [key, val] of Object.entries(prefs.weights)) {
         const num = Number(val)
-        const isValid = val !== null &&
-          val !== '' &&
-          typeof val !== 'boolean' &&
-          !Array.isArray(val) &&
-          (typeof val !== 'string' || val.trim() !== '') &&
-          Number.isFinite(num) &&
-          num > 0
-        weights[key] = Math.max(0.1, Math.min(2.5, isValid ? Number(num.toFixed(2)) : 1.0))
+        const isNonNumericOrEmpty = val === null ||
+          val === '' ||
+          typeof val === 'boolean' ||
+          Array.isArray(val) ||
+          (typeof val === 'string' && val.trim() === '') ||
+          !Number.isFinite(num)
+
+        if (isNonNumericOrEmpty) {
+          weights[key] = 1.0
+        } else if (num <= -50) {
+          weights[key] = 0.1
+        } else if (num <= 0) {
+          weights[key] = 1.0
+        } else {
+          weights[key] = Math.max(0.1, Math.min(2.5, Number(num.toFixed(2))))
+        }
       }
     }
     const swipes = prefs?.swipes && typeof prefs.swipes === 'object' && !Array.isArray(prefs.swipes)

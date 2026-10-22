@@ -215,24 +215,53 @@ export const loginUser = async (email, password) => {
     )
   }
 
-  // Fusionar datos de la nube con datos locales para que NINGUNA tarea se pierda
+  // Fusionar datos de la nube con datos locales con prioridad canónica a la nube (sesión móvil / remota)
   const baseAccount = cloudAccount || localAccount
   const extraAccount = localAccount || cloudAccount
 
-  const allTasks = [...(baseAccount.tasks || []), ...(extraAccount?.tasks || [])]
-  const taskMap = new Map()
-  allTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+  let mergedCals = []
+  if (cloudAccount?.calendars && Array.isArray(cloudAccount.calendars) && cloudAccount.calendars.length > 0) {
+    const cloudCalMap = new Map()
+    cloudAccount.calendars.forEach((c) => { if (c && c.id) cloudCalMap.set(String(c.id), c) })
+    // Solo anexar calendarios locales si fueron creados offline y no existen en la nube
+    if (localAccount?.calendars && Array.isArray(localAccount.calendars)) {
+      localAccount.calendars.forEach((c) => {
+        if (c && c.id && !cloudCalMap.has(String(c.id)) && !c.isDefault) {
+          cloudCalMap.set(String(c.id), c)
+        }
+      })
+    }
+    mergedCals = Array.from(cloudCalMap.values())
+  } else if (localAccount?.calendars && Array.isArray(localAccount.calendars) && localAccount.calendars.length > 0) {
+    mergedCals = localAccount.calendars
+  } else {
+    mergedCals = DEFAULT_USER_CALENDARS
+  }
 
-  const allCals = [...(baseAccount.calendars || []), ...(extraAccount?.calendars || [])]
-  const calMap = new Map()
-  allCals.forEach((c) => { if (c && c.id) calMap.set(String(c.id), c) })
+  let mergedTasks = []
+  if (cloudAccount?.tasks && Array.isArray(cloudAccount.tasks)) {
+    const cloudTaskMap = new Map()
+    cloudAccount.tasks.forEach((t) => { if (t && t.id) cloudTaskMap.set(String(t.id), t) })
+    if (localAccount?.tasks && Array.isArray(localAccount.tasks)) {
+      localAccount.tasks.forEach((t) => {
+        if (t && t.id && !cloudTaskMap.has(String(t.id))) {
+          cloudTaskMap.set(String(t.id), t)
+        }
+      })
+    }
+    mergedTasks = Array.from(cloudTaskMap.values())
+  } else if (localAccount?.tasks && Array.isArray(localAccount.tasks)) {
+    mergedTasks = localAccount.tasks
+  } else {
+    mergedTasks = []
+  }
 
   const mergedUser = {
     ...baseAccount,
-    displayName: baseAccount.displayName || extraAccount?.displayName,
-    password: baseAccount.password || extraAccount?.password,
-    tasks: Array.from(taskMap.values()),
-    calendars: Array.from(calMap.values()),
+    displayName: cloudAccount?.displayName || localAccount?.displayName || baseAccount.displayName,
+    password: cloudAccount?.password || localAccount?.password || baseAccount.password,
+    tasks: mergedTasks,
+    calendars: mergedCals,
     updatedAt: new Date().toISOString(),
   }
 
@@ -339,20 +368,48 @@ export const registerUser = async (email, password, displayName = '') => {
     const base = existingCloud || existingLocal
     const extra = existingLocal || existingCloud
 
-    const allTasks = [...(base.tasks || []), ...(extra?.tasks || [])]
-    const taskMap = new Map()
-    allTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+    let mergedCals = []
+    if (existingCloud?.calendars && Array.isArray(existingCloud.calendars) && existingCloud.calendars.length > 0) {
+      const cloudCalMap = new Map()
+      existingCloud.calendars.forEach((c) => { if (c && c.id) cloudCalMap.set(String(c.id), c) })
+      if (existingLocal?.calendars && Array.isArray(existingLocal.calendars)) {
+        existingLocal.calendars.forEach((c) => {
+          if (c && c.id && !cloudCalMap.has(String(c.id)) && !c.isDefault) {
+            cloudCalMap.set(String(c.id), c)
+          }
+        })
+      }
+      mergedCals = Array.from(cloudCalMap.values())
+    } else if (existingLocal?.calendars && Array.isArray(existingLocal.calendars) && existingLocal.calendars.length > 0) {
+      mergedCals = existingLocal.calendars
+    } else {
+      mergedCals = DEFAULT_USER_CALENDARS
+    }
 
-    const allCals = [...(base.calendars || []), ...(extra?.calendars || [])]
-    const calMap = new Map()
-    allCals.forEach((c) => { if (c && c.id) calMap.set(String(c.id), c) })
+    let mergedTasks = []
+    if (existingCloud?.tasks && Array.isArray(existingCloud.tasks)) {
+      const cloudTaskMap = new Map()
+      existingCloud.tasks.forEach((t) => { if (t && t.id) cloudTaskMap.set(String(t.id), t) })
+      if (existingLocal?.tasks && Array.isArray(existingLocal.tasks)) {
+        existingLocal.tasks.forEach((t) => {
+          if (t && t.id && !cloudTaskMap.has(String(t.id))) {
+            cloudTaskMap.set(String(t.id), t)
+          }
+        })
+      }
+      mergedTasks = Array.from(cloudTaskMap.values())
+    } else if (existingLocal?.tasks && Array.isArray(existingLocal.tasks)) {
+      mergedTasks = existingLocal.tasks
+    } else {
+      mergedTasks = []
+    }
 
     const mergedUser = {
       ...base,
-      displayName: displayName.trim() || base.displayName || trimmedEmail.split('@')[0],
-      password: password || base.password || '123456',
-      tasks: Array.from(taskMap.values()),
-      calendars: Array.from(calMap.values()),
+      displayName: displayName.trim() || existingCloud?.displayName || existingLocal?.displayName || trimmedEmail.split('@')[0],
+      password: password || existingCloud?.password || existingLocal?.password || '123456',
+      tasks: mergedTasks,
+      calendars: mergedCals,
       updatedAt: new Date().toISOString(),
     }
 
@@ -653,15 +710,18 @@ export const getUserCalendars = (user = getCurrentUser()) => {
       return DEFAULT_USER_CALENDARS
     }
 
-    const accounts = getAllAccounts()
-    const found = accounts.find((a) => a.uid === user.uid)
-    if (found && Array.isArray(found.calendars) && found.calendars.length > 0) {
-      return found.calendars
-    }
+    // 1. Prioridad: datos sincronizados en caché de usuario desde la nube
     const rawLocal = localStorage.getItem(`studenthub_calendars_${user.uid}`)
     if (rawLocal !== null) {
       const parsed = JSON.parse(rawLocal)
       if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+
+    // 2. Registro local de cuentas
+    const accounts = getAllAccounts()
+    const found = accounts.find((a) => a.uid === user.uid)
+    if (found && Array.isArray(found.calendars) && found.calendars.length > 0) {
+      return found.calendars
     }
   } catch (e) {
     console.warn('Error leyendo calendarios de usuario:', e)
@@ -766,6 +826,12 @@ export const loadUserDataFromCloud = async () => {
           // Si la nube ya contiene calendarios reales del usuario, esa es la fuente de verdad directa
           // Evita contaminar con plantillas vacías por defecto
           localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(cloudData.calendars))
+          const accounts = getAllAccounts()
+          const idx = accounts.findIndex((a) => a.uid === current.uid)
+          if (idx >= 0) {
+            accounts[idx].calendars = cloudData.calendars
+            saveAllAccounts(accounts)
+          }
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
           }
@@ -808,6 +874,12 @@ export const subscribeToUserCloudData = (user, onUpdate) => {
           }
           if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
             localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(cloudData.calendars))
+            const accounts = getAllAccounts()
+            const idx = accounts.findIndex((a) => a.uid === user.uid)
+            if (idx >= 0) {
+              accounts[idx].calendars = cloudData.calendars
+              saveAllAccounts(accounts)
+            }
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
             }
