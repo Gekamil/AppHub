@@ -18,6 +18,34 @@ import path from 'path'
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
+import { FALLBACK_NEWS } from '../src/services/newsService.js'
+
+/**
+ * Formato enriquecido para el boletín diario de noticias en WhatsApp.
+ * Emplea tipografía estándar de WhatsApp (*negrita*, _cursiva_, viñetas) y cita fuentes autorizadas.
+ */
+export function formatNewsForWhatsApp(articles = FALLBACK_NEWS) {
+  const items = Array.isArray(articles) && articles.length > 0 ? articles : FALLBACK_NEWS
+  return items.map((a, idx) => (
+    `*${idx + 1}. [${a.category || a.categoryKey}] ${a.title}*\n` +
+    `• ${a.summary}\n` +
+    `_Fuente: ${a.source || a.sourceName || 'Medio'} (${a.readTime || a.readingTime || '3 min'})_`
+  )).join('\n\n')
+}
+
+/**
+ * Clasificador de consultas de noticias y actualidad para WhatsApp.
+ * Detecta consultas directas y sutiles (incluyendo tiempo pasado y tecnología) y descarta acciones de tareas.
+ */
+export function classifyWhatsAppNewsQuery(userText) {
+  const lowerUserText = (userText || '').toLowerCase()
+  const isNewsQuery = (
+    /(?:noticia|novedad|titular|actualidad|bolet[ií]n)/i.test(lowerUserText) ||
+    /(?:qu[eé]\s+(?:hay|sabes|pasa|pas[oó]|ha\s+pasado|ocurri[oó]|sucedi[oó])|dime|cu[eé]ntame).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lowerUserText)
+  ) && !/(?:a[ñn]ad|crea|pon|programa|apunta|borra|elimina|quita|suprime|cambia|pasa|mueve|asigna)/i.test(lowerUserText)
+  const isAIOrTech = /ia|inteligencia artificial|tecnolog|software|hardware/i.test(lowerUserText)
+  return { isNewsQuery, isAIOrTech }
+}
 
 const AUTH_DIR = path.resolve(process.cwd(), '.whatsapp_auth')
 const TASKS_FILE = path.resolve(process.cwd(), '.whatsapp_synced_tasks.json')
@@ -964,6 +992,8 @@ export async function processMessageWithAI(userText, fromUser = 'default') {
     .map(([k, v]) => `- "${k}" -> Calendario "${v}"`)
     .join('\n')
 
+  const whatsappNewsDigest = formatNewsForWhatsApp(FALLBACK_NEWS)
+
   const systemPrompt = `Eres "AI Helper", el asistente personal de élite de Jorge en su WhatsApp.
 Fecha y hora actual: ${todayStr} (${dayOfWeek}), ${currentTimeStr}.
 Usuario: Jorge (estudiante universitario de informática/sistemas, desarrollador tech, deportista pádel/gym, vida personal).
@@ -979,6 +1009,9 @@ ${routingRulesText || 'Sin reglas específicas'}
 
 AGENDA ACTUAL EN SU APLICACIÓN (ORDEN CRONOLÓGICO):
 ${tasksSummary}
+
+NOTICIAS DESTACADAS DE HOY (${todayStr}):
+${whatsappNewsDigest}
 
 REGLAS DE ACTUACIÓN, PERSONALIDAD Y FORMATO (ESTRICTAS):
 
@@ -1044,6 +1077,13 @@ REGLAS DE ACTUACIÓN, PERSONALIDAD Y FORMATO (ESTRICTAS):
 
    H) CAMBIAR MODO DE ASIGNACIÓN:
       - Permite cambiar entre modo "auto" e "interactive".
+
+   I) CONSULTAS DE NOTICIAS, NOVEDADES Y ACTUALIDAD:
+      - Cuando Jorge te pregunte en WhatsApp por noticias o actualidad ("¿Cuáles son las noticias de hoy?", "¿Qué titulares hay?", "noticias", "¿Qué hay de IA o tecnología?"):
+        Envía un boletín elegante usando tipografía de WhatsApp (*negrita* en titulares, _cursiva_ en fuentes, viñetas • para resúmenes).
+        Cita siempre las fuentes oficiales (Xataka, Genbeta, Agencia SINC / Nature, El País Educación).
+        Destaca los procesadores LPU de Groq y las herramientas recomendadas por Genbeta para universitarios.
+      - NUNCA uses etiquetas HTML (como <p>, <div>, <br>). Emplea únicamente markdown nativo de WhatsApp.
 
 ESTRUCTURA JSON OBLIGATORIA DE RETORNO:
 {
@@ -1163,7 +1203,37 @@ Las claves del JSON deben ser obligatoriamente: "reply", "actions", "isNewTask".
       /(?:mete|pasa|mueve|cambia|asigna|pon|coloca)\s+(?:todos\s+los\s+eventos|todas\s+las\s+tareas|todo)\s+(?:de\s+mi\s+calendario|del\s+calendario|de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|la\s+categor[ií]a|rol|calendario)?\s*(.*)/i
     )
     let fallbackReply = '¡Hola, Jorge! He recibido tu mensaje. ¿Deseas consultar tu agenda o agregar alguna actividad?'
-    if (moveMatch) {
+
+    // Detección de consultas de noticias y actualidad en WhatsApp cuando el motor remoto no responda
+    const { isNewsQuery, isAIOrTech } = classifyWhatsAppNewsQuery(lowerUserText)
+
+    if (isNewsQuery) {
+      if (isAIOrTech) {
+        fallbackReply = `¡Hola, Jorge! Aquí tienes las novedades más destacadas de *Inteligencia Artificial y Tecnología* hoy:\n\n` +
+          `*1. [IA] Groq y la nueva ola de procesadores LPU*\n` +
+          `• Las unidades LPU superan los 300 tokens por segundo en inferencia de LLMs, permitiendo respuestas de voz instantáneas sin la latencia de GPUs tradicionales.\n` +
+          `_Fuente: Xataka (3 min)_\n\n` +
+          `*2. [Tech] Herramientas esenciales de desarrollo para universitarios*\n` +
+          `• Selección de utilidades open source y bases de datos locales para gestionar apuntes y código con privacidad y sin suscripciones.\n` +
+          `_Fuente: Genbeta (4 min)_\n\n` +
+          `¿Te gustaría que te resuma alguna de las otras áreas (Ciencia cuántica, Pomodoro, Becas Erasmus+ o Vite en Rust)?`
+      } else {
+        fallbackReply = `¡Hola, Jorge! Aquí tienes los *6 titulares destacados de hoy* en StudentHub:\n\n` +
+          `*1. [IA]* Groq y los chips LPU: Inferencia a 300+ tok/s en tiempo real.\n` +
+          `• _Fuente: Xataka (3 min)_\n\n` +
+          `*2. [Tech]* Guía Genbeta de apps open-source para universitarios.\n` +
+          `• _Fuente: Genbeta (4 min)_\n\n` +
+          `*3. [Ciencia]* Supresión de decoherencia en cúbits cuánticos lógicos.\n` +
+          `• _Fuente: Agencia SINC / Nature (5 min)_\n\n` +
+          `*4. [Productividad]* Protocolo Pomodoro 50/10 respaldado por neurociencia.\n` +
+          `• _Fuente: Xataka Ciencia (3 min)_\n\n` +
+          `*5. [Universidad]* Nuevas convocatorias Erasmus+ y becas STEM.\n` +
+          `• _Fuente: El País Educación (4 min)_\n\n` +
+          `*6. [Desarrollo]* Vite y bundlers nativos en Rust a 60 FPS.\n` +
+          `• _Fuente: Genbeta Dev (3 min)_\n\n` +
+          `¿Deseas que profundice en el resumen de alguna de ellas?`
+      }
+    } else if (moveMatch) {
       const rawSource = moveMatch[1].replace(/mi calendario|calendario|rol|categoría/gi, '').trim()
       const rawTarget = moveMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
       const targetCal = currentKnownCalendars.find((c) => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
@@ -1644,6 +1714,20 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
           continue
         }
 
+        // 4.2b. COMANDO /noticias o titulares
+        if (/^(\/|!|\.)?(noticias|noticia|titulares|actualidad)$/i.test(cleanInstruction) || lowerInstruction === 'noticias' || lowerInstruction === 'titulares') {
+          const newsReply = `¡Hola, Jorge! Aquí tienes los *6 titulares destacados de hoy* en StudentHub:\n\n` +
+            formatNewsForWhatsApp(FALLBACK_NEWS) +
+            `\n\n¿Deseas que te amplíe información sobre alguna de ellas?`
+          try {
+            const sent = await sock.sendMessage(from, { text: newsReply }, { quoted: msg })
+            if (sent?.key?.id) sentBotMessageIds.add(sent.key.id)
+          } catch (e) {
+            await sock.sendMessage(from, { text: newsReply }).catch(() => {})
+          }
+          continue
+        }
+
         // 4.3. CAMBIOS DIRECTOS DE MODO (AUTOMÁTICO / INTERACTIVO)
         if (
           /^(\/|!|\.)?modo\s+(auto|predeterminado|automatico)$/i.test(cleanInstruction) ||
@@ -2054,6 +2138,13 @@ export function handleBaileysApiRoute(req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify({ status: 'ok', uptime: process.uptime(), time: new Date().toISOString() }))
+    return true
+  }
+
+  if (pathname === '/api/news' && req.method === 'GET') {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    res.end(JSON.stringify(FALLBACK_NEWS))
     return true
   }
 
@@ -2495,127 +2586,32 @@ function serveStatic(req, res) {
   return false
 }
 
-// Cache de URLs firmadas de descarga para entregar APKs y EXEs oficiales al instante
-const downloadUrlCache = new Map()
-
-async function resolveGitHubDownloadUrl(assetName) {
-  const cached = downloadUrlCache.get(assetName)
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.url
-  }
-
-  const token = process.env.GITHUB_TOKEN || ''
-  const headers = {
-    'User-Agent': 'StudentHub-Render-Server',
-    Accept: 'application/vnd.github+json',
-  }
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  const opt1 = {
-    hostname: 'api.github.com',
-    path: '/repos/Gekamil/AppHub/releases/tags/latest',
-    headers,
-  }
-
-  const releaseData = await new Promise((resolve, reject) => {
-    https.get(opt1, (res) => {
-      let data = ''
-      res.on('data', (d) => (data += d))
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(data))
-        } catch (e) {
-          reject(e)
-        }
-      })
-    }).on('error', reject)
-  })
-
-  const asset = (releaseData.assets || []).find(
-    (a) => a.name && a.name.toLowerCase() === assetName.toLowerCase()
-  )
-  if (!asset) return null
-
-  // Si el asset dispone de URL de descarga directa pública, usarla de inmediato
-  if (asset.browser_download_url) {
-    downloadUrlCache.set(assetName, {
-      url: asset.browser_download_url,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-    })
-    return asset.browser_download_url
-  }
-
-  if (token && asset.id) {
-    const opt2 = {
-      hostname: 'api.github.com',
-      path: `/repos/Gekamil/AppHub/releases/assets/${asset.id}`,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'User-Agent': 'StudentHub-Render-Server',
-        Accept: 'application/octet-stream',
-      },
-    }
-
-    const signedUrl = await new Promise((resolve, reject) => {
-      https.get(opt2, (res) => {
-        resolve(res.headers.location || null)
-      }).on('error', reject)
-    })
-
-    if (signedUrl) {
-      downloadUrlCache.set(assetName, {
-        url: signedUrl,
-        expiresAt: Date.now() + 10 * 60 * 1000,
-      })
-    }
-    return signedUrl
-  }
-
-  return null
-}
+// URLs oficiales de descarga de GitHub Releases (binarios compilados actualizados)
+const GITHUB_RELEASE_APK_URL = 'https://github.com/Gekamil/AppHub/releases/download/latest/AppHub.apk'
+const GITHUB_RELEASE_SETUP_URL = 'https://github.com/Gekamil/AppHub/releases/download/latest/AppHub-Setup.exe'
 
 function handleDownloadRoute(req, res) {
   const parsedUrl = new URL(req.url, 'http://localhost')
   const pathname = parsedUrl.pathname.toLowerCase()
 
-  let targetAsset = null
+  let targetUrl = null
   if (pathname === '/download/studenthub.apk' || pathname === '/download/apphub.apk') {
-    targetAsset = 'AppHub.apk'
+    targetUrl = GITHUB_RELEASE_APK_URL
   } else if (
     pathname === '/download/studenthub-setup.exe' ||
     pathname === '/download/apphub-setup.exe' ||
     pathname === '/download/studenthub.exe'
   ) {
-    targetAsset = 'AppHub-Setup.exe'
+    targetUrl = GITHUB_RELEASE_SETUP_URL
   }
 
-  if (!targetAsset) return false
+  if (!targetUrl) return false
 
-  resolveGitHubDownloadUrl(targetAsset)
-    .then((signedUrl) => {
-      if (signedUrl) {
-        res.writeHead(302, {
-          Location: signedUrl,
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-        })
-        res.end()
-      } else {
-        if (!serveStatic(req, res)) {
-          res.statusCode = 404
-          res.end('Download not available')
-        }
-      }
-    })
-    .catch((err) => {
-      console.warn('[Download Router Fallback]:', err.message)
-      if (!serveStatic(req, res)) {
-        res.statusCode = 404
-        res.end('Download error')
-      }
-    })
-
+  res.writeHead(302, {
+    Location: targetUrl,
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+  })
+  res.end()
   return true
 }
 

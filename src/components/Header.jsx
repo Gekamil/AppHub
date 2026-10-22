@@ -14,6 +14,7 @@ const mobileNavItems = [
   { name: 'Notas', shortName: 'Notas', to: '/notebooks', icon: 'menu_book' },
   { name: 'Asistente IA', shortName: 'IA', to: '/ai-assistant', icon: 'smart_toy' },
   { name: 'My Hub', shortName: 'Hub', to: '/my-hub', icon: 'hub' },
+  { name: 'Noticias', shortName: 'Noticias', to: '/news', icon: 'newspaper' },
 ]
 
 export default function Header({
@@ -155,7 +156,7 @@ export default function Header({
   const navContainerRef = useRef(null)
   const itemRefs = useRef({})
   const hasMeasuredRef = useRef(false)
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0, ready: false })
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, scaleX: 1, opacity: 0, ready: false })
 
   const mobileNavContainerRef = useRef(null)
   const mobileItemRefs = useRef({})
@@ -183,6 +184,7 @@ export default function Header({
         setIndicatorStyle((prev) => ({
           left: desktopEl.offsetLeft,
           width: desktopEl.offsetWidth,
+          scaleX: 1,
           opacity: 1,
           ready: hasMeasuredRef.current,
         }))
@@ -324,15 +326,17 @@ export default function Header({
               ref={navContainerRef}
               className="hidden md:flex items-center gap-1 bg-surface-muted/80 dark:bg-[#111214] p-1 rounded-2xl border border-slate-200/80 dark:border-[#27272a] shadow-2xs relative app-no-drag"
             >
-              {/* Pastilla Deslizante con acento dinámico */}
+              {/* Pastilla Deslizante con acento dinámico GPU acelerado */}
               <div
-                className="absolute top-1 bottom-1 rounded-xl shadow-xs pointer-events-none"
+                className="absolute top-1 bottom-1 left-0 rounded-xl shadow-xs pointer-events-none will-change-transform"
                 style={{
-                  left: `${indicatorStyle.left}px`,
                   width: `${indicatorStyle.width}px`,
                   opacity: indicatorStyle.opacity,
                   backgroundColor: 'var(--app-accent-color, #0071E3)',
-                  transition: indicatorStyle.ready ? 'all 300ms cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+                  transform: `translateX(${indicatorStyle.left}px) scaleX(${indicatorStyle.scaleX || 1})`,
+                  transformOrigin: 'left center',
+                  willChange: 'transform',
+                  transition: indicatorStyle.ready ? 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease' : 'none',
                 }}
               />
 
@@ -350,6 +354,7 @@ export default function Header({
                         setIndicatorStyle({
                           left: el.offsetLeft,
                           width: el.offsetWidth,
+                          scaleX: 1,
                           opacity: 1,
                           ready: true,
                         })
@@ -923,7 +928,7 @@ export default function Header({
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span className="material-symbols-outlined text-[17px] text-primary shrink-0">
-                              {def.icon}
+                              {def.icon?.toLowerCase?.() || def.icon}
                             </span>
                             <div className="flex flex-col min-w-0">
                               <span className="text-xs font-semibold text-on-surface truncate">

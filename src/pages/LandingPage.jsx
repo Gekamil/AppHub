@@ -718,8 +718,8 @@ export default function LandingPage() {
 
               <div className="mt-8 pt-5 border-t border-white/10 flex flex-col gap-2">
                 <a
-                  href="/download/StudentHub-Setup.exe"
-                  download="StudentHub-Setup.exe"
+                  href="https://github.com/Gekamil/AppHub/releases/download/latest/AppHub-Setup.exe"
+                  download="AppHub-Setup.exe"
                   className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs font-semibold py-3"
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>
@@ -754,8 +754,8 @@ export default function LandingPage() {
 
               <div className="mt-8 pt-5 border-t border-white/10 flex flex-col gap-2">
                 <a
-                  href="/download/StudentHub.apk"
-                  download="StudentHub.apk"
+                  href="https://github.com/Gekamil/AppHub/releases/download/latest/AppHub.apk"
+                  download="AppHub.apk"
                   className="apple-btn-blue apple-btn-sheen w-full flex items-center justify-center gap-2 cursor-pointer text-xs font-semibold py-3"
                 >
                   <span className="material-symbols-outlined text-[18px]">download</span>

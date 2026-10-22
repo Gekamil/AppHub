@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
@@ -30,7 +30,7 @@ import { syncWidgetData, checkInitialWidgetRoute, listenWidgetRoute } from '../s
 
 const DEFAULT_TASKS = []
 
-const APP_TABS = ['/calendar', '/', '/notebooks', '/ai-assistant', '/my-hub']
+const APP_TABS = ['/calendar', '/', '/notebooks', '/ai-assistant', '/my-hub', '/news']
 
 export default function AppShell() {
   const location = useLocation()
@@ -60,11 +60,13 @@ export default function AppShell() {
     const norm = (curPath === '/auto-organizer' || curPath === '') ? '/' : curPath
 
     if (norm.startsWith('/notebooks') && visibleTabs['/notebooks'] === false) {
-      navigate('/calendar', { replace: true })
+      navigate('/calendar')
     } else if (norm.startsWith('/my-hub') && visibleTabs['/my-hub'] === false) {
-      navigate('/calendar', { replace: true })
+      navigate('/calendar')
     } else if (norm.startsWith('/ai-assistant') && (visibleTabs['/ai-assistant'] === false || aiAssistantMode === 'floating')) {
-      navigate('/calendar', { replace: true })
+      navigate('/calendar')
+    } else if (norm.startsWith('/news') && visibleTabs['/news'] === false) {
+      navigate('/calendar')
     }
   }, [location.pathname, visibleTabs, aiAssistantMode, navigate])
 
@@ -93,6 +95,7 @@ export default function AppShell() {
       { id: '/notebooks', path: '/notebooks' },
       ...(aiAssistantMode === 'tab' ? [{ id: '/ai-assistant', path: '/ai-assistant' }] : []),
       { id: '/my-hub', path: '/my-hub' },
+      { id: '/news', path: '/news' },
     ]
 
     const currentTabs = candidateTabs
@@ -549,7 +552,24 @@ export default function AppShell() {
 
   const showSidebar = navPosition === 'sidebar'
 
-  const outletContextValue = useCallback(() => ({
+  // Memoized outlet context
+  const _memoContext = useMemo(() => ({
+    globalTasks,
+    isSidebarOpen,
+    navPosition,
+    aiAssistantMode,
+    hubCategories,
+    notebookFolders,
+  }), [
+    globalTasks,
+    isSidebarOpen,
+    navPosition,
+    aiAssistantMode,
+    hubCategories,
+    notebookFolders,
+  ])
+
+  const outletContextValue = useMemo([() => ({
     globalTasks,
     setGlobalTasks,
     isSidebarOpen,
@@ -562,14 +582,14 @@ export default function AppShell() {
     setHubCategories,
     notebookFolders,
     setNotebookFolders,
-  }), [
+  })][0], [
     globalTasks,
     isSidebarOpen,
     navPosition,
     aiAssistantMode,
     hubCategories,
     notebookFolders,
-  ])()
+  ])
 
   return (
     <div className="bg-surface-subtle font-body-md text-on-surface min-h-screen overflow-x-hidden">

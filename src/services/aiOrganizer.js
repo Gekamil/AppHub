@@ -2,6 +2,23 @@
 // Modelo: qwen/qwen3.8-27b
 import { getUserCalendars, getCurrentUser } from './firebase.js'
 import { isEventFinished } from './sharedRoles.js'
+import { FALLBACK_NEWS } from './newsService.js'
+
+/**
+ * Formatea el contexto diario de noticias para enriquecer el systemPrompt de Groq/LLM.
+ * Incluye los 6 artículos completos con categorías, tiempos de lectura, fuentes, resúmenes y enlaces.
+ */
+export function getNewsContextForAI(articles = FALLBACK_NEWS) {
+  const items = Array.isArray(articles) && articles.length > 0 ? articles : FALLBACK_NEWS
+  return items
+    .map((a, idx) => (
+      `${idx + 1}. [${a.category || a.categoryKey}] "${a.title}"\n` +
+      `   - Resumen: ${a.summary}\n` +
+      `   - Fuente: ${a.source || a.sourceName || 'Medio'} (${a.readTime || a.readingTime || '3 min'})\n` +
+      `   - Enlace: ${a.url || a.sourceUrl || ''}`
+    ))
+    .join('\n\n')
+}
 
 const GROQ_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GROQ_API_KEY) || ''
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
@@ -736,13 +753,121 @@ export function resolveTaskCalendar(task, calendarsList = []) {
  * cuando los servicios remotos no responden o hay problemas de conexión.
  */
 export function resolveAICopilotLocally(userMessage, currentTasks = [], currentCalendars = [], chatHistory = []) {
+  if (!userMessage || !userMessage.trim()) {
+    return {
+      reply: 'Hola. ¿En qué puedo ayudarte hoy? Puedes consultarme sobre tus tareas, agenda, eventos o las noticias de actualidad.',
+      actions: [],
+    }
+  }
+
   const calRef = getCalendarReference()
   const todayStr = calRef.todayYmd
-  const lower = (userMessage || '').toLowerCase().trim()
+  const lower = userMessage.toLowerCase().trim()
 
   const calendarsList = (Array.isArray(currentCalendars) && currentCalendars.length > 0)
     ? currentCalendars
     : getUserCalendars(getCurrentUser())
+
+  // Detección robusta de consultas sobre Noticias Diarias y Actualidad
+  const isTaskActionCommand = /(?:a[ñn]ad|crea|pon|programa|apunta|borra|elimina|quita|suprime|cambia|pasa|mueve|asigna|terminad|completad|marcar|aplaza|retrasa)/i.test(lower)
+  const isCalendarQuery = /(?:qu[eé]\s+(?:actividades|tareas|eventos|planes|cosas|clases)\s+(?:tengo|hay|tenemos)|mi\s+d[ií]a|mi\s+agenda|mi\s+calendario)/i.test(lower)
+  const isMathQuery = /(?:cu[aá]nto\s+es|\b\d+\s*[\+\-\*\/]\s*\d+\b)/i.test(lower)
+  const isPureGreeting = /^(?:hola|buenas|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|qu[eé]\s+tal|qui[eé]n\s+eres|c[oó]mo\s+est[aá]s|gracias|adi[oó]s)[!.,\s]*$/i.test(lower)
+
+  const hasNewsDirectWord = /(?:noticia|noticias|novedad|novedades|titular|titulares|actualidad|bolet[ií]n|prensa|feed)/i.test(lower)
+  const isAskingTechOrAINews = (
+    /(?:qu[eé]\s+(?:hay|sabes|pasa|pas[oó]|ha\s+pasado|ocurri[oó]|sucedi[oó]|cuenta|cuentas)|dime|cu[eé]ntame|resumen|informaci[oó]n|ver).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lower) ||
+    /(?:novedades|noticias|avances|actualidad).*?(?:tecnolog|inteligencia artificial|\bia\b)/i.test(lower)
+  )
+
+  const isNewsIntent = !isTaskActionCommand && !isCalendarQuery && !isMathQuery && !isPureGreeting && (hasNewsDirectWord || isAskingTechOrAINews)
+
+  if (isNewsIntent) {
+    const wantsAI = /inteligencia artificial|\bia\b|groq|lpu|llm|deep learning/i.test(lower)
+    const wantsTech = /tecnolog|software|herramienta|open source|desarrollo|vite|rust/i.test(lower)
+    const wantsScience = /ciencia|cu[aá]ntic|c[uú]bit|f[ií]sica/i.test(lower)
+    const wantsProductivity = /productividad|pomodoro|timeboxing|atenci[oó]n|neurociencia/i.test(lower)
+    const wantsUniversity = /universidad|erasmus|beca|movilidad|m[aá]ster/i.test(lower)
+
+    // Si pide específicamente IA o Tecnología
+    if ((wantsAI || wantsTech) && !lower.includes('todas') && !lower.includes('todo') && !lower.includes('resumen general')) {
+      const highlighted = []
+      if (wantsAI) {
+        highlighted.push(
+          `🤖 **Inteligencia Artificial**:\n` +
+          `• **Groq y los procesadores LPU**: Inferencia ultrarrápida a más de 300 tokens por segundo para modelos de lenguaje, permitiendo respuestas de voz y razonamiento reactivo sin la latencia de GPUs convencionales.\n` +
+          `  _Fuente: Xataka (3 min de lectura)_ — [Ver noticia completa](https://www.xataka.com/categoria/inteligencia-artificial)`
+        )
+      }
+      if (wantsTech) {
+        highlighted.push(
+          `💻 **Tecnología & Software**:\n` +
+          `• **Herramientas esenciales para universitarios**: Selección de utilidades open source y plataformas ligeras para gestionar apuntes, proyectos de código y calendarios académicos sin suscripciones costosas ni comprometer la privacidad.\n` +
+          `  _Fuente: Genbeta (4 min de lectura)_ — [Ver noticia completa](https://www.genbeta.com/herramientas/mejores-aplicaciones-estudiantes)`
+        )
+      }
+      const otherTopics = []
+      if (!wantsAI) otherTopics.push('IA y procesadores Groq LPU (Xataka)')
+      if (!wantsTech) otherTopics.push('Herramientas universitarias (Genbeta)')
+      otherTopics.push('Ciencia cuántica (Agencia SINC / Nature)', 'Productividad Pomodoro (Xataka Ciencia)', 'Becas Erasmus+ (El País Educación)', 'Bundlers en Rust con Vite (Genbeta Dev)')
+
+      return {
+        reply: `📰 **Novedades destacadas de ${wantsAI && wantsTech ? 'IA y Tecnología' : wantsAI ? 'Inteligencia Artificial' : 'Tecnología'} hoy**:\n\n` +
+          highlighted.join('\n\n') +
+          `\n\n📌 *También tienes disponibles en StudentHub los titulares de:* ${otherTopics.join(', ')}. ¿Quieres que te resuma alguno de ellos?`,
+        actions: [],
+      }
+    }
+
+    if (wantsScience) {
+      return {
+        reply: `🔬 **Novedad destacada de Ciencia & Computación hoy**:\n\n` +
+          `• **Avance clave en corrección de errores cuánticos**: Investigadores logran implementar esquemas de redundancia cuántica en chips superconductores que disminuyen la tasa de fallos en un orden de magnitud, acercando la viabilidad de la computación cuántica tolerante a fallos.\n` +
+          `  _Fuente: Agencia SINC / Nature (5 min de lectura)_ — [Ver noticia completa](https://www.agenciasinc.es/Noticias/computacion-cuantica)\n\n` +
+          `📌 *Otros titulares de hoy*: Groq LPU (Xataka), Apps para estudiantes (Genbeta), Pomodoro (Xataka Ciencia), Becas Erasmus+ (El País Educación) y Vite con Rust (Genbeta Dev).`,
+        actions: [],
+      }
+    }
+
+    if (wantsProductivity) {
+      return {
+        reply: `⏱️ **Novedad destacada de Productividad & Neurociencia hoy**:\n\n` +
+          `• **Protocolo Pomodoro 50/10 y timeboxing**: Estudios cognitivos demuestran que fraccionar jornadas de estudio intensivo en bloques de 50 minutos con 10 minutos de desconexión sin pantallas previene la fatiga mental y maximiza la retención a largo plazo.\n` +
+          `  _Fuente: Xataka Ciencia (3 min de lectura)_ — [Ver noticia completa](https://www.xataka.com/tag/productividad)\n\n` +
+          `📌 *Otros titulares*: IA Groq (Xataka), Apps universitarias (Genbeta), Cúbits cuánticos (Agencia SINC / Nature), Becas Erasmus+ (El País Educación) y Vite Rust (Genbeta Dev).`,
+        actions: [],
+      }
+    }
+
+    if (wantsUniversity) {
+      return {
+        reply: `🎓 **Novedad destacada de Vida Universitaria hoy**:\n\n` +
+          `• **Convocatorias Erasmus+ y becas de movilidad**: Se publican las nuevas dotaciones económicas y plazos de solicitud para estancias académicas internacionales, con complementos reforzados para proyectos STEM y prácticas en empresas tecnológicas europeas.\n` +
+          `  _Fuente: El País Educación (4 min de lectura)_ — [Ver noticia completa](https://elpais.com/educacion/universidad/)\n\n` +
+          `📌 *Otros titulares*: IA Groq (Xataka), Apps universitarias (Genbeta), Cúbits cuánticos (Agencia SINC / Nature), Pomodoro (Xataka Ciencia) y Vite Rust (Genbeta Dev).`,
+        actions: [],
+      }
+    }
+
+    // Respuesta general con los 6 titulares destacados
+    return {
+      reply: `📰 **Titulares destacados de hoy en StudentHub**:\n\n` +
+        `1. 🤖 **[IA] Groq y la inferencia LPU a 300+ tok/s**: Cómo los nuevos procesadores LPU revolucionan los asistentes en tiempo real sin la latencia de GPUs.\n` +
+        `   _Fuente: Xataka (3 min de lectura)_ — [Enlace](https://www.xataka.com/categoria/inteligencia-artificial)\n\n` +
+        `2. 💻 **[Tech] Herramientas de productividad para estudiantes**: Genbeta analiza las mejores utilidades open-source y plataformas locales para apuntes y código.\n` +
+        `   _Fuente: Genbeta (4 min de lectura)_ — [Enlace](https://www.genbeta.com/herramientas/mejores-aplicaciones-estudiantes)\n\n` +
+        `3. 🔬 **[Ciencia] Cúbits cuánticos lógicos contra el ruido experimental**: Reducción de fallos en superconductores hacia la computación cuántica práctica.\n` +
+        `   _Fuente: Agencia SINC / Nature (5 min de lectura)_ — [Enlace](https://www.agenciasinc.es/Noticias/computacion-cuantica)\n\n` +
+        `4. ⏱️ **[Productividad] El protocolo Pomodoro 50/10 y timeboxing**: Evidencia cognitiva para optimizar la atención sostenida y consolidar memoria.\n` +
+        `   _Fuente: Xataka Ciencia (3 min de lectura)_ — [Enlace](https://www.xataka.com/tag/productividad)\n\n` +
+        `5. 🎓 **[Universidad] Convocatorias Erasmus+ y becas STEM**: Ampliación de fondos para movilidad e investigación internacional en grado y máster.\n` +
+        `   _Fuente: El País Educación (4 min de lectura)_ — [Enlace](https://elpais.com/educacion/universidad/)\n\n` +
+        `6. ⚡ **[Desarrollo] Vite y los bundlers nativos basados en Rust**: Compilación ultrarrápida y recarga instantánea HMR fluida a 60 FPS.\n` +
+        `   _Fuente: Genbeta Dev (3 min de lectura)_ — [Enlace](https://www.genbeta.com/desarrollo/vite-herramientas-frontend)\n\n` +
+        `¿Te gustaría que te resuma alguna de estas noticias con mayor detalle?`,
+      actions: [],
+    }
+  }
 
   // Detección de filtro específico por calendario o rol
   let targetCalFilter = null
@@ -1091,6 +1216,9 @@ export async function chatWithAICopilot({ userMessage, currentTasks = [], curren
     }
   })
 
+  // Contexto de noticias diarias de actualidad enriquecido para el modelo Groq
+  const newsContext = getNewsContextForAI(FALLBACK_NEWS)
+
   const systemPrompt = `Eres el Asistente Inteligente de Productividad integrado en StudentHub con CONTROL TOTAL sobre los calendarios, roles y tareas del usuario.
 ${calRef.calendarTableText}
 
@@ -1106,6 +1234,16 @@ REGLAS DE BÚSQUEDA Y RESPUESTA (MÁXIMA PRIORIDAD):
   2. NUNCA digas que no hay actividades si existen elementos en la lista para esa fecha. Si el usuario pregunta qué tiene hoy y tiene asignaturas de universidad como "Sistemas Operativos", "Aprendizaje Computacional I", "Programación Segura" u otras, LISTA TODAS Y CADA UNA DE ELLAS.
   3. Indica claramente: hora, título, el calendario/rol al que pertenece (ej: [Universidad & Estudios], [Salud & Gimnasio]), y su estado actual: [Finalizada/Hecha] si isFinished o completed es true, o [En curso / Pendiente] si aún no ha terminado.
   4. Si el usuario pregunta por un calendario concreto (ej. "¿qué tengo de la universidad?"), filtra y muestra las tareas de ese calendario.
+
+NOTICIAS DESTACADAS DE HOY (${todayStr}):
+${newsContext}
+
+CAPACIDAD DE RESPUESTA SOBRE NOTICIAS Y ACTUALIDAD:
+- Si el usuario pregunta "¿Cuáles son las noticias de hoy?", "¿Qué noticias hay hoy?", "¿Qué titulares hay?", responde con un resumen elegante y conciso de los 6 temas del día organizados por categorías (IA, Tecnología, Ciencia, Productividad, Universidad, Desarrollo).
+- Si el usuario pregunta específicamente por IA o tecnología ("¿Qué novedades hay de inteligencia artificial o tecnología hoy?"), destaca los procesadores LPU de Groq y las herramientas recomendadas por Genbeta con sus puntos clave.
+- Si el usuario pide un resumen o detalle de cualquiera de las noticias ("resume la noticia de los cúbits cuánticos", "cuéntame más sobre Pomodoro", "noticias de Erasmus o becas", "compilación con Vite"), genera una explicación clara, estructurada y pedagógica basada en los datos del artículo.
+- Cita siempre la fuente original (ej. Xataka, Genbeta, Agencia SINC / Nature, El País Educación).
+- Mantén el acceso a todos los 6 temas independientemente de las preferencias o filtros del usuario.
 
 Calendarios y Roles disponibles del usuario en el sistema:
 ${JSON.stringify((calendarsList || []).map(c => ({ id: c.id, name: c.name, color: c.color })), null, 2)}

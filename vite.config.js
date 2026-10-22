@@ -5,12 +5,33 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 function downloadMiddlewarePlugin() {
+  const GITHUB_RELEASE_APK_URL = 'https://github.com/Gekamil/AppHub/releases/download/latest/AppHub.apk'
+  const GITHUB_RELEASE_SETUP_URL = 'https://github.com/Gekamil/AppHub/releases/download/latest/AppHub-Setup.exe'
+
   const handler = (req, res, next) => {
     const rawUrl = req.url || ''
     if (rawUrl.startsWith('/download/')) {
-      const fileName = path.basename(rawUrl.split('?')[0])
-      const publicPath = path.resolve(process.cwd(), 'public/download', fileName)
-      const distPath = path.resolve(process.cwd(), 'dist/download', fileName)
+      const fileName = path.basename(rawUrl.split('?')[0]).toLowerCase()
+      if (fileName === 'apphub.apk' || fileName === 'studenthub.apk') {
+        res.writeHead(302, {
+          Location: GITHUB_RELEASE_APK_URL,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        })
+        res.end()
+        return
+      }
+      if (fileName === 'apphub-setup.exe' || fileName === 'studenthub-setup.exe' || fileName === 'studenthub.exe') {
+        res.writeHead(302, {
+          Location: GITHUB_RELEASE_SETUP_URL,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        })
+        res.end()
+        return
+      }
+
+      const originalFileName = path.basename(rawUrl.split('?')[0])
+      const publicPath = path.resolve(process.cwd(), 'public/download', originalFileName)
+      const distPath = path.resolve(process.cwd(), 'dist/download', originalFileName)
       const targetPath = fs.existsSync(publicPath) ? publicPath : (fs.existsSync(distPath) ? distPath : null)
 
       if (targetPath) {
@@ -18,7 +39,7 @@ function downloadMiddlewarePlugin() {
         res.writeHead(200, {
           'Content-Type': 'application/octet-stream',
           'Content-Length': stat.size,
-          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'Content-Disposition': `attachment; filename="${originalFileName}"`,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
         })
         const stream = fs.createReadStream(targetPath)
@@ -26,7 +47,7 @@ function downloadMiddlewarePlugin() {
         return
       } else {
         res.writeHead(404, { 'Content-Type': 'text/plain' })
-        res.end(`File ${fileName} not found on server`)
+        res.end(`File ${originalFileName} not found on server`)
         return
       }
     }

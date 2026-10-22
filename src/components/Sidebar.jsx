@@ -11,6 +11,7 @@ const DEFAULT_NAVIGATION = [
   { name: 'Notebooks', to: '/notebooks', icon: 'menu_book' },
   { name: 'AI Assistant', to: '/ai-assistant', icon: 'smart_toy' },
   { name: 'My Hub (Links & Projects)', to: '/my-hub', icon: 'hub' },
+  { name: 'Noticias Diarias', to: '/news', icon: 'newspaper' },
 ]
 
 export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {

@@ -11,6 +11,7 @@ export const DEFAULT_VISIBLE_TABS = {
   '/notebooks': true,
   '/ai-assistant': true,
   '/my-hub': true,
+  '/news': true,
 }
 
 export const NAV_TAB_DEFINITIONS = [
@@ -47,6 +48,13 @@ export const NAV_TAB_DEFINITIONS = [
     label: 'My Hub (Recursos & Links)',
     desc: 'Directorio de enlaces rapidos, archivos y marcadores',
     icon: 'hub',
+    canToggle: true,
+  },
+  {
+    id: '/news',
+    label: 'Noticias',
+    desc: 'Noticias y actualidad diaria',
+    icon: 'Newspaper',
     canToggle: true,
   },
 ]

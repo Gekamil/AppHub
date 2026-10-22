@@ -93,11 +93,10 @@ html[data-theme-style="glassify"]:not(.dark) header[class*="border"] {
   color: #0f172a !important;
 }
 
-/* Celdas del Calendario Mensual, Semanal y Diario en Glassify Oscuro (Cero bloques blancos) */
+/* Contenedores y Vistas del Calendario en Glassify Oscuro */
 html[data-theme-style="glassify"].dark [class*="min-h-"][class*="cursor-pointer"],
 html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="bg-white"],
 html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="dark:bg-"],
-html[data-theme-style="glassify"].dark [class*="grid-cols-7"] > div,
 html[data-theme-style="glassify"].dark .bg-slate-100\/90,
 html[data-theme-style="glassify"].dark .bg-slate-100\/80,
 html[data-theme-style="glassify"].dark .bg-slate-100\/60,
@@ -111,15 +110,29 @@ html[data-theme-style="glassify"].dark div[class*="overflow-y-scroll"] {
   -webkit-backdrop-filter: blur(18px) !important;
 }
 
-/* Celdas del Calendario Mensual, Semanal y Diario en Glassify Claro: Cristal translúcido suave */
+/* Celdas del Calendario Mensual (Optimizado sin backdrop-filter individual para evitar fill-rate exhaustion) */
+html[data-theme-style="glassify"].dark [class*="grid-cols-7"] > div {
+  background: rgba(14, 23, 44, 0.6) !important;
+  background-color: rgba(14, 23, 44, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Contenedores y Vistas del Calendario en Glassify Claro: Cristal translúcido suave */
 html[data-theme-style="glassify"]:not(.dark) [class*="min-h-"][class*="cursor-pointer"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="min-h-"][class*="bg-white"],
-html[data-theme-style="glassify"]:not(.dark) [class*="grid-cols-7"] > div {
+html[data-theme-style="glassify"]:not(.dark) div[class*="min-h-"][class*="bg-white"] {
   background: rgba(255, 255, 255, 0.58) !important;
   background-color: rgba(255, 255, 255, 0.58) !important;
   border: 1px solid rgba(255, 255, 255, 0.75) !important;
   backdrop-filter: blur(18px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) [class*="grid-cols-7"] > div {
+  background: rgba(255, 255, 255, 0.65) !important;
+  background-color: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
   color: #0f172a !important;
 }
 

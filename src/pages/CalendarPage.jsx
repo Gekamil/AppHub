@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import {
   syncTasksToCloud,
@@ -983,10 +983,13 @@ export default function CalendarPage() {
   const [selectedPalette, setSelectedPalette] = useState(CATEGORY_PALETTES[0])
   const [editingCategory, setEditingCategory] = useState(null) // { id, name, hex }
 
-  // Ticker de tiempo real cada 20 segundos para actualizar eventos finalizados en directo
+  // Ticker de tiempo real aislado para actualizar eventos finalizados en cambios de minuto sin re-renderizar continuamente la página
   const [nowTicker, setNowTicker] = useState(() => new Date())
   useEffect(() => {
-    const timer = setInterval(() => setNowTicker(new Date()), 20000)
+    const timer = setInterval(() => {
+      const now = new Date()
+      setNowTicker((prev) => (now.getMinutes() !== prev.getMinutes() ? now : prev))
+    }, 60000)
     return () => clearInterval(timer)
   }, [])
 
@@ -1018,14 +1021,16 @@ export default function CalendarPage() {
     return { bg: 'bg-blue-50 dark:bg-blue-950/60', text: 'text-blue-700 dark:text-blue-300', dot: 'bg-blue-500', hex: '#3b82f6' }
   }
 
-  // Filtrado de tareas según filtros categóricos
-  const filteredTasks = globalTasks.filter((task) => {
-    if (selectedFilter === 'All') return true
-    return task.context === selectedFilter
-  })
+  // Filtrado de tareas según filtros categóricos (memoizado con useMemo)
+  const filteredTasks = useMemo(() => {
+    return (globalTasks || []).filter((task) => {
+      if (selectedFilter === 'All') return true
+      return task.context === selectedFilter
+    })
+  }, [globalTasks, selectedFilter])
 
   // Obtener tareas visibles para un calendario específico (incluyendo compartidos)
-  const getTasksForCalendar = (cal) => {
+  const getTasksForCalendar = useCallback((cal) => {
     if (!cal) return filteredTasks
     return filteredTasks.filter((t) => {
       const taskCalId = t.calendarId || 'cal-default'
@@ -1053,11 +1058,19 @@ export default function CalendarPage() {
       }
       return false
     })
-  }
+  }, [filteredTasks])
 
-  const activeCalendar = calendars.find((c) => c.id === activeCalendarId) || calendars[0]
-  const currentCalendarTasks = getTasksForCalendar(activeCalendar)
-  const pendingTasks = currentCalendarTasks.filter((t) => !t.completed)
+  const activeCalendar = useMemo(() => {
+    return calendars.find((c) => c.id === activeCalendarId) || calendars[0]
+  }, [calendars, activeCalendarId])
+
+  const currentCalendarTasks = useMemo(() => {
+    return getTasksForCalendar(activeCalendar)
+  }, [getTasksForCalendar, activeCalendar])
+
+  const pendingTasks = useMemo(() => {
+    return currentCalendarTasks.filter((t) => !t.completed)
+  }, [currentCalendarTasks])
 
   // Colores dinámicos del fondo según todos los calendarios presentes
   const otherCalendars = calendars.filter((c) => c.id !== activeCalendarId)

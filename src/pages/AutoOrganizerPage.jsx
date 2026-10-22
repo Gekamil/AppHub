@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { organizeScheduleWithAI, parseNaturalLanguageTask, parseNaturalLanguageSchedule, applyAIActions, parseScheduleLocalHeuristics } from '../services/aiOrganizer'
 import PrecisionFocusModal from '../components/PrecisionFocusModal'
@@ -449,7 +449,7 @@ export default function AutoOrganizerPage() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
-  const startFocusTimer = (task) => {
+  const startFocusTimer = useCallback((task) => {
     setActiveFocusTask(task)
     let mins = 25
     if (task?.est && typeof task.est === 'string' && /^\s*\d+\s*(m|min)/i.test(task.est)) {
@@ -467,7 +467,7 @@ export default function AutoOrganizerPage() {
     setPomodoroSeconds(secs)
     setIsPomodoroRunning(true)
     setIsFocusModalOpen(true)
-  }
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -517,7 +517,7 @@ export default function AutoOrganizerPage() {
     setIsTaskModalOpen(true)
   }
 
-  const handleOpenEditModal = (task) => {
+  const handleOpenEditModal = useCallback((task) => {
     setEditingTaskId(task.id)
     setTaskFormData({
       title: task.title || '',
@@ -531,7 +531,7 @@ export default function AutoOrganizerPage() {
       icon: task.icon || 'task_alt',
     })
     setIsTaskModalOpen(true)
-  }
+  }, [])
 
   // Guardar tarea (crear o editar)
   const handleSaveTask = (e) => {
@@ -616,17 +616,17 @@ export default function AutoOrganizerPage() {
   }
 
   // Conmutar estado de completada
-  const toggleTaskCompleted = (id) => {
+  const toggleTaskCompleted = useCallback((id) => {
     setGlobalTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+      (prev || []).map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
     )
-  }
+  }, [setGlobalTasks])
 
   // Eliminar tarea
-  const handleDeleteTask = (id) => {
-    setGlobalTasks((prev) => prev.filter((t) => t.id !== id))
+  const handleDeleteTask = useCallback((id) => {
+    setGlobalTasks((prev) => (prev || []).filter((t) => t.id !== id))
     deleteBaileysTask(id).catch(() => {})
-  }
+  }, [setGlobalTasks])
 
   // Auto-Organizar con IA: Reordena y envía logs estructurados y gráficos al asistente/bot
   const handleAutoOrganizeWithAI = async () => {
@@ -967,22 +967,24 @@ export default function AutoOrganizerPage() {
   const { todayYmd, weekStart, weekEnd, weekDays } = todayInfo
 
   // Filtrado de Tareas
-  const filteredTasks = globalTasks.filter((task) => {
-    if (filterStatus === 'pending') {
-      if (task.completed) return false
-      // Las actividades marcadas como deporte no son tareas pendientes a tachar como obligación
-      if (isSportActivity(task)) return false
-    }
-    if (filterStatus === 'completed' && !task.completed) return false
-    if (selectedContextFilter !== 'All' && task.context !== selectedContextFilter) return false
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      const matchTitle = (task.title || '').toLowerCase().includes(query)
-      const matchDesc = (task.description || '').toLowerCase().includes(query)
-      return matchTitle || matchDesc
-    }
-    return true
-  })
+  const filteredTasks = useMemo(() => {
+    return (globalTasks || []).filter((task) => {
+      if (filterStatus === 'pending') {
+        if (task.completed) return false
+        // Las actividades marcadas como deporte no son tareas pendientes a tachar como obligación
+        if (isSportActivity(task)) return false
+      }
+      if (filterStatus === 'completed' && !task.completed) return false
+      if (selectedContextFilter !== 'All' && task.context !== selectedContextFilter) return false
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase()
+        const matchTitle = (task.title || '').toLowerCase().includes(query)
+        const matchDesc = (task.description || '').toLowerCase().includes(query)
+        return matchTitle || matchDesc
+      }
+      return true
+    })
+  }, [globalTasks, filterStatus, selectedContextFilter, searchQuery])
 
   // Tareas de esta semana (Lunes a Domingo dinámico)
   const tasksThisWeek = useMemo(() => {
@@ -3749,7 +3751,7 @@ export default function AutoOrganizerPage() {
 
 // Componente Tarjeta de Tarea Individual con Animación de Checkmark y Botón Focus Centrado
 // Componente Tarjeta de Tarea Individual Adaptado Radicalmente al Diseño Visual Seleccionado
-function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme }) {
+const TaskCardItem = memo(function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme }) {
   const currentTheme = appTheme || 'clasica'
   const isFinished = isEventFinished(task)
   const isDoneOrFinished = task.completed || isFinished
@@ -4229,5 +4231,5 @@ function TaskCardItem({ task, onToggle, onEdit, onDelete, onStartFocus, appTheme
       </div>
     </div>
   )
-}
+})
 

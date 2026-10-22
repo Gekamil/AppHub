@@ -1,14 +1,16 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { createBrowserRouter, createHashRouter, RouterProvider, Navigate, useRouteError } from 'react-router-dom'
 import AppShell from './layouts/AppShell'
 import UpdateNotification from './components/UpdateNotification'
+import { lazyWithRetry, isChunkLoadError } from './utils/lazyWithRetry'
 
-const AutoOrganizerPage = lazy(() => import('./pages/AutoOrganizerPage'))
-const NotebooksPage = lazy(() => import('./pages/NotebooksPage'))
-const CalendarPage = lazy(() => import('./pages/CalendarPage'))
-const AIAssistantPage = lazy(() => import('./pages/AIAssistantPage'))
-const MyHubPage = lazy(() => import('./pages/MyHubPage'))
-const LandingPage = lazy(() => import('./pages/LandingPage'))
+const AutoOrganizerPage = lazyWithRetry(() => import('./pages/AutoOrganizerPage'), 'AutoOrganizerPage')
+const NotebooksPage = lazyWithRetry(() => import('./pages/NotebooksPage'), 'NotebooksPage')
+const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'), 'CalendarPage')
+const AIAssistantPage = lazyWithRetry(() => import('./pages/AIAssistantPage'), 'AIAssistantPage')
+const MyHubPage = lazyWithRetry(() => import('./pages/MyHubPage'), 'MyHubPage')
+const NewsPage = lazyWithRetry(() => import('./pages/NewsPage'), 'NewsPage')
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'), 'LandingPage')
 
 function PageFallback() {
   return (
@@ -49,13 +51,17 @@ function RootErrorBoundary() {
   }
 
   const errorMessage = error?.message || (typeof error === 'string' ? error : '') || error?.statusText || ''
+  const isChunkError = isChunkLoadError(error)
 
-  const handleClearCacheAndReset = () => {
+  const handleSafeReload = () => {
     try {
-      localStorage.clear()
       sessionStorage.clear()
     } catch (e) {}
-    window.location.href = '/'
+    window.location.reload()
+  }
+
+  const handleResumeWorkspace = () => {
+    window.location.href = '/app'
   }
 
   return (
@@ -66,9 +72,13 @@ function RootErrorBoundary() {
           alt="StudentHub Logo"
           className="w-12 h-12 object-contain bg-white rounded-2xl p-1 shadow-xs border border-slate-200 dark:border-slate-700 shrink-0"
         />
-        <h2 className="text-base font-bold">Recuperando sesion de StudentHub</h2>
+        <h2 className="text-base font-bold">
+          {isChunkError ? 'Actualizando StudentHub a la última versión' : 'Recuperando sesión de StudentHub'}
+        </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Se ha restablecido la conexion correctamente. Pulsa para continuar al espacio de trabajo.
+          {isChunkError
+            ? 'Se ha publicado una nueva actualización de StudentHub. Pulsa para recargar y aplicar los cambios sin perder tus datos ni notas guardadas.'
+            : 'Se ha restablecido la conexión correctamente. Pulsa para reanudar tu espacio de trabajo.'}
         </p>
 
         {errorMessage && (
@@ -80,17 +90,17 @@ function RootErrorBoundary() {
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full pt-2">
           <button
             type="button"
-            onClick={() => { window.location.href = '/app' }}
+            onClick={handleResumeWorkspace}
             className="w-full px-4 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:opacity-90 cursor-pointer shadow-sm active:scale-95 transition-all"
           >
             Continuar a StudentHub
           </button>
           <button
             type="button"
-            onClick={handleClearCacheAndReset}
+            onClick={handleSafeReload}
             className="w-full px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:opacity-90 cursor-pointer shadow-sm active:scale-95 transition-all"
           >
-            Reiniciar Caché
+            {isChunkError ? 'Actualizar ahora' : 'Recargar página'}
           </button>
         </div>
       </div>
@@ -161,6 +171,14 @@ const router = createRouter([
         element: (
           <Suspense fallback={<PageFallback />}>
             <MyHubPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: '/news',
+        element: (
+          <Suspense fallback={<PageFallback />}>
+            <NewsPage />
           </Suspense>
         ),
       },
