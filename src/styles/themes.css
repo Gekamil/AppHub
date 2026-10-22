@@ -1,6 +1,7 @@
 /* ==========================================================================
    StudentHub Multi-Design Themes Engine (Apple Glassify Pure System)
-   Fondo claro ultra luminoso, fondo oscuro azul espacial calibrado, y cero elementos blancos planos
+   Efecto cristal líquido esmerilado real de alta fidelidad, con refracción óptica,
+   desenfoque de 28px, reflejo specular superior y acento dinámico unificado
    ========================================================================== */
 
 :root {
@@ -30,9 +31,12 @@ button.btn-accent,
    GLASSIFY LIQUID PRO (Apple Keynote Frosted Glass)
    ========================================================================== */
 
-/* 1. MODO OSCURO (Luminoso, índigo/navy espacial, sin negro ciego y sin blancos planos) */
+/* 1. MODO OSCURO (Luminoso, índigo/navy espacial, sin negro ciego y con cristal esmerilado real) */
 html[data-theme-style="glassify"].dark body {
-  background: radial-gradient(135% 100% at 50% -5%, #18284e 0%, #101c3b 35%, #0b142b 70%, #070e20 100%) !important;
+  background: radial-gradient(at 0% 0%, rgba(24, 40, 80, 0.75) 0px, transparent 55%),
+              radial-gradient(at 100% 0%, rgba(35, 25, 70, 0.65) 0px, transparent 55%),
+              radial-gradient(at 50% 100%, rgba(10, 28, 65, 0.8) 0px, transparent 55%),
+              linear-gradient(180deg, #0e172e 0%, #070e20 100%) !important;
   background-color: #080f22 !important;
   color: #f1f5f9 !important;
 }
@@ -42,10 +46,14 @@ html[data-theme-style="glassify"] main {
   background: transparent !important;
 }
 
-/* 2. MODO CLARO (Lienzo cristalino ultra claro, suave, luminoso con cristal blanco translúcido) */
+/* 2. MODO CLARO (Lienzo con halo ambiental pastel luminoso y cristal translúcido esmerilado perceptible) */
 html[data-theme-style="glassify"]:not(.dark) body {
-  background: radial-gradient(120% 90% at 50% -5%, #ffffff 0%, #f4f8fd 40%, #e8f0fa 100%) !important;
-  background-color: #f8fafc !important;
+  background: radial-gradient(at 0% 0%, rgba(195, 225, 255, 0.6) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, rgba(225, 215, 255, 0.5) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, rgba(255, 225, 220, 0.45) 0px, transparent 50%),
+              radial-gradient(at 0% 100%, rgba(210, 245, 255, 0.5) 0px, transparent 50%),
+              linear-gradient(135deg, #f2f6fc 0%, #e8f0fa 100%) !important;
+  background-color: #edf3fa !important;
   color: #0f172a !important;
 }
 
@@ -59,27 +67,29 @@ html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-sl
 html[data-theme-style="glassify"].dark div[class*="rounded-2xl"][class*="border"],
 html[data-theme-style="glassify"].dark section[class*="rounded-"],
 html[data-theme-style="glassify"].dark header[class*="border"] {
-  background: rgba(14, 23, 44, 0.65) !important;
-  background-color: rgba(14, 23, 44, 0.65) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.28) !important;
+  background: rgba(14, 23, 44, 0.62) !important;
+  background-color: rgba(14, 23, 44, 0.62) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
   box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.16) !important;
   color: #f8fafc !important;
 }
 
-/* Contenedores y tarjetas en MODO CLARO: Cristal de hielo puro translúcido */
+/* Contenedores y tarjetas en MODO CLARO: Cristal de hielo puro translúcido con refracción óptica real */
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-surface-pure"],
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-white"],
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"][class*="border"],
-html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"] {
-  background: rgba(255, 255, 255, 0.88) !important;
-  background-color: rgba(255, 255, 255, 0.88) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  border: 1px solid rgba(226, 232, 240, 0.85) !important;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"],
+html[data-theme-style="glassify"]:not(.dark) header[class*="border"] {
+  background: rgba(255, 255, 255, 0.65) !important;
+  background-color: rgba(255, 255, 255, 0.65) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 12px 36px -4px rgba(15, 23, 42, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95) !important;
   color: #0f172a !important;
 }
 
@@ -93,20 +103,23 @@ html[data-theme-style="glassify"].dark .bg-slate-100\/80,
 html[data-theme-style="glassify"].dark .bg-slate-100\/60,
 html[data-theme-style="glassify"].dark div[class*="h-\[1440px\]"],
 html[data-theme-style="glassify"].dark div[class*="overflow-y-scroll"] {
-  background: rgba(14, 23, 44, 0.55) !important;
-  background-color: rgba(14, 23, 44, 0.55) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(14, 23, 44, 0.52) !important;
+  background-color: rgba(14, 23, 44, 0.52) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
   color: #f1f5f9 !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
 }
 
+/* Celdas del Calendario Mensual, Semanal y Diario en Glassify Claro: Cristal translúcido suave */
 html[data-theme-style="glassify"]:not(.dark) [class*="min-h-"][class*="cursor-pointer"],
 html[data-theme-style="glassify"]:not(.dark) div[class*="min-h-"][class*="bg-white"],
 html[data-theme-style="glassify"]:not(.dark) [class*="grid-cols-7"] > div {
-  background: rgba(255, 255, 255, 0.82) !important;
-  background-color: rgba(255, 255, 255, 0.82) !important;
-  border-color: rgba(226, 232, 240, 0.85) !important;
+  background: rgba(255, 255, 255, 0.58) !important;
+  background-color: rgba(255, 255, 255, 0.58) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(18px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
   color: #0f172a !important;
 }
 
@@ -118,6 +131,13 @@ html[data-theme-style="glassify"].dark div[class*="border-b"][class*="text-secon
   color: #94a3b8 !important;
 }
 
+html[data-theme-style="glassify"]:not(.dark) div[class*="bg-slate-50"][class*="border-b"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="border-b"][class*="text-secondary"] {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
+  color: #475569 !important;
+}
+
 /* Botones y elementos dentro de widgets inferiores (Mis Calendarios, Entregas, etc.) */
 html[data-theme-style="glassify"].dark div[class*="rounded-3xl"] div[class*="bg-white"],
 html[data-theme-style="glassify"].dark div[class*="rounded-3xl"] button[class*="bg-white"],
@@ -127,20 +147,32 @@ html[data-theme-style="glassify"].dark div[class*="rounded-2xl"] div[class*="bg-
   color: #ffffff !important;
 }
 
-/* Botones secundarios en Glassify Oscuro (Auto-Organizar, Focus, WhatsApp, Avanzado, etc.) */
+html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-3xl"] div[class*="bg-white"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-3xl"] button[class*="bg-white"],
+html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"] div[class*="bg-white"] {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  color: #0f172a !important;
+}
+
+/* Botones secundarios en Glassify (Auto-Organizar, Focus, WhatsApp, Avanzado, etc.) */
 html[data-theme-style="glassify"].dark button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
 html[data-theme-style="glassify"].dark button[class*="bg-slate-50"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
   background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
 }
 
-html[data-theme-style="glassify"]:not(.dark) button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]) {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+html[data-theme-style="glassify"]:not(.dark) button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
+html[data-theme-style="glassify"]:not(.dark) button[class*="bg-slate-50"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
   color: #0f172a !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
 }
 
 /* Botón de limpiar tareas importadas (Rosa suave translúcido en lugar de caja blanca) */
@@ -150,6 +182,13 @@ html[data-theme-style="glassify"].dark .border-pink-200 {
   background: rgba(244, 63, 94, 0.15) !important;
   border-color: rgba(244, 63, 94, 0.35) !important;
   color: #fda4af !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) button[class*="Limpiar"],
+html[data-theme-style="glassify"]:not(.dark) button:has([class*="delete_sweep"]) {
+  background: rgba(255, 228, 230, 0.75) !important;
+  border: 1px solid rgba(254, 205, 211, 0.9) !important;
+  color: #e11d48 !important;
 }
 
 /* Textos de alto contraste en Glassify Oscuro */
@@ -212,13 +251,14 @@ html[data-theme-style="glassify"].dark select {
 html[data-theme-style="glassify"]:not(.dark) input,
 html[data-theme-style="glassify"]:not(.dark) textarea,
 html[data-theme-style="glassify"]:not(.dark) select {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03) !important;
   border-radius: 12px !important;
   color: #0f172a !important;
 }
 
-/* Modales, dropdowns y selectores flotantes en Glassify Oscuro */
+/* Modales, dropdowns y selectores flotantes en Glassify */
 html[data-theme-style="glassify"].dark [role="dialog"],
 html[data-theme-style="glassify"].dark .modal-content,
 html[data-theme-style="glassify"].dark [role="menu"],
@@ -232,6 +272,19 @@ html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class
   border-top: 1px solid rgba(255, 255, 255, 0.38) !important;
   box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7) !important;
   color: #f8fafc !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) [role="dialog"],
+html[data-theme-style="glassify"]:not(.dark) .modal-content,
+html[data-theme-style="glassify"]:not(.dark) [role="menu"],
+html[data-theme-style="glassify"]:not(.dark) [role="listbox"],
+html[data-theme-style="glassify"]:not(.dark) [class*="fixed"][class*="z-50"] div[class*="bg-white"] {
+  background: rgba(255, 255, 255, 0.88) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(200%) !important;
+  backdrop-filter: blur(36px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.16) !important;
+  color: #0f172a !important;
 }
 
 /* --------------------------------------------------------------------------

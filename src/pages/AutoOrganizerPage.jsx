@@ -243,9 +243,9 @@ export default function AutoOrganizerPage() {
   const handleKanbanDrop = (targetCol) => {
     if (draggedKanbanTaskId) {
       handleMoveKanbanTask(draggedKanbanTaskId, targetCol)
-      setDraggedKanbanTaskId(null)
-      setDropOverKanbanCol(null)
     }
+    setDraggedKanbanTaskId(null)
+    setDropOverKanbanCol(null)
   }
 
   const handleKanbanTouchStart = (taskId) => {
@@ -261,7 +261,9 @@ export default function AutoOrganizerPage() {
       const colElem = elem.closest('[data-kanban-col]')
       if (colElem) {
         const col = colElem.getAttribute('data-kanban-col')
-        setDropOverKanbanCol(col)
+        if (col && dropOverKanbanCol !== col) {
+          setDropOverKanbanCol(col)
+        }
       }
     }
   }
@@ -992,17 +994,26 @@ export default function AutoOrganizerPage() {
     return filteredTasks.filter((t) => t.date === todayYmd)
   }, [filteredTasks, todayYmd])
 
+  // Función auxiliar para saber si una tarea está finalizada (por completada o por haber pasado su hora fijada hoy)
+  const isTaskFinishedOrDone = (t) => {
+    if (!t) return false
+    if (t.completed || t.status === 'done') return true
+    // Si su hora programada ya pasó hoy (no de todo el día) y no está forzada a 'todo' ni 'in_progress'
+    if (t.status !== 'todo' && t.status !== 'in_progress' && isEventFinished(t)) return true
+    return false
+  }
+
   // Tareas clasificadas para el Tablero Kanban de Hoy (Por hacer, En progreso, Hecho)
   const kanbanTodoTasks = useMemo(() => {
-    return tasksToday.filter((t) => !t.completed && t.status !== 'in_progress' && !t.inProgress)
+    return tasksToday.filter((t) => !isTaskFinishedOrDone(t) && t.status !== 'in_progress' && !t.inProgress)
   }, [tasksToday])
 
   const kanbanInProgressTasks = useMemo(() => {
-    return tasksToday.filter((t) => !t.completed && (t.status === 'in_progress' || t.inProgress))
+    return tasksToday.filter((t) => !isTaskFinishedOrDone(t) && (t.status === 'in_progress' || t.inProgress))
   }, [tasksToday])
 
   const kanbanDoneTasks = useMemo(() => {
-    return tasksToday.filter((t) => t.completed || t.status === 'done')
+    return tasksToday.filter(isTaskFinishedOrDone)
   }, [tasksToday])
 
   // Tareas de to-do reales (excluye deportes y eventos de sincronización externa para el conteo de pendientes)
@@ -1837,10 +1848,15 @@ export default function AutoOrganizerPage() {
                     onDragOver={(e) => {
                       e.preventDefault()
                       e.dataTransfer.dropEffect = 'move'
-                      setDropOverKanbanCol('todo')
+                      if (dropOverKanbanCol !== 'todo') setDropOverKanbanCol('todo')
                     }}
-                    onDragLeave={() => setDropOverKanbanCol(null)}
-                    onDrop={() => handleKanbanDrop('todo')}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      handleKanbanDrop('todo')
+                    }}
                     className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
                       dropOverKanbanCol === 'todo'
                         ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20'
@@ -1954,10 +1970,15 @@ export default function AutoOrganizerPage() {
                     onDragOver={(e) => {
                       e.preventDefault()
                       e.dataTransfer.dropEffect = 'move'
-                      setDropOverKanbanCol('in_progress')
+                      if (dropOverKanbanCol !== 'in_progress') setDropOverKanbanCol('in_progress')
                     }}
-                    onDragLeave={() => setDropOverKanbanCol(null)}
-                    onDrop={() => handleKanbanDrop('in_progress')}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      handleKanbanDrop('in_progress')
+                    }}
                     className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
                       dropOverKanbanCol === 'in_progress'
                         ? 'border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-950/20'
@@ -2070,10 +2091,15 @@ export default function AutoOrganizerPage() {
                     onDragOver={(e) => {
                       e.preventDefault()
                       e.dataTransfer.dropEffect = 'move'
-                      setDropOverKanbanCol('done')
+                      if (dropOverKanbanCol !== 'done') setDropOverKanbanCol('done')
                     }}
-                    onDragLeave={() => setDropOverKanbanCol(null)}
-                    onDrop={() => handleKanbanDrop('done')}
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget)) setDropOverKanbanCol(null)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      handleKanbanDrop('done')
+                    }}
                     className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[480px] sm:min-h-[580px] max-h-[720px] ${
                       dropOverKanbanCol === 'done'
                         ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20'
@@ -2131,7 +2157,10 @@ export default function AutoOrganizerPage() {
                                   {roleMatch?.label || roleMatch?.name || t.context || 'General'}
                                 </span>
                               </div>
-                              <span className="material-symbols-outlined text-[17px] text-emerald-500">check_circle</span>
+                              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                <span>{t.completed ? 'Hecho' : 'Finalizado'}</span>
+                              </div>
                             </div>
                             <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 line-through line-clamp-2 leading-snug">
                               {t.title}

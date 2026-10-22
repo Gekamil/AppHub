@@ -1,6 +1,7 @@
 // Servicio de IA Avanzada para Auto-Organizer y Asistente Global (Groq API de ultra-alta velocidad)
 // Modelo: qwen/qwen3.8-27b
 import { getUserCalendars, getCurrentUser } from './firebase.js'
+import { isEventFinished } from './sharedRoles.js'
 
 const GROQ_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GROQ_API_KEY) || ''
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions'
@@ -679,6 +680,58 @@ export function applyAIActions(currentTasks = [], actions = []) {
 }
 
 /**
+ * Resuelve y mapea el calendario real de una actividad analizando su calendarId,
+ * contexto, etiquetas y palabras clave de asignaturas o universidad.
+ */
+export function resolveTaskCalendar(task, calendarsList = []) {
+  if (!task) return { id: 'cal-default', name: 'General' }
+  const taskCalId = String(task.calendarId || '')
+  const matched = calendarsList.find(c => String(c.id) === taskCalId)
+  if (matched) return matched
+
+  // Comprobar coincidencias por contexto o patrones de Universidad / UMA / asignaturas
+  const ctx = (task.context || '').toLowerCase()
+  const title = (task.title || '').toLowerCase()
+  const desc = (task.description || '').toLowerCase()
+
+  if (
+    taskCalId === 'cal-university' ||
+    ctx.includes('uni') ||
+    ctx.includes('estudio') ||
+    title.includes('@uma.es') ||
+    desc.includes('@uma.es') ||
+    title.includes('sistemas') ||
+    title.includes('aprendizaje') ||
+    title.includes('computacional') ||
+    title.includes('programación') ||
+    title.includes('programacion') ||
+    title.includes('seguridad') ||
+    title.includes('examen') ||
+    title.includes('asignatura') ||
+    title.includes('clase') ||
+    title.includes('profesor')
+  ) {
+    const uniCal = calendarsList.find(c => c.id === 'cal-university' || c.name.toLowerCase().includes('universidad'))
+    if (uniCal) return uniCal
+    return { id: 'cal-university', name: 'Universidad & Estudios' }
+  }
+
+  if (taskCalId === 'cal-health' || ctx.includes('health') || ctx.includes('gym') || ctx.includes('salud') || ctx.includes('deporte') || ctx.includes('padel') || ctx.includes('fitness')) {
+    const healthCal = calendarsList.find(c => c.id === 'cal-health' || c.name.toLowerCase().includes('salud'))
+    if (healthCal) return healthCal
+    return { id: 'cal-health', name: 'Salud & Deporte' }
+  }
+
+  if (taskCalId === 'cal-work' || ctx.includes('project') || ctx.includes('work') || ctx.includes('trabajo') || ctx.includes('proyectos')) {
+    const workCal = calendarsList.find(c => c.id === 'cal-work' || c.name.toLowerCase().includes('trabajo') || c.name.toLowerCase().includes('proyectos'))
+    if (workCal) return workCal
+    return { id: 'cal-work', name: 'Trabajo & Proyectos' }
+  }
+
+  return { id: 'cal-default', name: task.calendarName || task.context || 'General' }
+}
+
+/**
  * Resuelve peticiones conversacionales y de control de calendario de forma local
  * cuando los servicios remotos no responden o hay problemas de conexión.
  */
@@ -691,6 +744,23 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     ? currentCalendars
     : getUserCalendars(getCurrentUser())
 
+  // Detección de filtro específico por calendario o rol
+  let targetCalFilter = null
+  let targetCalName = null
+  if (/universidad|facultad|carrera|estudio|uma|clases?|asignatura/i.test(lower)) {
+    targetCalFilter = 'cal-university'
+    targetCalName = 'Universidad & Estudios'
+  } else if (/salud|gym|gimnasio|deporte|entrenamiento|fitness/i.test(lower)) {
+    targetCalFilter = 'cal-health'
+    targetCalName = 'Salud & Deporte'
+  } else if (/trabajo|proyecto|work|job|proyectos/i.test(lower)) {
+    targetCalFilter = 'cal-work'
+    targetCalName = 'Trabajo & Proyectos'
+  } else if (/personal|general/i.test(lower)) {
+    targetCalFilter = 'cal-default'
+    targetCalName = 'Personal & General'
+  }
+
   // 1. Mover todos los eventos de un calendario o rol a otro
   // Ej: "mete todos los eventos de mi calendario X en el rol Y", "mueve todas las tareas de mates a universidad"
   const moveAllMatch = lower.match(/(?:mete|pasa|mueve|cambia|asigna)\s+(?:todos\s+los\s+eventos|todas\s+las\s+tareas|todo)\s+(?:de\s+mi\s+calendario|del\s+calendario|de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|la\s+categor[ií]a|rol|calendario)?\s*(.*)/i)
@@ -700,25 +770,27 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
 
     const targetCal = calendarsList.find(c => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
     const targetCalId = targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-'))
-    const targetCalName = targetCal ? targetCal.name : rawTarget
+    const targetCalNameResolved = targetCal ? targetCal.name : rawTarget
 
     const matchingTasks = currentTasks.filter(t => {
+      const cal = resolveTaskCalendar(t, calendarsList)
       const matchName = (t.calendarName && t.calendarName.toLowerCase().includes(rawSource.toLowerCase()))
       const matchContext = (t.context && t.context.toLowerCase().includes(rawSource.toLowerCase()))
       const matchId = (t.calendarId && t.calendarId.toLowerCase().includes(rawSource.toLowerCase()))
-      return matchName || matchContext || matchId
+      const matchCalObj = (cal.name.toLowerCase().includes(rawSource.toLowerCase()))
+      return matchName || matchContext || matchId || matchCalObj
     })
 
     if (matchingTasks.length > 0) {
       return {
-        reply: `He movido ${matchingTasks.length} evento(s) del calendario "${rawSource}" al rol/calendario "${targetCalName}" correctamente.`,
+        reply: `He movido ${matchingTasks.length} evento(s) del calendario "${rawSource}" al rol/calendario "${targetCalNameResolved}" correctamente.`,
         actions: [
           {
             type: 'move_calendar_events',
             sourceCalendarName: rawSource,
             targetCalendarId: targetCalId,
-            targetCalendarName: targetCalName,
-            targetContext: targetCalName,
+            targetCalendarName: targetCalNameResolved,
+            targetContext: targetCalNameResolved,
           }
         ]
       }
@@ -731,19 +803,18 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
   }
 
   // 2. Mover un evento específico a un rol o calendario
-  // Ej: "mete el evento de mates al rol universidad"
   const moveSingleMatch = lower.match(/(?:mete|pasa|mueve|cambia|asigna)\s+(?:el\s+evento|la\s+tarea)\s+(?:de)?\s*(.*?)\s+(?:en|al|a)\s+(?:el\s+rol|el\s+calendario|rol|calendario)?\s*(.*)/i)
   if (moveSingleMatch) {
     const rawTask = moveSingleMatch[1].trim()
     const rawTarget = moveSingleMatch[2].replace(/el rol|el calendario|rol|calendario/gi, '').trim()
     const targetCal = calendarsList.find(c => c.name.toLowerCase().includes(rawTarget.toLowerCase()))
     const targetCalId = targetCal ? targetCal.id : ('cal-' + rawTarget.toLowerCase().replace(/\s+/g, '-'))
-    const targetCalName = targetCal ? targetCal.name : rawTarget
+    const targetCalNameResolved = targetCal ? targetCal.name : rawTarget
 
     const found = currentTasks.find(t => t.title && t.title.toLowerCase().includes(rawTask.toLowerCase()))
     if (found) {
       return {
-        reply: `He asignado el evento "${found.title}" al rol/calendario "${targetCalName}" correctamente.`,
+        reply: `He asignado el evento "${found.title}" al rol/calendario "${targetCalNameResolved}" correctamente.`,
         actions: [
           {
             type: 'update_task',
@@ -751,8 +822,8 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
             targetTitle: found.title,
             updates: {
               calendarId: targetCalId,
-              calendarName: targetCalName,
-              context: targetCalName,
+              calendarName: targetCalNameResolved,
+              context: targetCalNameResolved,
             }
           }
         ]
@@ -760,20 +831,77 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     }
   }
 
-  // 3. Consulta de tareas de hoy / resumen
-  const isAskingToday = (lower.includes('hoy') || lower.includes('mi día') || lower.includes('mi dia')) &&
-    /(?:qu[eé]|c[uú]al|hay|tengo|tenemos|dime|muestra|ver|actividades|eventos|tareas|planes|agenda|horario|resumen|programad|cosas|algo)/i.test(lower)
+  // 3. Consulta de tareas de hoy / resumen o consulta general de agenda
+  const isAskingToday = (lower.includes('hoy') || lower.includes('mi día') || lower.includes('mi dia') || /qu[eé]\s+(?:actividades|tareas|eventos|planes|cosas|clases)\s+(?:tengo|hay|tenemos)/i.test(lower)) &&
+    !lower.includes('mañana') && !lower.includes('manana') && !lower.includes('semana')
   if (isAskingToday) {
-    const todayTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === todayStr)
+    let todayTasks = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === todayStr)
+
+    // Si el usuario preguntó por un calendario en particular (ej. universidad)
+    if (targetCalFilter) {
+      todayTasks = todayTasks.filter(t => {
+        const cal = resolveTaskCalendar(t, calendarsList)
+        return cal.id === targetCalFilter || cal.name === targetCalName || (t.context || '').toLowerCase().includes(targetCalName.toLowerCase())
+      })
+    }
+
     if (todayTasks.length === 0) {
+      if (targetCalName) {
+        const otherTodayCount = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === todayStr).length
+        return {
+          reply: `Para hoy (${calRef.dayOfWeek}, ${todayStr}) no tienes actividades en el calendario "${targetCalName}"${otherTodayCount > 0 ? ` (aunque tienes ${otherTodayCount} actividad(es) en otros calendarios)` : ''}. ¿Quieres que programemos alguna?`,
+          actions: [],
+        }
+      }
       return {
         reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) no tienes actividades ni tareas registradas en tu calendario. ¿Quieres que programemos alguna?`,
         actions: [],
       }
     }
-    const list = todayTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
+
+    const list = todayTasks.map(t => {
+      const cal = resolveTaskCalendar(t, calendarsList)
+      const isFinished = isEventFinished(t) || t.completed || t.status === 'done'
+      const statusStr = t.completed ? ' [Completada]' : isFinished ? ' [Finalizada]' : ' [Pendiente]'
+      return `• ${t.time || 'Durante el día'}: ${t.title} [${cal.name}]${statusStr}`
+    }).join('\n')
+
+    const calLabel = targetCalName ? ` en "${targetCalName}"` : ''
     return {
-      reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) tienes ${todayTasks.length} actividad(es):\n\n${list}\n\n¿Quieres que modifique la hora de alguna o marque alguna como completada?`,
+      reply: `Hoy (${calRef.dayOfWeek}, ${todayStr}) tienes ${todayTasks.length} actividad(es)${calLabel}:\n\n${list}\n\n¿Quieres que modifique la hora de alguna, la mueva de calendario o la marque como completada?`,
+      actions: [],
+    }
+  }
+
+  // 3b. Consulta de eventos de un calendario específico en cualquier fecha
+  if (targetCalFilter && /(?:qu[eé]|c[uú]al|hay|tengo|tenemos|dime|muestra|ver|actividades|eventos|tareas|planes|agenda|clases)/i.test(lower)) {
+    const calTasks = (currentTasks || []).filter(t => {
+      const cal = resolveTaskCalendar(t, calendarsList)
+      return cal.id === targetCalFilter || cal.name === targetCalName
+    }).sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+
+    const todayUniTasks = calTasks.filter(t => (t.date || '').slice(0, 10) === todayStr)
+    const futureUniTasks = calTasks.filter(t => (t.date || '').slice(0, 10) > todayStr).slice(0, 6)
+
+    if (calTasks.length === 0) {
+      return {
+        reply: `No tienes actividades registradas en el calendario "${targetCalName}". Puedes pedirme que añada o mueva eventos aquí en cualquier momento.`,
+        actions: [],
+      }
+    }
+
+    let responseText = `En el calendario "${targetCalName}" tienes un total de ${calTasks.length} actividad(es):\n\n`
+    if (todayUniTasks.length > 0) {
+      responseText += `📅 HOY (${todayStr}):\n` + todayUniTasks.map(t => {
+        const isFin = isEventFinished(t) || t.completed
+        return `• ${t.time || 'Todo el día'}: ${t.title}${isFin ? ' [Finalizado]' : ' [Pendiente]'}`
+      }).join('\n') + '\n\n'
+    }
+    if (futureUniTasks.length > 0) {
+      responseText += `🗓️ Próximas fechas:\n` + futureUniTasks.map(t => `• ${t.date} (${t.time || 'Horario flexible'}): ${t.title}`).join('\n')
+    }
+    return {
+      reply: responseText,
       actions: [],
     }
   }
@@ -790,7 +918,10 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
         actions: [],
       }
     }
-    const list = afterTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
+    const list = afterTasks.map(t => {
+      const cal = resolveTaskCalendar(t, calendarsList)
+      return `• ${t.time || 'Durante el día'}: ${t.title} [${cal.name}]${t.completed ? ' [Completada]' : ''}`
+    }).join('\n')
     return {
       reply: `Para pasado mañana (${afterTomorrowStr}) tienes ${afterTasks.length} actividad(es):\n\n${list}`,
       actions: [],
@@ -810,7 +941,10 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
         actions: [],
       }
     }
-    const list = tomorrowTasks.map(t => `• ${t.time || 'Durante el día'}: ${t.title} (${t.calendarName || t.context || 'General'})${t.completed ? ' [Completada]' : ''}`).join('\n')
+    const list = tomorrowTasks.map(t => {
+      const cal = resolveTaskCalendar(t, calendarsList)
+      return `• ${t.time || 'Durante el día'}: ${t.title} [${cal.name}]${t.completed ? ' [Completada]' : ''}`
+    }).join('\n')
     return {
       reply: `Para mañana (${tomorrowStr}) tienes ${tomorrowTasks.length} actividad(es):\n\n${list}`,
       actions: [],
@@ -827,7 +961,10 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
         actions: [],
       }
     }
-    const list = weekTasks.map(t => `• ${t.date} (${t.time || 'Todo el día'}): ${t.title} [${t.calendarName || t.context || 'General'}]${t.completed ? ' [Completada]' : ''}`).join('\n')
+    const list = weekTasks.map(t => {
+      const cal = resolveTaskCalendar(t, calendarsList)
+      return `• ${t.date} (${t.time || 'Todo el día'}): ${t.title} [${cal.name}]${t.completed ? ' [Completada]' : ''}`
+    }).join('\n')
     return {
       reply: `Esta semana tienes ${weekTasks.length} actividad(es) programadas:\n\n${list}`,
       actions: [],
@@ -897,10 +1034,15 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     }
   }
 
-  // 9. Respuesta conversacional inteligente por defecto
+  // 9. Respuesta conversacional inteligente contextual
   const pendingCount = (currentTasks || []).filter(t => !t.completed).length
+  const todayTasksAll = (currentTasks || []).filter(t => (t.date || '').slice(0, 10) === todayStr)
+  let extraContext = ''
+  if (todayTasksAll.length > 0) {
+    extraContext = ` Para hoy tienes ${todayTasksAll.length} actividad(es) programada(s).`
+  }
   return {
-    reply: `Entendido. Tienes ${pendingCount} tareas activas y ${calendarsList.length} calendarios/roles disponibles (${calendarsList.map(c => c.name).join(', ')}). Puedes pedirme que mueva eventos a un rol o calendario, que añada nuevas tareas, que mueva horarios o que te resuma tu día.`,
+    reply: `Entendido.${extraContext} Tienes acceso a todos tus calendarios: ${calendarsList.map(c => c.name).join(', ')}. Puedes preguntarme qué tienes hoy o en cualquier fecha, pedirme que cree tareas, mueva eventos entre calendarios o marque actividades como completadas.`,
     actions: [],
   }
 }
@@ -930,19 +1072,21 @@ export async function chatWithAICopilot({ userMessage, currentTasks = [], curren
     return da.localeCompare(db)
   })
 
-  // Contexto ampliado a 120 tareas con identificación precisa de calendarios y roles
-  const tasksSummary = sortedTasks.slice(0, 120).map(t => {
-    const cal = (calendarsList || []).find(c => String(c.id) === String(t.calendarId)) || {}
+  // Contexto ampliado a 150 tareas con resolución precisa de calendario y estado temporal
+  const tasksSummary = sortedTasks.slice(0, 150).map(t => {
+    const cal = resolveTaskCalendar(t, calendarsList)
+    const finished = isEventFinished(t) || !!t.completed || t.status === 'done'
     return {
       id: t.id,
       title: t.title,
       date: (t.date || '').slice(0, 10),
-      time: t.time,
-      effort: t.effort,
-      context: t.context,
-      calendarId: t.calendarId || 'cal-default',
-      calendarName: cal.name || t.calendarName || 'Principal',
+      time: t.time || 'Todo el día',
+      effort: t.effort || 'Medium',
+      context: t.context || cal.name,
+      calendarId: cal.id,
+      calendarName: cal.name,
       completed: !!t.completed,
+      isFinished: finished,
       isRecurring: !!t.isRecurring,
     }
   })
@@ -956,15 +1100,17 @@ REFERENCIA TEMPORAL EXACTA Y OBLIGATORIA:
 - PASADO MAÑANA es: ${afterTomorrowStr}
 - Hora actual aproximada: ${new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
 
-REGLAS DE BÚSQUEDA Y RESPUESTA:
-- Cuando el usuario pregunte por actividades, eventos, tareas o planes de "mañana", "hoy", "esta semana" o cualquier fecha, busca en la lista de Tareas y Eventos filtrando por el campo 'date' (por ejemplo para mañana: ${tomorrowStr}).
-- Si hay actividades para esa fecha, NÚMERALAS y descríbelas todas indicando su hora, título y rol/calendario. No omitas ninguna.
-- Si están completadas, indícalo claramente. No digas que no hay nada si existen elementos en la lista con esa fecha.
+REGLAS DE BÚSQUEDA Y RESPUESTA (MÁXIMA PRIORIDAD):
+- Cuando el usuario pregunte por actividades, eventos, tareas o planes de "hoy" (${todayStr}), "mañana" (${tomorrowStr}), "esta semana" o cualquier fecha o calendario (como "Universidad", "Gimnasio", "Proyectos"):
+  1. Revisa TODAS las tareas de la lista con date === fecha solicitada.
+  2. NUNCA digas que no hay actividades si existen elementos en la lista para esa fecha. Si el usuario pregunta qué tiene hoy y tiene asignaturas de universidad como "Sistemas Operativos", "Aprendizaje Computacional I", "Programación Segura" u otras, LISTA TODAS Y CADA UNA DE ELLAS.
+  3. Indica claramente: hora, título, el calendario/rol al que pertenece (ej: [Universidad & Estudios], [Salud & Gimnasio]), y su estado actual: [Finalizada/Hecha] si isFinished o completed es true, o [En curso / Pendiente] si aún no ha terminado.
+  4. Si el usuario pregunta por un calendario concreto (ej. "¿qué tengo de la universidad?"), filtra y muestra las tareas de ese calendario.
 
 Calendarios y Roles disponibles del usuario en el sistema:
 ${JSON.stringify((calendarsList || []).map(c => ({ id: c.id, name: c.name, color: c.color })), null, 2)}
 
-Tareas y Eventos actuales del usuario (con su calendario y rol actual):
+Tareas y Eventos actuales del usuario (con su calendario y estado exacto):
 ${JSON.stringify(tasksSummary, null, 2)}
 
 Tienes permisos plenos para:

@@ -298,7 +298,7 @@ function ClockWidget({ clockMode, setClockMode, activeCalendar, todayTasks, setS
           </div>
           <div className="flex items-center gap-1.5 text-secondary text-[11px] font-medium mt-1">
             <span className="material-symbols-outlined text-[13px] text-primary">location_on</span>
-            <span>Madrid (UTC+2) · 12 Oct 2026</span>
+            <span>Madrid (UTC+2) · {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           </div>
         </div>
       ) : (
