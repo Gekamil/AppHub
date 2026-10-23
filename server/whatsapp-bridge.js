@@ -46,7 +46,7 @@ export async function fetchLiveAggregatedNews() {
   const base12 = generateDailyNews()
   const feeds = [
     {
-      sourceName: 'El Pais',
+      sourceName: 'El País',
       category: 'Actualidad & Sociedad',
       categoryKey: 'actualidad',
       icon: 'public',
@@ -118,30 +118,55 @@ export async function fetchLiveAggregatedNews() {
             let icon = feed.icon
 
             const lowerTitle = title.toLowerCase()
-            if (lowerTitle.includes('inteligencia artificial') || lowerTitle.includes(' ai ') || lowerTitle.includes('ia') || lowerTitle.includes('chatgpt') || lowerTitle.includes('gemini')) {
-              catKey = 'ai'
-              catName = 'Inteligencia Artificial'
-              icon = 'smart_toy'
-            } else if (lowerTitle.includes('econom') || lowerTitle.includes('bce') || lowerTitle.includes('inflaci') || lowerTitle.includes('hipoteca') || lowerTitle.includes('empleo') || lowerTitle.includes('salario')) {
-              catKey = 'economy'
-              catName = 'Economia & Empleo'
-              icon = 'trending_up'
-            } else if (lowerTitle.includes('cine') || lowerTitle.includes('musica') || lowerTitle.includes('concierto') || lowerTitle.includes('libro') || lowerTitle.includes('museo') || lowerTitle.includes('festival')) {
-              catKey = 'culture'
-              catName = 'Cultura & Ocio'
-              icon = 'theater_comedy'
-            } else if (lowerTitle.includes('salud') || lowerTitle.includes('medic') || lowerTitle.includes('dieta') || lowerTitle.includes('sueno') || lowerTitle.includes('estres')) {
-              catKey = 'health'
-              catName = 'Salud & Bienestar'
-              icon = 'favorite'
-            } else if (lowerTitle.includes('universidad') || lowerTitle.includes('beca') || lowerTitle.includes('estudiante') || lowerTitle.includes('campus') || lowerTitle.includes('grado')) {
-              catKey = 'university'
-              catName = 'Vida Universitaria'
-              icon = 'school'
-            } else if (lowerTitle.includes('clima') || lowerTitle.includes('renovable') || lowerTitle.includes('solar') || lowerTitle.includes('ecolog') || lowerTitle.includes('bosque')) {
-              catKey = 'society'
-              catName = 'Clima & Medioambiente'
-              icon = 'eco'
+
+            // Source-specific strict classification to prevent cross-domain contamination
+            if (feed.sourceName === 'Marca') {
+              // Sports news source is strictly sports & fitness
+              catKey = 'sports'
+              catName = 'Deportes'
+              icon = 'sports_soccer'
+            } else if (feed.sourceName === 'Agencia SINC') {
+              // Scientific agency source is strictly science
+              catKey = 'science'
+              catName = 'Ciencia'
+              icon = 'biotech'
+            } else if (feed.sourceName === 'Xataka') {
+              if (/\b(inteligencia artificial|chatgpt|openai|gemini|llm|deep learning|ia generativa)\b/i.test(title)) {
+                catKey = 'ai'
+                catName = 'Inteligencia Artificial'
+                icon = 'smart_toy'
+              } else {
+                catKey = 'tech'
+                catName = 'Tecnología'
+                icon = 'devices'
+              }
+            } else {
+              // General sources (El País, 20 Minutos): refine only with strict word boundaries
+              if (/\b(inteligencia artificial|chatgpt|openai|gemini|ia generativa)\b/i.test(title)) {
+                catKey = 'ai'
+                catName = 'Inteligencia Artificial'
+                icon = 'smart_toy'
+              } else if (/\b(bce|inflaci[oó]n|hipotecas?|tipos de inter[eé]s|salarios?|ibex|bolsa|fondos europeos)\b/i.test(title)) {
+                catKey = 'economy'
+                catName = 'Economía'
+                icon = 'trending_up'
+              } else if (/\b(cine|festival de cine|conciertos?|teatro|premios? goya|museos?|literatura|novela)\b/i.test(title)) {
+                catKey = 'culture'
+                catName = 'Cultura'
+                icon = 'theater_comedy'
+              } else if (/\b(sanidad|m[eé]dicos|vacunas?|hospital|alzheimer|c[aá]ncer|enfermedad|dieta mediterr[aá]nea)\b/i.test(title)) {
+                catKey = 'health'
+                catName = 'Salud'
+                icon = 'favorite'
+              } else if (/\b(universidad|erasmus|estudiantes universitarios|selectividad|evau|campus universitario)\b/i.test(title)) {
+                catKey = 'university'
+                catName = 'Universidad'
+                icon = 'school'
+              } else if (/\b(cambio clim[aá]tico|energ[ií]as renovables|paneles solares|sequ[ií]a|parque nacional)\b/i.test(title)) {
+                catKey = 'society'
+                catName = 'Medioambiente'
+                icon = 'eco'
+              }
             }
 
             liveArticles.push({
@@ -1233,7 +1258,10 @@ export async function processMessageWithAI(userText, fromUser = 'default') {
     .map(([k, v]) => `- "${k}" -> Calendario "${v}"`)
     .join('\n')
 
-  const whatsappNewsDigest = formatNewsForWhatsApp(FALLBACK_NEWS)
+  const activeWhatsAppNews = (liveNewsCache && Array.isArray(liveNewsCache) && liveNewsCache.length > 0)
+    ? liveNewsCache
+    : generateDailyNews()
+  const whatsappNewsDigest = formatNewsForWhatsApp(activeWhatsAppNews)
 
   const systemPrompt = `Eres "AI Helper", el asistente personal de élite de Jorge en su WhatsApp.
 Fecha y hora actual: ${todayStr} (${dayOfWeek}), ${currentTimeStr}.
@@ -1610,8 +1638,11 @@ function startMidnightScheduler() {
         const target = briefings.targetJid || lastRecipientJid
         if (target) {
           console.log(`[Baileys Scheduler]: Enviando boletín de noticias programado (${currentHm}) a ${target}...`)
+          const activeNews = (liveNewsCache && Array.isArray(liveNewsCache) && liveNewsCache.length > 0)
+            ? liveNewsCache
+            : generateDailyNews()
           const newsText = `¡Buenos días, Jorge! Aquí tienes tu *boletín diario de noticias destacadas*:\n\n` +
-            formatNewsForWhatsApp(FALLBACK_NEWS) +
+            formatNewsForWhatsApp(activeNews) +
             `\n\n_(Configurado todos los días a las ${currentHm}. Escribe /ajustes para ver o cambiar tus recordatorios)_`
           await sock.sendMessage(target, { text: newsText }).catch((e) => console.error(e))
         }
@@ -2097,8 +2128,11 @@ export async function startBaileysConnection(phoneNumber = null, forceRefresh = 
 
         // 4.2b. COMANDO /noticias o titulares
         if (/^(\/|!|\.)?(noticias|noticia|titulares|actualidad)$/i.test(cleanInstruction) || lowerInstruction === 'noticias' || lowerInstruction === 'titulares') {
-          const newsReply = `¡Hola, Jorge! Aquí tienes los *6 titulares destacados de hoy* en StudentHub:\n\n` +
-            formatNewsForWhatsApp(FALLBACK_NEWS) +
+          const activeNews = (liveNewsCache && Array.isArray(liveNewsCache) && liveNewsCache.length > 0)
+            ? liveNewsCache
+            : generateDailyNews()
+          const newsReply = `¡Hola, Jorge! Aquí tienes los *titulares destacados de hoy* en StudentHub:\n\n` +
+            formatNewsForWhatsApp(activeNews) +
             `\n\n¿Deseas que te amplíe información sobre alguna de ellas?`
           try {
             const sent = await sock.sendMessage(from, { text: newsReply }, { quoted: msg })

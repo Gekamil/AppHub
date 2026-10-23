@@ -2,7 +2,7 @@
 // Modelo: qwen/qwen3.8-27b
 import { getUserCalendars, getCurrentUser } from './firebase.js'
 import { isEventFinished } from './sharedRoles.js'
-import { FALLBACK_NEWS, generateDailyNews } from './newsService.js'
+import { FALLBACK_NEWS, generateDailyNews, getCachedDailyNews } from './newsService.js'
 import {
   getScheduledBriefings,
   setDailyNewsBriefing,
@@ -21,7 +21,7 @@ export function getNewsContextForAI(articles = null) {
   if (Array.isArray(articles) && articles.length > 0) {
     items = articles
   } else if (articles === null) {
-    items = generateDailyNews()
+    items = getCachedDailyNews()
   } else {
     items = FALLBACK_NEWS
   }
@@ -904,10 +904,146 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
   const isNewsIntent = !isTaskActionCommand && !isCalendarQuery && !isMathQuery && !isPureGreeting && (hasNewsDirectWord || isAskingTechOrAINews)
 
   if (isNewsIntent) {
+    let activeArticles = null
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const cached = localStorage.getItem('studenthub_cached_daily_news')
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (Array.isArray(parsed) && parsed.length > 0) activeArticles = parsed
+        }
+      }
+    } catch (e) {}
+
+    if (!activeArticles || activeArticles.length === 0) {
+      activeArticles = [
+        {
+          id: 'news-1',
+          category: 'Actualidad',
+          categoryKey: 'actualidad',
+          title: 'Transporte joven bonificado y movilidad limpia: nuevos descuentos para estudiantes y menores de 30 anos',
+          summary: 'El Ministerio de Transportes y comunidades extienden los abonos gratuitos de Cercanías y bonificaciones del 50% en transporte metropolitano.',
+          source: 'El País',
+          readTime: '3 min',
+          url: 'https://elpais.com/sociedad/'
+        },
+        {
+          id: 'news-2',
+          category: 'Deportes',
+          categoryKey: 'sports',
+          title: 'Jornada clave en Champions League y beneficios de la fuerza: victorias continentales y neurobiologia del ejercicio muscular',
+          summary: 'Victorias clave con destacada actuacion de jovenes talentos y nuevos estudios sobre fuerza y rendimiento cognitivo.',
+          source: 'Marca',
+          readTime: '3 min',
+          url: 'https://www.marca.com/futbol/champions-league.html'
+        },
+        {
+          id: 'news-3',
+          category: 'Ciencia',
+          categoryKey: 'science',
+          title: 'Avance clave en correccion de errores cuanticos y misiones a lunas heladas de Jupiter',
+          summary: 'Europa Clipper explora oceanos habitables en el sistema solar exterior y avances en redundancia cuantica.',
+          source: 'Agencia SINC / Nature',
+          readTime: '5 min',
+          url: 'https://www.agenciasinc.es/Noticias/computacion-cuantica'
+        },
+        {
+          id: 'news-4',
+          category: 'Economia',
+          categoryKey: 'economy',
+          title: 'El BCE baja tipos de interes e impulsa el empleo joven en energias renovables e ingenieria',
+          summary: 'Alivio para hipotecas y contratos cualificados en sectores de alta tecnologia.',
+          source: 'Cinco Dias / El País Economía',
+          readTime: '3 min',
+          url: 'https://cincodias.elpais.com/economia/'
+        },
+        {
+          id: 'news-5',
+          category: 'Cultura',
+          categoryKey: 'culture',
+          title: 'Festival de Cine de Malaga y Bono Cultural Universitario: nuevas convocatorias audiovisuales',
+          summary: 'Gran participacion de proyectos independientes y nuevas narrativas iberoamericanas.',
+          source: 'RTVE Cultura',
+          readTime: '3 min',
+          url: 'https://www.rtve.es/noticias/cultura/'
+        },
+        {
+          id: 'news-6',
+          category: 'Universidad',
+          categoryKey: 'university',
+          title: 'Nuevas dotaciones Erasmus+ y salas 24h: ayudas de movilidad y adaptacion academica',
+          summary: 'Se publican las nuevas dotaciones economicas y plazos de solicitud para estancias academicas internacionales.',
+          source: 'El País Educación',
+          readTime: '4 min',
+          url: 'https://elpais.com/educacion/universidad/'
+        },
+        {
+          id: 'news-7',
+          category: 'Salud',
+          categoryKey: 'health',
+          title: 'Dieta mediterranea contra el estres y pautas activas de descanso cognitivo',
+          summary: 'Pautas medicas para optimizar la energia y regular el cortisol durante semanas de estudio intensivo.',
+          source: 'Agencia SINC / Medscape',
+          readTime: '3 min',
+          url: 'https://www.agenciasinc.es/Noticias/dieta-mediterranea-salud-cerebral'
+        },
+        {
+          id: 'news-8',
+          category: 'Inteligencia Artificial',
+          categoryKey: 'ai',
+          title: 'Groq y los procesadores LPU: inferencia ultrarrapida a mas de 300 tokens por segundo para modelos de lenguaje',
+          summary: 'La revolucion de la inferencia en tiempo real sin latencia de GPUs para agentes reactivos y asistentes multimodales.',
+          source: 'Xataka',
+          readTime: '3 min',
+          url: 'https://www.xataka.com/categoria/inteligencia-artificial'
+        },
+        {
+          id: 'news-9',
+          category: 'Tecnologia',
+          categoryKey: 'tech',
+          title: 'Herramientas esenciales para universitarios y baterias de silicio-carbono con 2 dias de autonomia',
+          summary: 'Seleccion de utilidades open source para gestionar apuntes y avances en celdas de alta densidad energetica.',
+          source: 'Genbeta',
+          readTime: '4 min',
+          url: 'https://www.genbeta.com/tecnologia/baterias-silicio-carbono-moviles'
+        },
+        {
+          id: 'news-10',
+          category: 'Medioambiente',
+          categoryKey: 'society',
+          title: 'Record historico de generacion renovable solar y eolica en la peninsula',
+          summary: 'Mas del 65% del consumo peninsular cubierto con fuentes de generacion limpia.',
+          source: 'EFE Verde',
+          readTime: '3 min',
+          url: 'https://efeverde.com/'
+        },
+        {
+          id: 'news-11',
+          category: 'Productividad',
+          categoryKey: 'productivity',
+          title: 'La ciencia del descanso cognitivo: protocolo Pomodoro 50/10 y timeboxing',
+          summary: 'Como estructurar bloques de foco profundo para maximizar la retencion y eliminar la fatiga mental.',
+          source: 'Xataka Ciencia',
+          readTime: '3 min',
+          url: 'https://www.xataka.com/tag/productividad'
+        },
+        {
+          id: 'news-12',
+          category: 'Gaming',
+          categoryKey: 'gaming',
+          title: 'Grandes lanzamientos indie y auge de consolas portatiles para jugar en cualquier parte',
+          summary: 'Nuevas aventuras narrativas independientes cautivan a jugadores en plataformas portatiles.',
+          source: '3DJuegos',
+          readTime: '3 min',
+          url: 'https://www.3djuegos.com/'
+        }
+      ]
+    }
+
     const wantsAI = /inteligencia artificial|\bia\b|groq|lpu|llm|deep learning/i.test(lower)
     const wantsTech = /tecnolog|software|hardware|bater[ií]a|pantalla|dispositivo|open source|desarrollo|vite|rust/i.test(lower)
     const wantsScience = /ciencia|cu[aá]ntic|c[uú]bit|f[ií]sica|espacio|luna|j[uú]piter|astronom/i.test(lower)
-    const wantsSports = /deporte|f[uú]tbol|champions|partido|fuerza|gimnasio|atleta/i.test(lower)
+    const wantsSports = /deporte|f[uú]tbol|champions|partido|fuerza|gimnasio|atleta|moto|motogp/i.test(lower)
     const wantsEconomy = /econom|bce|tipo.*inter|hipoteca|inflaci|empleo|salario|finanza/i.test(lower)
     const wantsCulture = /cultura|cine|m[aá]laga|festival|m[uú]sica|concierto|libro|museo/i.test(lower)
     const wantsProductivity = /productividad|pomodoro|timeboxing|atenci[oó]n|neurociencia|sue[ñn]o/i.test(lower)
@@ -915,12 +1051,15 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
 
     // Si pide especificamente Deportes
     if (wantsSports) {
+      const sportsArt = activeArticles.find((a) => a.categoryKey === 'sports' || /marca/i.test(a.source || a.sourceName || ''))
+      const title = sportsArt?.title || 'Jornada de Champions League y beneficios de la fuerza'
+      const summary = sportsArt?.summary || 'Victorias continentales y neurobiologia del ejercicio muscular.'
+      const source = sportsArt ? (sportsArt.source || sportsArt.sourceName || 'Marca') : 'Marca'
+      const url = sportsArt ? (sportsArt.url || sportsArt.sourceUrl || 'https://www.marca.com/futbol/champions-league.html') : 'https://www.marca.com/futbol/champions-league.html'
       return {
-        reply: `**Novedades destacadas de Deportes & Salud hoy**:\n\n` +
-          `• **Jornada de Champions League y competicion europea**: Victorias clave con destacada actuacion de jovenes talentos.\n` +
-          `  _Fuente: Marca (3 min de lectura)_ - [Ver noticia completa](https://www.marca.com/futbol/champions-league.html)\n\n` +
-          `• **Beneficios del entrenamiento de fuerza**: El trabajo muscular constante mejora la funcion ejecutiva y reduce el estres en un 25%.\n` +
-          `  _Fuente: AS Salud & Deporte (4 min de lectura)_ - [Ver noticia completa](https://as.com/deportes/)\n\n` +
+        reply: `**Novedades destacadas de Deportes hoy**:\n\n` +
+          `• **${title}**: ${summary}\n` +
+          `  _Fuente: ${source} (3 min de lectura)_ - [Ver noticia completa](${url})\n\n` +
           `*Tambien tienes disponibles titulares de Actualidad, Economia, Ciencia, Cultura, Universidad y Tecnologia en StudentHub.*`,
         actions: [],
       }
@@ -928,12 +1067,15 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
 
     // Si pide especificamente Economia
     if (wantsEconomy) {
+      const econArt = activeArticles.find((a) => a.categoryKey === 'economy' || /cinco|econom/i.test(a.source || a.sourceName || ''))
+      const title = econArt?.title || 'El BCE reduce tipos de interes e impulsa el empleo joven'
+      const summary = econArt?.summary || 'Alivio para hipotecas y contratos cualificados en energias e ingenieria.'
+      const source = econArt ? (econArt.source || econArt.sourceName || 'Cinco Días / El País Economía') : 'Cinco Días / El País Economía'
+      const url = econArt ? (econArt.url || econArt.sourceUrl || 'https://cincodias.elpais.com/economia/') : 'https://cincodias.elpais.com/economia/'
       return {
         reply: `**Novedades destacadas de Economia & Empleo hoy**:\n\n` +
-          `• **El BCE reduce tipos de interes**: Alivio para hipotecas y creditos a emprendedores y jovenes profesionales.\n` +
-          `  _Fuente: Cinco Dias (3 min de lectura)_ - [Ver noticia completa](https://cincodias.elpais.com/economia/)\n\n` +
-          `• **Liderazgo del empleo tecnologico**: Ingenieria y energias limpias concentran el mayor crecimiento de empleo cualificado.\n` +
-          `  _Fuente: El Economista (4 min de lectura)_ - [Ver noticia completa](https://www.eleconomista.es/economia/)\n\n` +
+          `• **${title}**: ${summary}\n` +
+          `  _Fuente: ${source} (3 min de lectura)_ - [Ver noticia completa](${url})\n\n` +
           `*Tambien tienes disponibles titulares de Actualidad, Deportes, Ciencia, Cultura, Universidad y Tecnologia.*`,
         actions: [],
       }
@@ -941,12 +1083,15 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
 
     // Si pide especificamente Cultura
     if (wantsCulture) {
+      const cultArt = activeArticles.find((a) => a.categoryKey === 'culture' || /cultur|rtve/i.test(a.source || a.sourceName || ''))
+      const title = cultArt?.title || 'Festival de Cine de Malaga y Bono Cultural Universitario'
+      const summary = cultArt?.summary || 'Gran participacion de proyectos independientes y nuevas narrativas iberoamericanas.'
+      const source = cultArt ? (cultArt.source || cultArt.sourceName || 'RTVE Cultura') : 'RTVE Cultura'
+      const url = cultArt ? (cultArt.url || cultArt.sourceUrl || 'https://www.rtve.es/noticias/cultura/') : 'https://www.rtve.es/noticias/cultura/'
       return {
         reply: `**Novedades destacadas de Cultura & Ocio hoy**:\n\n` +
-          `• **Festival de Cine de Malaga**: Gran participacion de proyectos independientes y nuevas narrativas iberoamericanas.\n` +
-          `  _Fuente: RTVE Cultura (3 min de lectura)_ - [Ver noticia completa](https://www.rtve.es/noticias/cultura/)\n\n` +
-          `• **Exposiciones inmersivas y Bono Cultural Joven**: Museos refuerzan actividades y acceso gratuito para universitarios.\n` +
-          `  _Fuente: El Confidencial Cultural (3 min de lectura)_ - [Ver noticia completa](https://www.elconfidencial.com/cultura/)\n\n` +
+          `• **${title}**: ${summary}\n` +
+          `  _Fuente: ${source} (3 min de lectura)_ - [Ver noticia completa](${url})\n\n` +
           `*Tambien tienes disponibles titulares de Actualidad, Deportes, Ciencia, Economia, Universidad y Tecnologia.*`,
         actions: [],
       }
@@ -983,10 +1128,15 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
     }
 
     if (wantsScience) {
+      const sciArt = activeArticles.find((a) => a.categoryKey === 'science' || /sinc|nature/i.test(a.source || a.sourceName || ''))
+      const title = sciArt?.title || 'Avance clave en correccion de errores cuanticos'
+      const summary = sciArt?.summary || 'Investigadores logran esquemas de redundancia cuantica en chips superconductores que disminuyen la tasa de fallos.'
+      const source = sciArt ? (sciArt.source || sciArt.sourceName || 'Agencia SINC / Nature') : 'Agencia SINC / Nature'
+      const url = sciArt ? (sciArt.url || sciArt.sourceUrl || 'https://www.agenciasinc.es/Noticias/computacion-cuantica') : 'https://www.agenciasinc.es/Noticias/computacion-cuantica'
       return {
         reply: `**Novedad destacada de Ciencia & Computacion hoy**:\n\n` +
-          `• **Avance clave en correccion de errores cuanticos**: Investigadores logran implementar esquemas de redundancia cuantica en chips superconductores que disminuyen la tasa de fallos en un orden de magnitud, acercando la viabilidad de la computacion cuantica tolerante a fallos.\n` +
-          `  _Fuente: Agencia SINC / Nature (5 min de lectura)_ - [Ver noticia completa](https://www.agenciasinc.es/Noticias/computacion-cuantica)\n\n` +
+          `• **${title}**: ${summary}\n` +
+          `  _Fuente: ${source} (5 min de lectura)_ - [Ver noticia completa](${url})\n\n` +
           `*Otros titulares de hoy*: Groq LPU (Xataka), Apps para estudiantes (Genbeta), Pomodoro (Xataka Ciencia), Becas Erasmus+ (El País Educación) y Vite con Rust (Genbeta Dev).`,
         actions: [],
       }
@@ -1012,34 +1162,20 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
       }
     }
 
-    // Respuesta general con los 12 titulares destacados organizados por categorias
+    // Respuesta general dinamica con los titulares sincronizados exactamente con la app
+    const formattedHeadlines = activeArticles.slice(0, 12).map((a, idx) => {
+      const num = idx + 1
+      const catLabel = a.category || a.categoryKey || 'Actualidad'
+      const srcName = a.source || a.sourceName || 'Medio'
+      const timeStr = a.readTime || a.readingTime || '3 min'
+      const urlStr = a.url || a.sourceUrl || 'https://studenthub.app'
+      return `${num}. **[${catLabel}] ${a.title}**: ${a.summary}\n   _Fuente: ${srcName} (${timeStr} de lectura)_ - [Enlace](${urlStr})`
+    }).join('\n\n')
+
     return {
       reply: `**Titulares destacados de hoy en StudentHub (12 noticias del dia)**:\n\n` +
-        `1. **[Actualidad] Transporte joven bonificado y movilidad limpia**: Nuevos descuentos directos para estudiantes y menores de 30 anos.\n` +
-        `   _Fuente: El País (3 min de lectura)_ - [Enlace](https://elpais.com/sociedad/)\n\n` +
-        `2. **[Deportes] Jornada clave en Champions League y beneficios de la fuerza**: Victorias continentales y neurobiologia del ejercicio muscular.\n` +
-        `   _Fuente: Marca (3 min de lectura)_ - [Enlace](https://www.marca.com/futbol/champions-league.html)\n\n` +
-        `3. **[Ciencia] Misiones espaciales a lunas heladas de Jupiter**: Europa Clipper explora oceanos habitables en el sistema solar exterior.\n` +
-        `   _Fuente: Agencia SINC / Nature (5 min de lectura)_ - [Enlace](https://www.agenciasinc.es/Noticias/exploracion-espacial-lunas-jupiter)\n\n` +
-        `4. **[Economia] El BCE baja tipos de interes e impulsa el empleo joven**: Alivio para hipotecas y contratos cualificados en energias e ingenieria.\n` +
-        `   _Fuente: Cinco Dias / El País Economía (3 min de lectura)_ - [Enlace](https://cincodias.elpais.com/economia/)\n\n` +
-        `5. **[Cultura] Festival de Cine de Malaga y Bono Cultural Universitario**: Convocatorias audiovisuales y exposiciones de arte contemporaneo.\n` +
-        `   _Fuente: RTVE Cultura (3 min de lectura)_ - [Enlace](https://www.rtve.es/noticias/cultura/)\n\n` +
-        `6. **[Universidad] Nuevas dotaciones Erasmus+ y bibliotecas 24h**: Ayudas de movilidad y salas de estudio acondicionadas para evaluacion continua.\n` +
-        `   _Fuente: El País Educación (4 min de lectura)_ - [Enlace](https://elpais.com/educacion/universidad/)\n\n` +
-        `7. **[Salud] Dieta mediterranea contra el estres y 7.000 pasos activos**: Pautas medicas para optimizar la energia y regular el cortisol.\n` +
-        `   _Fuente: Agencia SINC / Medscape (3 min de lectura)_ - [Enlace](https://www.agenciasinc.es/Noticias/dieta-mediterranea-salud-cerebral)\n\n` +
-        `8. **[IA] La revolucion de los asistentes multimodales en el movil**: Modelos ligeros de voz y vision que razonan paso a paso.\n` +
-        `   _Fuente: Xataka (3 min de lectura)_ - [Enlace](https://www.xataka.com/categoria/inteligencia-artificial)\n\n` +
-        `9. **[Tecnologia] Baterias de silicio-carbono con 2 dias de autonomia**: Mayor densidad energetica para portátiles y telefonos.\n` +
-        `   _Fuente: Genbeta (4 min de lectura)_ - [Enlace](https://www.genbeta.com/tecnologia/baterias-silicio-carbono-moviles)\n\n` +
-        `10. **[Medioambiente] Record historico de generacion renovable solar y eolica**: Mas del 65% del consumo peninsular cubierto con energias limpias.\n` +
-        `   _Fuente: EFE Verde (3 min de lectura)_ - [Enlace](https://efeverde.com/)\n\n` +
-        `11. **[Productividad] La ciencia del descanso y el metodo time-blocking**: Como planificar bloques de foco sin saturacion mental.\n` +
-        `   _Fuente: Xataka Ciencia (3 min de lectura)_ - [Enlace](https://www.xataka.com/tag/productividad)\n\n` +
-        `12. **[Gaming] Grandes lanzamientos indie y auge de consolas portatiles**: Nuevas aventuras narrativas que cautivan en cualquier lugar.\n` +
-        `   _Fuente: 3DJuegos (3 min de lectura)_ - [Enlace](https://www.3djuegos.com/)\n\n` +
-        `¿Te gustaria que te resuma alguna de estas noticias con mayor detalle?`,
+        formattedHeadlines +
+        `\n\n¿Te gustaria que te resuma alguna de estas noticias con mayor detalle?`,
       actions: [],
     }
   }
@@ -1391,8 +1527,8 @@ export async function chatWithAICopilot({ userMessage, currentTasks = [], curren
     }
   })
 
-  // Contexto de noticias diarias de actualidad enriquecido para el modelo Groq
-  const newsContext = getNewsContextForAI(FALLBACK_NEWS)
+  // Contexto de noticias diarias de actualidad sincronizado con la lista activa para el modelo Groq
+  const newsContext = getNewsContextForAI(getCachedDailyNews())
 
   const systemPrompt = `Eres el Asistente Inteligente de Productividad integrado en StudentHub con CONTROL TOTAL sobre los calendarios, roles y tareas del usuario.
 ${calRef.calendarTableText}

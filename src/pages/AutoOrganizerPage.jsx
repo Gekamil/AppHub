@@ -1659,7 +1659,7 @@ export default function AutoOrganizerPage() {
                     e.preventDefault()
                     handleKanbanDrop('todo')
                   }}
-                  className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[420px] sm:min-h-[560px] ${
+                  className={`p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[360px] sm:min-h-[440px] ${
                     mobileKanbanTab !== 'todo' ? 'hidden sm:flex' : 'flex'
                   } ${
                     dropOverKanbanCol === 'todo'
@@ -1677,7 +1677,7 @@ export default function AutoOrganizerPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+                  <div className="space-y-3 flex-1">
                     {kanbanTodoTasks.map((t) => {
                       const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
                       const isBeingDragged = draggedKanbanTaskId === t.id
@@ -1781,7 +1781,7 @@ export default function AutoOrganizerPage() {
                     e.preventDefault()
                     handleKanbanDrop('in_progress')
                   }}
-                  className={`p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[420px] sm:min-h-[560px] ${
+                  className={`p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[360px] sm:min-h-[440px] ${
                     mobileKanbanTab !== 'in_progress' ? 'hidden sm:flex' : 'flex'
                   } ${
                     dropOverKanbanCol === 'in_progress'
@@ -1799,7 +1799,7 @@ export default function AutoOrganizerPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+                  <div className="space-y-3 flex-1">
                     {kanbanInProgressTasks.map((t) => {
                       const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
                       const isBeingDragged = draggedKanbanTaskId === t.id
@@ -1900,7 +1900,7 @@ export default function AutoOrganizerPage() {
                     e.preventDefault()
                     handleKanbanDrop('done')
                   }}
-                  className={`p-3.5 sm:p-4 rounded-2xl bg-emerald-50/30 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[420px] sm:min-h-[560px] ${
+                  className={`p-3.5 sm:p-4 rounded-2xl bg-emerald-50/30 dark:bg-slate-800/40 border transition-all duration-200 flex flex-col min-h-[360px] sm:min-h-[440px] ${
                     mobileKanbanTab !== 'done' ? 'hidden sm:flex' : 'flex'
                   } ${
                     dropOverKanbanCol === 'done'
@@ -1918,7 +1918,7 @@ export default function AutoOrganizerPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+                  <div className="space-y-3 flex-1">
                     {kanbanDoneTasks.map((t) => {
                       const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
                       const isBeingDragged = draggedKanbanTaskId === t.id

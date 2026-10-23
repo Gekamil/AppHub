@@ -884,6 +884,23 @@ export function getPersonalizedNews(articles = null, preferences = null) {
 }
 
 /**
+ * Retrieves the currently active and cached daily news list synchronously.
+ * Returns either cached live articles or deterministic 12-article daily rotation.
+ */
+export function getCachedDailyNews() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const cached = localStorage.getItem('studenthub_cached_daily_news')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    }
+  } catch (e) {}
+  return generateDailyNews()
+}
+
+/**
  * Fetches daily news with dual-tier reliability:
  * 1. Attempts live aggregation endpoint (/api/news or /api/proxy-rss?feed=daily).
  * 2. Falls back to generating 12 diverse daily news items for today across all domains.
@@ -901,6 +918,11 @@ export async function getDailyNews(options = {}) {
       if (res.ok) {
         const data = await res.json()
         if (Array.isArray(data) && data.length > 0) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('studenthub_cached_daily_news', JSON.stringify(data))
+            }
+          } catch (e) {}
           return data
         }
       }
@@ -908,10 +930,24 @@ export async function getDailyNews(options = {}) {
   } catch (err) {
     // Graceful offline fallback: return dynamic 12 daily articles or FALLBACK_NEWS
     const dynamicItems = generateDailyNews()
-    if (dynamicItems && dynamicItems.length >= 12) return dynamicItems
+    if (dynamicItems && dynamicItems.length >= 12) {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('studenthub_cached_daily_news', JSON.stringify(dynamicItems))
+        }
+      } catch (e) {}
+      return dynamicItems
+    }
     return FALLBACK_NEWS
   }
   const daily = generateDailyNews()
-  if (daily && daily.length >= 12) return daily
+  if (daily && daily.length >= 12) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('studenthub_cached_daily_news', JSON.stringify(daily))
+      }
+    } catch (e) {}
+    return daily
+  }
   return FALLBACK_NEWS
 }

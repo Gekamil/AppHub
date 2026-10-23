@@ -10,26 +10,16 @@ import {
 } from '../services/newsService'
 import NewsSwipePersonalizer from '../components/news/NewsSwipePersonalizer'
 
-const CATEGORIES = [
-  { key: 'all', label: 'Todas', icon: 'apps' },
-  { key: 'actualidad', label: 'Actualidad', icon: 'public' },
-  { key: 'sports', label: 'Deportes', icon: 'sports_soccer' },
-  { key: 'science', label: 'Ciencia', icon: 'biotech' },
-  { key: 'economy', label: 'Economía', icon: 'trending_up' },
-  { key: 'culture', label: 'Cultura', icon: 'theater_comedy' },
-  { key: 'university', label: 'Universidad', icon: 'school' },
-  { key: 'health', label: 'Salud', icon: 'favorite' },
-  { key: 'ai', label: 'IA', icon: 'smart_toy' },
-  { key: 'tech', label: 'Tecnología', icon: 'devices' },
-  { key: 'society', label: 'Medioambiente', icon: 'eco' },
-  { key: 'productivity', label: 'Productividad', icon: 'timer' },
-  { key: 'gaming', label: 'Gaming', icon: 'sports_esports' },
+const VIEW_FILTERS = [
+  { key: 'all', label: 'Todas las noticias', icon: 'newspaper' },
+  { key: 'recommended', label: 'Recomendadas', icon: 'star' },
+  { key: 'favorites', label: 'Favoritas', icon: 'thumb_up' },
 ]
 
 export default function NewsPage() {
   const [rawNews, setRawNews] = useState([])
   const [preferences, setPreferences] = useState(() => getNewsPreferences())
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedFilter, setSelectedFilter] = useState('all')
   const [isPersonalizerOpen, setIsPersonalizerOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [actionFeedback, setActionFeedback] = useState(null)
@@ -91,11 +81,12 @@ export default function NewsPage() {
     return getPersonalizedNews(list, preferences)
   }, [rawNews, preferences])
 
-  // Filtered by active category pill
+  // Filtered by selected feed view (Todas / Recomendadas / Favoritas)
   const filteredArticles = useMemo(() => {
-    if (selectedCategory === 'all') return personalizedArticles
-    return personalizedArticles.filter((item) => item.categoryKey === selectedCategory)
-  }, [personalizedArticles, selectedCategory])
+    if (selectedFilter === 'recommended') return personalizedArticles.filter((item) => item.isRecommended)
+    if (selectedFilter === 'favorites') return personalizedArticles.filter((item) => item.isLiked)
+    return personalizedArticles
+  }, [personalizedArticles, selectedFilter])
 
   const handleLike = (articleId, categoryKey) => {
     toggleArticleLike(articleId, categoryKey)
@@ -170,26 +161,38 @@ export default function NewsPage() {
         </div>
       </div>
 
-      {/* Category Pills Filter with Icons */}
-      <div className="py-4 flex items-center gap-2 overflow-x-auto scrollbar-none">
-        {CATEGORIES.map((cat) => {
-          const isActive = selectedCategory === cat.key
-          return (
-            <button
-              key={cat.key}
-              type="button"
-              onClick={() => setSelectedCategory(cat.key)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-                isActive
-                  ? 'bg-primary text-white shadow-xs font-bold'
-                  : 'bg-white dark:bg-[#1a1f2c] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[15px]">{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          )
-        })}
+      {/* Clean, intuitive view filter selector */}
+      <div className="py-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-2xs">
+          {VIEW_FILTERS.map((f) => {
+            const isActive = selectedFilter === f.key
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setSelectedFilter(f.key)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                  isActive
+                    ? 'bg-white dark:bg-[#1e2433] text-primary shadow-xs font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[15px]">{f.icon}</span>
+                <span>{f.label}</span>
+                {f.key === 'all' && (
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">
+                    {personalizedArticles.length}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[15px] text-emerald-500">auto_awesome</span>
+          <span>Feed adaptativo ordenado por tus preferencias</span>
+        </div>
       </div>
 
       {/* News Grid (12 dynamic items with category icons and like/dislike buttons) */}

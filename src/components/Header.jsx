@@ -618,11 +618,14 @@ export default function Header({
       {isSettingsOpen && (
         <div
           onClick={() => setIsSettingsOpen(false)}
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xs cursor-pointer"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/50 cursor-pointer"
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            data-floating-menu="true"
             onClick={(e) => e.stopPropagation()}
-            className="bg-surface-pure rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl lg:max-w-3xl border border-outline-variant/30 animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 cursor-default relative max-h-[82vh] sm:max-h-[88vh] flex flex-col mb-1 sm:mb-0"
+            className="bg-white dark:bg-[#161b26] rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl lg:max-w-3xl border border-slate-200 dark:border-slate-800 animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-150 cursor-default relative max-h-[82vh] sm:max-h-[88vh] flex flex-col mb-1 sm:mb-0 transform-gpu"
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-muted shrink-0">
               <div className="flex items-center gap-2.5">
