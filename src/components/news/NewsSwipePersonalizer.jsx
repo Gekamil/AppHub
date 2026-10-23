@@ -242,8 +242,9 @@ export default function NewsSwipePersonalizer({
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
-                      {nextCard.category}
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">{nextCard.icon || 'newspaper'}</span>
+                      <span>{nextCard.category}</span>
                     </span>
                     <span className="text-[11px] text-slate-400">{nextCard.readTime}</span>
                   </div>
@@ -307,8 +308,11 @@ export default function NewsSwipePersonalizer({
                   {/* Card Content */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                        {currentCard.category}
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px]">
+                          {currentCard.icon || 'newspaper'}
+                        </span>
+                        <span>{currentCard.category}</span>
                       </span>
                       <span className="text-xs text-slate-400 flex items-center gap-1">
                         <span className="material-symbols-outlined text-xs">schedule</span>

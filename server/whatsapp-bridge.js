@@ -18,7 +18,192 @@ import path from 'path'
 import fs from 'fs'
 import http from 'http'
 import https from 'https'
-import { FALLBACK_NEWS } from '../src/services/newsService.js'
+import { FALLBACK_NEWS, generateDailyNews, CATEGORY_METADATA } from '../src/services/newsService.js'
+
+let liveNewsCache = null
+let lastLiveNewsFetch = 0
+const NEWS_CACHE_TTL = 15 * 60 * 1000 // 15 minutos de cache
+
+function cleanHtmlText(text = '') {
+  return text
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .trim()
+}
+
+export async function fetchLiveAggregatedNews() {
+  const now = Date.now()
+  if (liveNewsCache && Array.isArray(liveNewsCache) && liveNewsCache.length >= 12 && (now - lastLiveNewsFetch) < NEWS_CACHE_TTL) {
+    return liveNewsCache
+  }
+
+  const base12 = generateDailyNews()
+  const feeds = [
+    {
+      sourceName: 'El Pais',
+      category: 'Actualidad & Sociedad',
+      categoryKey: 'actualidad',
+      icon: 'public',
+      url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
+    },
+    {
+      sourceName: 'Marca',
+      category: 'Deportes & Salud',
+      categoryKey: 'sports',
+      icon: 'sports_soccer',
+      url: 'https://e00-marca.uecdn.es/rss/portada.xml',
+    },
+    {
+      sourceName: 'Agencia SINC',
+      category: 'Ciencia & Espacio',
+      categoryKey: 'science',
+      icon: 'biotech',
+      url: 'https://www.agenciasinc.es/rss/actualidad',
+    },
+    {
+      sourceName: '20 Minutos',
+      category: 'Actualidad & Sociedad',
+      categoryKey: 'actualidad',
+      icon: 'public',
+      url: 'https://www.20minutos.es/rss/',
+    },
+    {
+      sourceName: 'Xataka',
+      category: 'Tecnologia & Hardware',
+      categoryKey: 'tech',
+      icon: 'devices',
+      url: 'https://feeds.weblogssl.com/xataka2',
+    },
+  ]
+
+  const liveArticles = []
+
+  await Promise.allSettled(
+    feeds.map(async (feed) => {
+      try {
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 2500)
+        const res = await fetch(feed.url, {
+          signal: controller.signal,
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StudentHub/1.0; +https://studenthub.app)' },
+        })
+        clearTimeout(timer)
+        if (!res.ok) return
+        const xml = await res.text()
+        const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/gi) || []
+
+        let addedForFeed = 0
+        for (const itemXml of itemMatches) {
+          if (addedForFeed >= 3) break
+          const titleRaw = (itemXml.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i) || [])[1]
+          const linkRaw = (itemXml.match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i) || [])[1]
+          const descRaw = (itemXml.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i) || [])[1]
+          const imageMatch = itemXml.match(/<media:content[^>]+url=["']([^"']+)["']/i) ||
+            itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i) ||
+            itemXml.match(/<img[^>]+src=["']([^"']+)["']/i)
+
+          const title = cleanHtmlText(titleRaw || '')
+          const summary = cleanHtmlText(descRaw || '').slice(0, 220)
+          const url = (linkRaw || '').trim()
+
+          if (title && url) {
+            let catKey = feed.categoryKey
+            let catName = feed.category
+            let icon = feed.icon
+
+            const lowerTitle = title.toLowerCase()
+            if (lowerTitle.includes('inteligencia artificial') || lowerTitle.includes(' ai ') || lowerTitle.includes('ia') || lowerTitle.includes('chatgpt') || lowerTitle.includes('gemini')) {
+              catKey = 'ai'
+              catName = 'Inteligencia Artificial'
+              icon = 'smart_toy'
+            } else if (lowerTitle.includes('econom') || lowerTitle.includes('bce') || lowerTitle.includes('inflaci') || lowerTitle.includes('hipoteca') || lowerTitle.includes('empleo') || lowerTitle.includes('salario')) {
+              catKey = 'economy'
+              catName = 'Economia & Empleo'
+              icon = 'trending_up'
+            } else if (lowerTitle.includes('cine') || lowerTitle.includes('musica') || lowerTitle.includes('concierto') || lowerTitle.includes('libro') || lowerTitle.includes('museo') || lowerTitle.includes('festival')) {
+              catKey = 'culture'
+              catName = 'Cultura & Ocio'
+              icon = 'theater_comedy'
+            } else if (lowerTitle.includes('salud') || lowerTitle.includes('medic') || lowerTitle.includes('dieta') || lowerTitle.includes('sueno') || lowerTitle.includes('estres')) {
+              catKey = 'health'
+              catName = 'Salud & Bienestar'
+              icon = 'favorite'
+            } else if (lowerTitle.includes('universidad') || lowerTitle.includes('beca') || lowerTitle.includes('estudiante') || lowerTitle.includes('campus') || lowerTitle.includes('grado')) {
+              catKey = 'university'
+              catName = 'Vida Universitaria'
+              icon = 'school'
+            } else if (lowerTitle.includes('clima') || lowerTitle.includes('renovable') || lowerTitle.includes('solar') || lowerTitle.includes('ecolog') || lowerTitle.includes('bosque')) {
+              catKey = 'society'
+              catName = 'Clima & Medioambiente'
+              icon = 'eco'
+            }
+
+            liveArticles.push({
+              id: `live-${feed.categoryKey}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              category: catName,
+              categoryKey: catKey,
+              icon,
+              title,
+              summary: summary || title,
+              content: summary || title,
+              readTime: '3 min',
+              readingTime: '3 min',
+              sourceName: feed.sourceName,
+              source: feed.sourceName,
+              url,
+              sourceUrl: url,
+              imageUrl: imageMatch ? imageMatch[1] : 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80',
+              publishedAt: 'Hoy',
+              tags: [catName, feed.sourceName, 'Actualidad'],
+            })
+            addedForFeed++
+          }
+        }
+      } catch (e) {
+        // Feed fetch error gracefully ignored
+      }
+    })
+  )
+
+  // Merge liveArticles with base12 to ensure full 12-category coverage
+  const result = []
+  const usedKeys = new Set()
+
+  for (const art of liveArticles) {
+    if (!usedKeys.has(art.categoryKey)) {
+      result.push(art)
+      usedKeys.add(art.categoryKey)
+    }
+    if (result.length >= 12) break
+  }
+
+  // Fill in any missing domains from base12
+  for (const b of base12) {
+    if (result.length >= 12) break
+    if (!usedKeys.has(b.categoryKey)) {
+      result.push(b)
+      usedKeys.add(b.categoryKey)
+    }
+  }
+
+  // If still under 12, fill from remaining base12
+  for (const b of base12) {
+    if (result.length >= 12) break
+    if (!result.some((r) => r.id === b.id)) {
+      result.push(b)
+    }
+  }
+
+  liveNewsCache = result
+  lastLiveNewsFetch = now
+  return result
+}
 
 /**
  * Formato enriquecido para el boletín diario de noticias en WhatsApp.
@@ -2444,10 +2629,18 @@ export function handleBaileysApiRoute(req, res) {
     return true
   }
 
-  if (pathname === '/api/news' && req.method === 'GET') {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'application/json; charset=utf-8')
-    res.end(JSON.stringify(FALLBACK_NEWS))
+  if ((pathname === '/api/news' || pathname === '/api/proxy-rss') && req.method === 'GET') {
+    fetchLiveAggregatedNews()
+      .then((news) => {
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.end(JSON.stringify(news))
+      })
+      .catch(() => {
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.end(JSON.stringify(generateDailyNews()))
+      })
     return true
   }
 

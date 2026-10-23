@@ -2,7 +2,7 @@
 // Modelo: qwen/qwen3.8-27b
 import { getUserCalendars, getCurrentUser } from './firebase.js'
 import { isEventFinished } from './sharedRoles.js'
-import { FALLBACK_NEWS } from './newsService.js'
+import { FALLBACK_NEWS, generateDailyNews } from './newsService.js'
 import {
   getScheduledBriefings,
   setDailyNewsBriefing,
@@ -14,10 +14,17 @@ import {
 
 /**
  * Formatea el contexto diario de noticias para enriquecer el systemPrompt de Groq/LLM.
- * Incluye los 6 artículos completos con categorías, tiempos de lectura, fuentes, resúmenes y enlaces.
+ * Incluye los articulos diarios completos con categorias, tiempos de lectura, fuentes, resumenes y enlaces.
  */
-export function getNewsContextForAI(articles = FALLBACK_NEWS) {
-  const items = Array.isArray(articles) && articles.length > 0 ? articles : FALLBACK_NEWS
+export function getNewsContextForAI(articles = null) {
+  let items
+  if (Array.isArray(articles) && articles.length > 0) {
+    items = articles
+  } else if (articles === null) {
+    items = generateDailyNews()
+  } else {
+    items = FALLBACK_NEWS
+  }
   return items
     .map((a, idx) => (
       `${idx + 1}. [${a.category || a.categoryKey}] "${a.title}"\n` +
@@ -898,87 +905,141 @@ export function resolveAICopilotLocally(userMessage, currentTasks = [], currentC
 
   if (isNewsIntent) {
     const wantsAI = /inteligencia artificial|\bia\b|groq|lpu|llm|deep learning/i.test(lower)
-    const wantsTech = /tecnolog|software|herramienta|open source|desarrollo|vite|rust/i.test(lower)
-    const wantsScience = /ciencia|cu[aá]ntic|c[uú]bit|f[ií]sica/i.test(lower)
-    const wantsProductivity = /productividad|pomodoro|timeboxing|atenci[oó]n|neurociencia/i.test(lower)
-    const wantsUniversity = /universidad|erasmus|beca|movilidad|m[aá]ster/i.test(lower)
+    const wantsTech = /tecnolog|software|hardware|bater[ií]a|pantalla|dispositivo|open source|desarrollo|vite|rust/i.test(lower)
+    const wantsScience = /ciencia|cu[aá]ntic|c[uú]bit|f[ií]sica|espacio|luna|j[uú]piter|astronom/i.test(lower)
+    const wantsSports = /deporte|f[uú]tbol|champions|partido|fuerza|gimnasio|atleta/i.test(lower)
+    const wantsEconomy = /econom|bce|tipo.*inter|hipoteca|inflaci|empleo|salario|finanza/i.test(lower)
+    const wantsCulture = /cultura|cine|m[aá]laga|festival|m[uú]sica|concierto|libro|museo/i.test(lower)
+    const wantsProductivity = /productividad|pomodoro|timeboxing|atenci[oó]n|neurociencia|sue[ñn]o/i.test(lower)
+    const wantsUniversity = /universidad|erasmus|beca|movilidad|m[aá]ster|campus|biblioteca/i.test(lower)
 
-    // Si pide específicamente IA o Tecnología
+    // Si pide especificamente Deportes
+    if (wantsSports) {
+      return {
+        reply: `**Novedades destacadas de Deportes & Salud hoy**:\n\n` +
+          `• **Jornada de Champions League y competicion europea**: Victorias clave con destacada actuacion de jovenes talentos.\n` +
+          `  _Fuente: Marca (3 min de lectura)_ - [Ver noticia completa](https://www.marca.com/futbol/champions-league.html)\n\n` +
+          `• **Beneficios del entrenamiento de fuerza**: El trabajo muscular constante mejora la funcion ejecutiva y reduce el estres en un 25%.\n` +
+          `  _Fuente: AS Salud & Deporte (4 min de lectura)_ - [Ver noticia completa](https://as.com/deportes/)\n\n` +
+          `*Tambien tienes disponibles titulares de Actualidad, Economia, Ciencia, Cultura, Universidad y Tecnologia en StudentHub.*`,
+        actions: [],
+      }
+    }
+
+    // Si pide especificamente Economia
+    if (wantsEconomy) {
+      return {
+        reply: `**Novedades destacadas de Economia & Empleo hoy**:\n\n` +
+          `• **El BCE reduce tipos de interes**: Alivio para hipotecas y creditos a emprendedores y jovenes profesionales.\n` +
+          `  _Fuente: Cinco Dias (3 min de lectura)_ - [Ver noticia completa](https://cincodias.elpais.com/economia/)\n\n` +
+          `• **Liderazgo del empleo tecnologico**: Ingenieria y energias limpias concentran el mayor crecimiento de empleo cualificado.\n` +
+          `  _Fuente: El Economista (4 min de lectura)_ - [Ver noticia completa](https://www.eleconomista.es/economia/)\n\n` +
+          `*Tambien tienes disponibles titulares de Actualidad, Deportes, Ciencia, Cultura, Universidad y Tecnologia.*`,
+        actions: [],
+      }
+    }
+
+    // Si pide especificamente Cultura
+    if (wantsCulture) {
+      return {
+        reply: `**Novedades destacadas de Cultura & Ocio hoy**:\n\n` +
+          `• **Festival de Cine de Malaga**: Gran participacion de proyectos independientes y nuevas narrativas iberoamericanas.\n` +
+          `  _Fuente: RTVE Cultura (3 min de lectura)_ - [Ver noticia completa](https://www.rtve.es/noticias/cultura/)\n\n` +
+          `• **Exposiciones inmersivas y Bono Cultural Joven**: Museos refuerzan actividades y acceso gratuito para universitarios.\n` +
+          `  _Fuente: El Confidencial Cultural (3 min de lectura)_ - [Ver noticia completa](https://www.elconfidencial.com/cultura/)\n\n` +
+          `*Tambien tienes disponibles titulares de Actualidad, Deportes, Ciencia, Economia, Universidad y Tecnologia.*`,
+        actions: [],
+      }
+    }
+
+    // Si pide especificamente IA o Tecnologia
     if ((wantsAI || wantsTech) && !lower.includes('todas') && !lower.includes('todo') && !lower.includes('resumen general')) {
       const highlighted = []
       if (wantsAI) {
         highlighted.push(
-          `🤖 **Inteligencia Artificial**:\n` +
-          `• **Groq y los procesadores LPU**: Inferencia ultrarrápida a más de 300 tokens por segundo para modelos de lenguaje, permitiendo respuestas de voz y razonamiento reactivo sin la latencia de GPUs convencionales.\n` +
-          `  _Fuente: Xataka (3 min de lectura)_ — [Ver noticia completa](https://www.xataka.com/categoria/inteligencia-artificial)`
+          `**Inteligencia Artificial**:\n` +
+          `• **Groq y los procesadores LPU**: Inferencia ultrarrapida a mas de 300 tokens por segundo para modelos de lenguaje, permitiendo respuestas de voz y razonamiento reactivo sin la latencia de GPUs convencionales.\n` +
+          `  _Fuente: Xataka (3 min de lectura)_ - [Ver noticia completa](https://www.xataka.com/categoria/inteligencia-artificial)`
         )
       }
       if (wantsTech) {
         highlighted.push(
-          `💻 **Tecnología & Software**:\n` +
-          `• **Herramientas esenciales para universitarios**: Selección de utilidades open source y plataformas ligeras para gestionar apuntes, proyectos de código y calendarios académicos sin suscripciones costosas ni comprometer la privacidad.\n` +
-          `  _Fuente: Genbeta (4 min de lectura)_ — [Ver noticia completa](https://www.genbeta.com/herramientas/mejores-aplicaciones-estudiantes)`
+          `**Tecnologia & Software**:\n` +
+          `• **Herramientas esenciales para universitarios**: Seleccion de utilidades open source y plataformas ligeras para gestionar apuntes, proyectos de codigo y calendarios academicos sin suscripciones costosas ni comprometer la privacidad.\n` +
+          `  _Fuente: Genbeta (4 min de lectura)_ - [Ver noticia completa](https://www.genbeta.com/herramientas/mejores-aplicaciones-estudiantes)`
         )
       }
       const otherTopics = []
       if (!wantsAI) otherTopics.push('IA y procesadores Groq LPU (Xataka)')
       if (!wantsTech) otherTopics.push('Herramientas universitarias (Genbeta)')
-      otherTopics.push('Ciencia cuántica (Agencia SINC / Nature)', 'Productividad Pomodoro (Xataka Ciencia)', 'Becas Erasmus+ (El País Educación)', 'Bundlers en Rust con Vite (Genbeta Dev)')
+      otherTopics.push('Ciencia cuantica (Agencia SINC / Nature)', 'Productividad Pomodoro (Xataka Ciencia)', 'Becas Erasmus+ (El País Educación)', 'Bundlers en Rust con Vite (Genbeta Dev)')
 
       return {
-        reply: `📰 **Novedades destacadas de ${wantsAI && wantsTech ? 'IA y Tecnología' : wantsAI ? 'Inteligencia Artificial' : 'Tecnología'} hoy**:\n\n` +
+        reply: `**Novedades destacadas de ${wantsAI && wantsTech ? 'IA y Tecnologia' : wantsAI ? 'Inteligencia Artificial' : 'Tecnologia'} hoy**:\n\n` +
           highlighted.join('\n\n') +
-          `\n\n📌 *También tienes disponibles en StudentHub los titulares de:* ${otherTopics.join(', ')}. ¿Quieres que te resuma alguno de ellos?`,
+          `\n\n*Tambien tienes disponibles en StudentHub los titulares de:* ${otherTopics.join(', ')}. ¿Quieres que te resuma alguno de ellos?`,
         actions: [],
       }
     }
 
     if (wantsScience) {
       return {
-        reply: `🔬 **Novedad destacada de Ciencia & Computación hoy**:\n\n` +
-          `• **Avance clave en corrección de errores cuánticos**: Investigadores logran implementar esquemas de redundancia cuántica en chips superconductores que disminuyen la tasa de fallos en un orden de magnitud, acercando la viabilidad de la computación cuántica tolerante a fallos.\n` +
-          `  _Fuente: Agencia SINC / Nature (5 min de lectura)_ — [Ver noticia completa](https://www.agenciasinc.es/Noticias/computacion-cuantica)\n\n` +
-          `📌 *Otros titulares de hoy*: Groq LPU (Xataka), Apps para estudiantes (Genbeta), Pomodoro (Xataka Ciencia), Becas Erasmus+ (El País Educación) y Vite con Rust (Genbeta Dev).`,
+        reply: `**Novedad destacada de Ciencia & Computacion hoy**:\n\n` +
+          `• **Avance clave en correccion de errores cuanticos**: Investigadores logran implementar esquemas de redundancia cuantica en chips superconductores que disminuyen la tasa de fallos en un orden de magnitud, acercando la viabilidad de la computacion cuantica tolerante a fallos.\n` +
+          `  _Fuente: Agencia SINC / Nature (5 min de lectura)_ - [Ver noticia completa](https://www.agenciasinc.es/Noticias/computacion-cuantica)\n\n` +
+          `*Otros titulares de hoy*: Groq LPU (Xataka), Apps para estudiantes (Genbeta), Pomodoro (Xataka Ciencia), Becas Erasmus+ (El País Educación) y Vite con Rust (Genbeta Dev).`,
         actions: [],
       }
     }
 
     if (wantsProductivity) {
       return {
-        reply: `⏱️ **Novedad destacada de Productividad & Neurociencia hoy**:\n\n` +
-          `• **Protocolo Pomodoro 50/10 y timeboxing**: Estudios cognitivos demuestran que fraccionar jornadas de estudio intensivo en bloques de 50 minutos con 10 minutos de desconexión sin pantallas previene la fatiga mental y maximiza la retención a largo plazo.\n` +
-          `  _Fuente: Xataka Ciencia (3 min de lectura)_ — [Ver noticia completa](https://www.xataka.com/tag/productividad)\n\n` +
-          `📌 *Otros titulares*: IA Groq (Xataka), Apps universitarias (Genbeta), Cúbits cuánticos (Agencia SINC / Nature), Becas Erasmus+ (El País Educación) y Vite Rust (Genbeta Dev).`,
+        reply: `**Novedad destacada de Productividad & Neurociencia hoy**:\n\n` +
+          `• **Protocolo Pomodoro 50/10 y timeboxing**: Estudios cognitivos demuestran que fraccionar jornadas de estudio intensivo en bloques de 50 minutos con 10 minutos de desconexion sin pantallas previene la fatiga mental y maximiza la retencion a largo plazo.\n` +
+          `  _Fuente: Xataka Ciencia (3 min de lectura)_ - [Ver noticia completa](https://www.xataka.com/tag/productividad)\n\n` +
+          `*Otros titulares*: IA Groq (Xataka), Apps universitarias (Genbeta), Cubits cuanticos (Agencia SINC / Nature), Becas Erasmus+ (El País Educación) y Vite Rust (Genbeta Dev).`,
         actions: [],
       }
     }
 
     if (wantsUniversity) {
       return {
-        reply: `🎓 **Novedad destacada de Vida Universitaria hoy**:\n\n` +
-          `• **Convocatorias Erasmus+ y becas de movilidad**: Se publican las nuevas dotaciones económicas y plazos de solicitud para estancias académicas internacionales, con complementos reforzados para proyectos STEM y prácticas en empresas tecnológicas europeas.\n` +
-          `  _Fuente: El País Educación (4 min de lectura)_ — [Ver noticia completa](https://elpais.com/educacion/universidad/)\n\n` +
-          `📌 *Otros titulares*: IA Groq (Xataka), Apps universitarias (Genbeta), Cúbits cuánticos (Agencia SINC / Nature), Pomodoro (Xataka Ciencia) y Vite Rust (Genbeta Dev).`,
+        reply: `**Novedad destacada de Vida Universitaria hoy**:\n\n` +
+          `• **Convocatorias Erasmus+ y becas de movilidad**: Se publican las nuevas dotaciones economicas y plazos de solicitud para estancias academicas internacionales, con complementos reforzados para proyectos STEM y practicas en empresas tecnologicas europeas.\n` +
+          `  _Fuente: El País Educación (4 min de lectura)_ - [Ver noticia completa](https://elpais.com/educacion/universidad/)\n\n` +
+          `*Otros titulares*: IA Groq (Xataka), Apps universitarias (Genbeta), Cubits cuanticos (Agencia SINC / Nature), Pomodoro (Xataka Ciencia) y Vite Rust (Genbeta Dev).`,
         actions: [],
       }
     }
 
-    // Respuesta general con los 6 titulares destacados
+    // Respuesta general con los 12 titulares destacados organizados por categorias
     return {
-      reply: `📰 **Titulares destacados de hoy en StudentHub**:\n\n` +
-        `1. 🤖 **[IA] La revolución de los asistentes multimodales en el móvil**: Cómo los nuevos modelos de voz y visión en tiempo real transforman el estudio y el día a día.\n` +
-        `   _Fuente: Xataka (3 min de lectura)_ — [Enlace](https://www.xataka.com/categoria/inteligencia-artificial)\n\n` +
-        `2. 🔋 **[Tecnología] Baterías de silicio-carbono con 2 días de autonomía**: Nueva densidad energética para smartphones y portátiles sin aumentar su grosor.\n` +
-        `   _Fuente: Genbeta (4 min de lectura)_ — [Enlace](https://www.genbeta.com/tecnologia/baterias-silicio-carbono-moviles)\n\n` +
-        `3. 🚀 **[Ciencia] Misiones espaciales a lunas heladas de Júpiter**: La ciencia confirma la travesía de Europa Clipper en busca de océanos habitables.\n` +
-        `   _Fuente: Agencia SINC / Nature (5 min de lectura)_ — [Enlace](https://www.agenciasinc.es/Noticias/exploracion-espacial-lunas-jupiter)\n\n` +
-        `4. 🧠 **[Salud] La ciencia del sueño y el rendimiento académico**: Dormir 7-8 horas consolida la memoria de trabajo mucho más que trasnochar antes de un examen.\n` +
-        `   _Fuente: Xataka Ciencia (3 min de lectura)_ — [Enlace](https://www.xataka.com/tag/productividad)\n\n` +
-        `5. 🎓 **[Universidad] Nuevas becas Erasmus+ y movilidad internacional**: Ayudas de estancia y manutención ampliadas para universitarios y máster.\n` +
-        `   _Fuente: El País Educación (4 min de lectura)_ — [Enlace](https://elpais.com/educacion/universidad/)\n\n` +
-        `6. 💻 **[Software] El auge de las aplicaciones locales y sin suscripción**: Movimiento hacia software ligero, 100% offline y centrado en la privacidad.\n` +
-        `   _Fuente: Genbeta Dev (3 min de lectura)_ — [Enlace](https://www.genbeta.com/desarrollo/software-local-offline-first)\n\n` +
-        `¿Te gustaría que te resuma alguna de estas noticias con mayor detalle?`,
+      reply: `**Titulares destacados de hoy en StudentHub (12 noticias del dia)**:\n\n` +
+        `1. **[Actualidad] Transporte joven bonificado y movilidad limpia**: Nuevos descuentos directos para estudiantes y menores de 30 anos.\n` +
+        `   _Fuente: El País (3 min de lectura)_ - [Enlace](https://elpais.com/sociedad/)\n\n` +
+        `2. **[Deportes] Jornada clave en Champions League y beneficios de la fuerza**: Victorias continentales y neurobiologia del ejercicio muscular.\n` +
+        `   _Fuente: Marca (3 min de lectura)_ - [Enlace](https://www.marca.com/futbol/champions-league.html)\n\n` +
+        `3. **[Ciencia] Misiones espaciales a lunas heladas de Jupiter**: Europa Clipper explora oceanos habitables en el sistema solar exterior.\n` +
+        `   _Fuente: Agencia SINC / Nature (5 min de lectura)_ - [Enlace](https://www.agenciasinc.es/Noticias/exploracion-espacial-lunas-jupiter)\n\n` +
+        `4. **[Economia] El BCE baja tipos de interes e impulsa el empleo joven**: Alivio para hipotecas y contratos cualificados en energias e ingenieria.\n` +
+        `   _Fuente: Cinco Dias / El País Economía (3 min de lectura)_ - [Enlace](https://cincodias.elpais.com/economia/)\n\n` +
+        `5. **[Cultura] Festival de Cine de Malaga y Bono Cultural Universitario**: Convocatorias audiovisuales y exposiciones de arte contemporaneo.\n` +
+        `   _Fuente: RTVE Cultura (3 min de lectura)_ - [Enlace](https://www.rtve.es/noticias/cultura/)\n\n` +
+        `6. **[Universidad] Nuevas dotaciones Erasmus+ y bibliotecas 24h**: Ayudas de movilidad y salas de estudio acondicionadas para evaluacion continua.\n` +
+        `   _Fuente: El País Educación (4 min de lectura)_ - [Enlace](https://elpais.com/educacion/universidad/)\n\n` +
+        `7. **[Salud] Dieta mediterranea contra el estres y 7.000 pasos activos**: Pautas medicas para optimizar la energia y regular el cortisol.\n` +
+        `   _Fuente: Agencia SINC / Medscape (3 min de lectura)_ - [Enlace](https://www.agenciasinc.es/Noticias/dieta-mediterranea-salud-cerebral)\n\n` +
+        `8. **[IA] La revolucion de los asistentes multimodales en el movil**: Modelos ligeros de voz y vision que razonan paso a paso.\n` +
+        `   _Fuente: Xataka (3 min de lectura)_ - [Enlace](https://www.xataka.com/categoria/inteligencia-artificial)\n\n` +
+        `9. **[Tecnologia] Baterias de silicio-carbono con 2 dias de autonomia**: Mayor densidad energetica para portátiles y telefonos.\n` +
+        `   _Fuente: Genbeta (4 min de lectura)_ - [Enlace](https://www.genbeta.com/tecnologia/baterias-silicio-carbono-moviles)\n\n` +
+        `10. **[Medioambiente] Record historico de generacion renovable solar y eolica**: Mas del 65% del consumo peninsular cubierto con energias limpias.\n` +
+        `   _Fuente: EFE Verde (3 min de lectura)_ - [Enlace](https://efeverde.com/)\n\n` +
+        `11. **[Productividad] La ciencia del descanso y el metodo time-blocking**: Como planificar bloques de foco sin saturacion mental.\n` +
+        `   _Fuente: Xataka Ciencia (3 min de lectura)_ - [Enlace](https://www.xataka.com/tag/productividad)\n\n` +
+        `12. **[Gaming] Grandes lanzamientos indie y auge de consolas portatiles**: Nuevas aventuras narrativas que cautivan en cualquier lugar.\n` +
+        `   _Fuente: 3DJuegos (3 min de lectura)_ - [Enlace](https://www.3djuegos.com/)\n\n` +
+        `¿Te gustaria que te resuma alguna de estas noticias con mayor detalle?`,
       actions: [],
     }
   }

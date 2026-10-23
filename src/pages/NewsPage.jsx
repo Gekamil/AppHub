@@ -4,27 +4,37 @@ import {
   getDailyNews,
   getNewsPreferences,
   getPersonalizedNews,
+  toggleArticleLike,
+  toggleArticleDislike,
+  CATEGORY_METADATA,
 } from '../services/newsService'
 import NewsSwipePersonalizer from '../components/news/NewsSwipePersonalizer'
 
 const CATEGORIES = [
-  { key: 'all', label: 'Todas' },
-  { key: 'ai', label: 'Inteligencia Artificial' },
-  { key: 'tech', label: 'Tecnología' },
-  { key: 'science', label: 'Ciencia' },
-  { key: 'productivity', label: 'Productividad' },
-  { key: 'university', label: 'Universidad' },
-  { key: 'software', label: 'Desarrollo' },
+  { key: 'all', label: 'Todas', icon: 'apps' },
+  { key: 'actualidad', label: 'Actualidad', icon: 'public' },
+  { key: 'sports', label: 'Deportes', icon: 'sports_soccer' },
+  { key: 'science', label: 'Ciencia', icon: 'biotech' },
+  { key: 'economy', label: 'Economía', icon: 'trending_up' },
+  { key: 'culture', label: 'Cultura', icon: 'theater_comedy' },
+  { key: 'university', label: 'Universidad', icon: 'school' },
+  { key: 'health', label: 'Salud', icon: 'favorite' },
+  { key: 'ai', label: 'IA', icon: 'smart_toy' },
+  { key: 'tech', label: 'Tecnología', icon: 'devices' },
+  { key: 'society', label: 'Medioambiente', icon: 'eco' },
+  { key: 'productivity', label: 'Productividad', icon: 'timer' },
+  { key: 'gaming', label: 'Gaming', icon: 'sports_esports' },
 ]
 
 export default function NewsPage() {
-  const [rawNews, setRawNews] = useState(FALLBACK_NEWS)
+  const [rawNews, setRawNews] = useState([])
   const [preferences, setPreferences] = useState(() => getNewsPreferences())
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [isPersonalizerOpen, setIsPersonalizerOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [actionFeedback, setActionFeedback] = useState(null)
 
-  // Format today's date in Spanish (e.g., "Jueves, 22 de octubre de 2026")
+  // Format today's date in Spanish (e.g., "Viernes, 23 de octubre de 2026")
   const todayFormatted = useMemo(() => {
     try {
       const d = new Date()
@@ -43,7 +53,7 @@ export default function NewsPage() {
     setIsLoading(true)
     try {
       const data = await getDailyNews({ useLiveProxy: true, timeoutMs: 3000 })
-      setRawNews(data && Array.isArray(data) && data.length > 0 ? data : FALLBACK_NEWS)
+      setRawNews(Array.isArray(data) && data.length > 0 ? data : FALLBACK_NEWS)
     } catch (err) {
       setRawNews(FALLBACK_NEWS)
     } finally {
@@ -68,9 +78,17 @@ export default function NewsPage() {
     return () => window.removeEventListener('studenthub_news_preferences_changed', handlePrefsChange)
   }, [refreshNews])
 
-  // Personalized and ranked news feed
+  // Clear toast feedback
+  useEffect(() => {
+    if (!actionFeedback) return
+    const t = setTimeout(() => setActionFeedback(null), 2500)
+    return () => clearTimeout(t)
+  }, [actionFeedback])
+
+  // Personalized and ranked news feed (prioritizing likes and deprioritizing dislikes)
   const personalizedArticles = useMemo(() => {
-    return getPersonalizedNews(rawNews, preferences)
+    const list = rawNews && rawNews.length > 0 ? rawNews : FALLBACK_NEWS
+    return getPersonalizedNews(list, preferences)
   }, [rawNews, preferences])
 
   // Filtered by active category pill
@@ -79,26 +97,50 @@ export default function NewsPage() {
     return personalizedArticles.filter((item) => item.categoryKey === selectedCategory)
   }, [personalizedArticles, selectedCategory])
 
+  const handleLike = (articleId, categoryKey) => {
+    toggleArticleLike(articleId, categoryKey)
+    setPreferences(getNewsPreferences())
+    const catLabel = CATEGORY_METADATA[categoryKey]?.label || categoryKey
+    setActionFeedback(`Preferencia guardada: Más noticias de ${catLabel}`)
+  }
+
+  const handleDislike = (articleId, categoryKey) => {
+    toggleArticleDislike(articleId, categoryKey)
+    setPreferences(getNewsPreferences())
+    const catLabel = CATEGORY_METADATA[categoryKey]?.label || categoryKey
+    setActionFeedback(`Preferencia guardada: Menos noticias de ${catLabel}`)
+  }
+
   return (
-    <div className="min-h-full pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto animate-fade-in">
+    <div className="min-h-full pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto animate-fade-in relative">
+      {/* Toast Feedback for direct like / dislike interactions */}
+      {actionFeedback && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900/95 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-2xl shadow-xl text-xs font-semibold backdrop-blur-md border border-white/10 dark:border-black/10 animate-in fade-in slide-in-from-bottom-2 duration-200 flex items-center gap-2">
+          <span className="material-symbols-outlined text-[16px] text-emerald-400 dark:text-emerald-600">
+            tune
+          </span>
+          <span>{actionFeedback}</span>
+        </div>
+      )}
+
       {/* Hero Header */}
       <div className="pt-6 pb-8 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5 capitalize">
               <span className="material-symbols-outlined text-[15px]">event</span>
               {todayFormatted}
             </span>
             <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Edición Diaria
+              12 Titulares del Día
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Noticias Diarias
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-            Titulares y actualidad sobre inteligencia artificial, ciencia, tecnología y vida universitaria. Personalizado según tus intereses.
+            12 noticias actualizadas hoy sobre deportes, actualidad, ciencia, economía, cultura, vida universitaria y tecnología. Se adaptan dinámicamente según tus likes y dislikes.
           </p>
         </div>
 
@@ -128,7 +170,7 @@ export default function NewsPage() {
         </div>
       </div>
 
-      {/* Category Pills Filter */}
+      {/* Category Pills Filter with Icons */}
       <div className="py-4 flex items-center gap-2 overflow-x-auto scrollbar-none">
         {CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat.key
@@ -137,19 +179,20 @@ export default function NewsPage() {
               key={cat.key}
               type="button"
               onClick={() => setSelectedCategory(cat.key)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
                 isActive
                   ? 'bg-primary text-white shadow-xs font-bold'
                   : 'bg-white dark:bg-[#1a1f2c] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/10'
               }`}
             >
-              {cat.label}
+              <span className="material-symbols-outlined text-[15px]">{cat.icon}</span>
+              <span>{cat.label}</span>
             </button>
           )
         })}
       </div>
 
-      {/* News Grid (6 structured items) */}
+      {/* News Grid (12 dynamic items with category icons and like/dislike buttons) */}
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredArticles.map((article) => {
           return (
@@ -166,27 +209,31 @@ export default function NewsPage() {
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     onError={(e) => {
-                      // Fallback gradient placeholder if external image fails to load
                       e.currentTarget.style.display = 'none'
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-                  {/* Badges on Image */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-black/60 backdrop-blur-md text-white border border-white/20">
-                      {article.category}
+                  {/* Badges on Image with category icon */}
+                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-black/65 backdrop-blur-md text-white border border-white/20 flex items-center gap-1.5 shadow-xs">
+                      <span className="material-symbols-outlined text-[13px] text-sky-400">
+                        {article.icon || CATEGORY_METADATA[article.categoryKey]?.icon || 'newspaper'}
+                      </span>
+                      <span>{article.category}</span>
                     </span>
+
                     {article.isRecommended && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/90 backdrop-blur-md text-white shadow-xs">
-                        ⭐ Recomendado
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/90 backdrop-blur-md text-white shadow-xs flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">star</span>
+                        <span>Recomendado</span>
                       </span>
                     )}
                   </div>
 
                   <div className="absolute bottom-2 right-3 text-[11px] text-white/90 font-medium drop-shadow-xs flex items-center gap-1">
                     <span className="material-symbols-outlined text-[13px]">schedule</span>
-                    {article.readTime || article.readingTime}
+                    {article.readTime || article.readingTime || '3 min'}
                   </div>
                 </div>
 
@@ -207,21 +254,60 @@ export default function NewsPage() {
                 </div>
               </div>
 
-              {/* Card Footer with Direct External Link */}
-              <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">
-                  {article.publishedAt}
+              {/* Card Footer with Direct External Link and Like / Dislike Buttons */}
+              <div className="px-5 pb-4 pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-400 truncate">
+                  {article.publishedAt || 'Hoy'}
                 </span>
 
-                <a
-                  href={article.url || article.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover transition-colors py-1 px-2.5 rounded-lg hover:bg-primary/10"
-                >
-                  <span>Leer fuente</span>
-                  <span className="material-symbols-outlined text-sm">open_in_new</span>
-                </a>
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Like Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleLike(article.id, article.categoryKey)
+                    }}
+                    className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                      article.isLiked
+                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold scale-105'
+                        : 'text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10'
+                    }`}
+                    title={article.isLiked ? 'Te gusta (Interés guardado)' : 'Me interesa este tema'}
+                    aria-label="Me gusta este tema"
+                  >
+                    <span className="material-symbols-outlined text-[17px]">thumb_up</span>
+                  </button>
+
+                  {/* Dislike Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleDislike(article.id, article.categoryKey)
+                    }}
+                    className={`p-1.5 rounded-xl transition-all cursor-pointer ${
+                      article.isDisliked
+                        ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold scale-105'
+                        : 'text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10'
+                    }`}
+                    title={article.isDisliked ? 'Descartada (Menos noticias de este tema)' : 'No me interesa este tema'}
+                    aria-label="No me interesa este tema"
+                  >
+                    <span className="material-symbols-outlined text-[17px]">thumb_down</span>
+                  </button>
+
+                  {/* External Source Link */}
+                  <a
+                    href={article.url || article.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover transition-colors py-1 px-2.5 rounded-lg hover:bg-primary/10 ml-0.5"
+                  >
+                    <span>Fuente</span>
+                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  </a>
+                </div>
               </div>
             </article>
           )
@@ -233,7 +319,7 @@ export default function NewsPage() {
           <span className="material-symbols-outlined text-4xl mb-2 text-slate-300 dark:text-slate-600">
             feed
           </span>
-          <p className="text-sm">No hay noticias en esta categoría hoy.</p>
+          <p className="text-sm">No hay noticias en esta categoría hoy o han sido descartadas según tus preferencias.</p>
         </div>
       )}
 
@@ -241,7 +327,7 @@ export default function NewsPage() {
       <NewsSwipePersonalizer
         isOpen={isPersonalizerOpen}
         onClose={() => setIsPersonalizerOpen(false)}
-        articles={rawNews}
+        articles={rawNews && rawNews.length > 0 ? rawNews : FALLBACK_NEWS}
         onPreferenceChange={handlePreferencesUpdated}
       />
     </div>
