@@ -110,15 +110,15 @@ export default function ProfilePopover({
   // Clases de posicionamiento según ubicación
   const positionClasses =
     placement === 'sidebar'
-      ? 'fixed left-3 sm:left-4 bottom-20 z-50'
+      ? 'fixed left-3 sm:left-4 bottom-20 z-[60]'
       : placement === 'bottom-bar'
-      ? 'fixed right-3 bottom-16 z-50 max-h-[calc(100vh-80px)] overflow-y-auto shadow-[0_-8px_30px_rgba(0,0,0,0.12)] animate-in fade-in slide-in-from-bottom-2 duration-150'
-      : `fixed right-3 sm:right-6 ${isElectron ? 'md:right-38' : ''} top-16 z-50 max-h-[calc(100vh-90px)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150`
+      ? 'fixed right-3 bottom-16 z-[60] max-h-[calc(100vh-80px)] overflow-y-auto shadow-[0_-8px_30px_rgba(0,0,0,0.12)] animate-in fade-in slide-in-from-bottom-2 duration-150'
+      : `fixed right-[max(env(safe-area-inset-right,0px),12px)] sm:right-6 ${isElectron ? 'md:right-38' : ''} top-[calc(3.5rem+env(safe-area-inset-top,0px)+0.5rem)] md:top-16 z-[60] max-h-[calc(100vh-90px)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150`
 
   return (
     <div
       ref={popoverRef}
-      className={`${positionClasses} w-[280px] max-w-[calc(100vw-24px)] bg-white dark:bg-[#161b26] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden text-sm select-none z-50`}
+      className={`${positionClasses} w-[280px] max-w-[calc(100vw-24px)] bg-white dark:bg-[#161b26] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden text-sm select-none z-[60]`}
     >
       {/* Cabecera del Popover */}
       <div className="p-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">

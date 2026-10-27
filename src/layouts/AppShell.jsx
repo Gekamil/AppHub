@@ -530,8 +530,10 @@ export default function AppShell() {
         />
         <main
           className={`w-full ${
-            navPosition === 'top' ? 'pt-16 md:pt-22 pb-24 sm:pb-28 md:pb-margin-lg' : 'pt-16 md:pt-16 pb-6 md:pb-margin-lg'
-          } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 bg-surface-subtle min-h-screen`}
+            navPosition === 'top'
+              ? 'pt-[calc(3.5rem+env(safe-area-inset-top,0px)+0.75rem)] md:pt-22 pb-[calc(5rem+max(env(safe-area-inset-bottom,0px),8px))] sm:pb-28 md:pb-margin-lg'
+              : 'pt-[calc(3.5rem+env(safe-area-inset-top,0px)+0.75rem)] md:pt-16 pb-[calc(2rem+max(env(safe-area-inset-bottom,0px),8px))] md:pb-margin-lg'
+          } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 pl-[max(env(safe-area-inset-left,0px),12px)] pr-[max(env(safe-area-inset-right,0px),12px)] bg-surface-subtle min-h-screen`}
         >
           <Outlet context={outletContextValue} />
         </main>

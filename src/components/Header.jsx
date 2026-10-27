@@ -333,7 +333,7 @@ export default function Header({
   return (
     <>
       <header
-        className={`fixed top-0 right-0 bg-surface-pure/90 dark:bg-[#040506]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-[#27272a] shadow-[0_1px_8px_rgba(0,0,0,0.03)] dark:shadow-none z-40 flex flex-col justify-center px-3 sm:px-gutter-lg ${isElectron ? 'md:pr-38' : ''} transition-all duration-300 left-0 app-drag-region ${
+        className={`fixed top-0 right-0 bg-surface-pure/90 dark:bg-[#040506]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-[#27272a] shadow-[0_1px_8px_rgba(0,0,0,0.03)] dark:shadow-none z-50 flex flex-col justify-center pt-[env(safe-area-inset-top,0px)] px-3 sm:px-gutter-lg pl-[max(env(safe-area-inset-left,0px),12px)] pr-[max(env(safe-area-inset-right,0px),12px)] ${isElectron ? 'md:pr-38' : ''} transition-all duration-300 left-0 app-drag-region ${
           navPosition === 'sidebar' && isSidebarOpen ? 'md:left-60' : 'md:left-0'
         }`}
       >
@@ -489,12 +489,12 @@ export default function Header({
           </div>
 
           {/* Controles para Móvil en la barra superior (Notificaciones, Ajustes y Perfil) */}
-          <div className="flex md:hidden items-center gap-1 app-no-drag">
+          <div className="flex md:hidden items-center gap-1.5 sm:gap-2 app-no-drag shrink-0 relative z-10">
             <button
               type="button"
               data-notif-button
               onClick={handleToggleNotifications}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative active:scale-95 ${
+              className={`w-9.5 h-9.5 min-w-[38px] min-h-[38px] rounded-xl flex items-center justify-center transition-colors cursor-pointer relative active:scale-95 ${
                 isNotificationsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
               }`}
               title="Centro de notificaciones"
@@ -507,7 +507,7 @@ export default function Header({
             <button
               type="button"
               onClick={() => setIsSettingsOpen(true)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 ${
+              className={`w-9.5 h-9.5 min-w-[38px] min-h-[38px] rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 ${
                 isSettingsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
               }`}
               title="Ajustes de la aplicación"
@@ -519,17 +519,17 @@ export default function Header({
                 ref={mobileProfileButtonRef}
                 type="button"
                 onClick={() => setIsProfileOpen((prev) => !prev)}
-                className="relative w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center ml-0.5 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                className="relative w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center ml-0.5 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
                 title="Modo Invitado • Pulsa para abrir menú"
               >
-                <span className="material-symbols-outlined text-[18px]">person</span>
+                <span className="material-symbols-outlined text-[19px]">person</span>
               </button>
             ) : (
               <button
                 ref={mobileProfileButtonRef}
                 type="button"
                 onClick={() => setIsProfileOpen((prev) => !prev)}
-                className="relative w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[10.5px] tracking-tight ml-0.5 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                className="relative w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[11px] tracking-tight ml-0.5 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
                 title={`Conectado como ${user.displayName || 'Usuario'}`}
               >
                 {user.displayName
@@ -549,7 +549,7 @@ export default function Header({
       {navPosition === 'top' && (
         <nav
           aria-label="Barra de navegación móvil"
-          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-16.5 sm:h-18 px-3 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[max(env(safe-area-inset-bottom,0px),6px)] pt-1"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-16.5 sm:h-18 px-3 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[max(env(safe-area-inset-bottom,0px),6px)] pt-1"
         >
           {currentNavItems.map((item) => {
             const isActive =
@@ -593,9 +593,9 @@ export default function Header({
       {isNotificationsOpen && (
         <div
           ref={notifRef}
-          className={`fixed z-50 ${
+          className={`fixed z-[60] ${
             isMobile
-              ? 'top-15 right-3 left-3 w-auto max-w-sm ml-auto shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150'
+              ? 'top-[calc(3.5rem+env(safe-area-inset-top,0px)+0.5rem)] right-3 left-3 w-auto max-w-sm ml-auto shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150'
               : 'top-14 right-4 sm:right-6 md:right-16 w-80 shadow-xl animate-in fade-in zoom-in-95 duration-150'
           } bg-white dark:bg-[#161b26] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3.5 text-left select-none`}
         >

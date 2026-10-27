@@ -2523,7 +2523,7 @@ export default function CalendarPage() {
             {/* Encabezados de días */}
             <div
               style={{ paddingRight: `${scrollbarGutter}px` }}
-              className="grid grid-cols-[56px_repeat(7,1fr)] sm:grid-cols-[64px_repeat(7,1fr)] bg-slate-100/90 dark:bg-[#141824] border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-20"
+              className="grid grid-cols-[56px_repeat(7,1fr)] sm:grid-cols-[64px_repeat(7,1fr)] bg-slate-100/90 dark:bg-[#141824] border-b border-slate-200/80 dark:border-slate-800 sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] md:top-14 z-20"
             >
               <div className="p-space-xs sm:p-space-sm flex items-end justify-center text-slate-500 dark:text-slate-400 font-code-sm border-r border-slate-200/80 dark:border-slate-800 font-semibold text-[11px]">
                 <span>GMT+2</span>
@@ -3294,9 +3294,9 @@ export default function CalendarPage() {
       </div>
 
       {/* Top Command & Filter Deck (Elegante y Limpio: Solo 2 filas) */}
-      <div className={`w-full flex flex-col gap-space-md mb-space-xl pt-3.5 sm:pt-0.5 relative ${isCalDropdownOpen ? 'z-50' : 'z-20'}`}>
+      <div className={`w-full flex flex-col gap-space-md mb-space-xl pt-3.5 sm:pt-0.5 relative ${isCalDropdownOpen ? 'z-30' : 'z-20'}`}>
         {/* Fila 1: Navegador de Fecha, Selector de Calendario y Vistas */}
-        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-white dark:bg-[#161b26] p-3 sm:p-space-md rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 relative ${isCalDropdownOpen ? 'z-50' : 'z-10'}`}>
+        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-white dark:bg-[#161b26] p-3 sm:p-space-md rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800 relative ${isCalDropdownOpen ? 'z-20' : 'z-10'}`}>
           <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
               <button
@@ -5911,7 +5911,7 @@ export default function CalendarPage() {
       {isDatePickerOpen && (
         <div
           onClick={() => setIsDatePickerOpen(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -6043,7 +6043,7 @@ export default function CalendarPage() {
       {taskToDelete && (
         <div
           onClick={() => setTaskToDelete(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-xs animate-in fade-in duration-150"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-xs animate-in fade-in duration-150"
         >
           <div
             onClick={(e) => e.stopPropagation()}
