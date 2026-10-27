@@ -61,6 +61,26 @@ export const sortDayTasks = (tasks = []) => {
   })
 }
 
+// Genera un índice O(1) de actividades indexadas por clave de fecha YYYY-MM-DD
+export const buildTasksByDateMap = (tasks = []) => {
+  const map = new Map()
+  if (!tasks || !tasks.length) return map
+  for (let i = 0; i < tasks.length; i++) {
+    const t = tasks[i]
+    if (!t || !t.date) continue
+    let list = map.get(t.date)
+    if (!list) {
+      list = []
+      map.set(t.date, list)
+    }
+    list.push(t)
+  }
+  for (const [date, list] of map.entries()) {
+    map.set(date, sortDayTasks(list))
+  }
+  return map
+}
+
 const getMonday = (d) => {
   let date
   if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
@@ -1171,6 +1191,20 @@ export default function CalendarPage() {
     return currentCalendarTasks.filter((t) => !t.completed)
   }, [currentCalendarTasks])
 
+  const categoryCounts = useMemo(() => {
+    const counts = {}
+    if (!globalTasks || !categories) return counts
+    for (let i = 0; i < categories.length; i++) {
+      const cat = categories[i]
+      counts[cat.id] = getUniqueTaskCount(
+        globalTasks.filter(
+          (t) => t.context === cat.name || t.context === cat.id || t.context === cat.label
+        )
+      )
+    }
+    return counts
+  }, [globalTasks, categories])
+
   // Colores dinámicos del fondo según todos los calendarios presentes
   const otherCalendars = calendars.filter((c) => c.id !== activeCalendarId)
   const bgCal1 = activeCalendar?.color || '#3b82f6'
@@ -2154,26 +2188,28 @@ export default function CalendarPage() {
   // ===================== RENDERIZADORES DE VISTAS =====================
 
   // 1. Vista de Mes Continua (Líneas divisorias integradas continuas estilo Apple Calendar)
-  const renderMonthView = (tasksToDisplay, calObj) => (
-    <div className="flex flex-col w-full overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#161b26]">
-      {/* Month Header Days */}
-      <div className="grid grid-cols-7 bg-slate-100/90 dark:bg-[#141824] border-b border-slate-200/80 dark:border-slate-800 py-2 sm:py-2.5 text-center">
-        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, idx) => {
-          const fullDay = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][idx]
-          return (
-            <span key={day} className="font-label-sm text-[11px] sm:text-label-sm text-secondary uppercase tracking-wider font-semibold">
-              <span className="sm:hidden">{day}</span>
-              <span className="hidden sm:inline">{fullDay}</span>
-            </span>
-          )
-        })}
-      </div>
-      {/* Month Grid Cells Continuas (Matriz continua sin cajas redondeadas flotantes) */}
-      <div className="grid grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80">
-        {getMonthDays(currentDate).map((cell) => {
-          const isToday = cell.ymd === TODAY_YMD
-          const isSelected = cell.ymd === formatYMD(currentDate)
-          const cellTasks = sortDayTasks(tasksToDisplay.filter((t) => t.date === cell.ymd))
+  const renderMonthView = (tasksToDisplay, calObj) => {
+    const tasksByDate = buildTasksByDateMap(tasksToDisplay)
+    return (
+      <div className="flex flex-col w-full overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#161b26]">
+        {/* Month Header Days */}
+        <div className="grid grid-cols-7 bg-slate-100/90 dark:bg-[#141824] border-b border-slate-200/80 dark:border-slate-800 py-2 sm:py-2.5 text-center">
+          {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, idx) => {
+            const fullDay = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][idx]
+            return (
+              <span key={day} className="font-label-sm text-[11px] sm:text-label-sm text-secondary uppercase tracking-wider font-semibold">
+                <span className="sm:hidden">{day}</span>
+                <span className="hidden sm:inline">{fullDay}</span>
+              </span>
+            )
+          })}
+        </div>
+        {/* Month Grid Cells Continuas (Matriz continua sin cajas redondeadas flotantes) */}
+        <div className="grid grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80">
+          {getMonthDays(currentDate).map((cell) => {
+            const isToday = cell.ymd === TODAY_YMD
+            const isSelected = cell.ymd === formatYMD(currentDate)
+            const cellTasks = tasksByDate.get(cell.ymd) || []
 
           return (
             <div
@@ -2284,10 +2320,15 @@ export default function CalendarPage() {
         })}
       </div>
     </div>
-  )
+    )
+  }
 
   // 2. Vista Semanal Adaptable (Por defecto limpia sin desbordar horas, con botón Expandir / Comprimir 24h)
-  const renderWeekView = (tasksToDisplay, calObj) => (
+  const renderWeekView = (tasksToDisplay, calObj) => {
+    const tasksByDate = buildTasksByDateMap(tasksToDisplay)
+    const weekDays = getWeekDays(currentDate)
+    const weekActivitiesCount = weekDays.reduce((acc, d) => acc + (tasksByDate.get(d.ymd)?.length || 0), 0)
+    return (
     <div className="flex flex-col w-full overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#161b26]">
       {/* Barra de opciones de la Vista Semanal: Botón Expandir / Comprimir Horario 24h */}
       <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-[#141824]/90">
@@ -2296,7 +2337,7 @@ export default function CalendarPage() {
             {getPeriodTitle()}
           </span>
           <span className="text-[11px] text-secondary font-code-sm hidden sm:inline">
-            · {tasksToDisplay.filter((t) => getWeekDays(currentDate).some((d) => d.ymd === t.date)).length} actividades
+            · {weekActivitiesCount} actividades
           </span>
         </div>
         <button
@@ -2318,7 +2359,7 @@ export default function CalendarPage() {
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80 min-h-[360px]">
           {getWeekDays(currentDate).map((day) => {
             const isToday = day.ymd === TODAY_YMD
-            const dayTasks = sortDayTasks(tasksToDisplay.filter((t) => t.date === day.ymd))
+            const dayTasks = tasksByDate.get(day.ymd) || []
 
             return (
               <div
@@ -2468,8 +2509,9 @@ export default function CalendarPage() {
               <div className="px-1.5 py-1 text-center text-[10px] font-code-sm text-slate-500 dark:text-slate-400 uppercase font-semibold border-r border-slate-200/80 dark:border-slate-800">
                 All Day
               </div>
-              {getWeekDays(currentDate).map((day, idx) => {
-                const allDayTasks = tasksToDisplay.filter((t) => t.date === day.ymd && (!t.time || t.isAllDay))
+              {weekDays.map((day, idx) => {
+                const dayList = tasksByDate.get(day.ymd) || []
+                const allDayTasks = dayList.filter((t) => !t.time || t.isAllDay)
                 const isLast = idx === 6
                 return (
                   <div
@@ -2514,9 +2556,10 @@ export default function CalendarPage() {
                 ))}
               </div>
 
-              {getWeekDays(currentDate).map((day, idx) => {
+              {weekDays.map((day, idx) => {
                 const isToday = day.ymd === TODAY_YMD
-                const dayTasks = tasksToDisplay.filter((task) => task.date === day.ymd && task.time && !task.isAllDay)
+                const dayList = tasksByDate.get(day.ymd) || []
+                const dayTasks = dayList.filter((task) => task.time && !task.isAllDay)
                 const isLast = idx === 6
 
                 return (
@@ -2592,13 +2635,16 @@ export default function CalendarPage() {
         </div>
       )}
     </div>
-  )
+    )
+  }
 
   // 3. Vista de Día
   const renderDayView = (tasksToDisplay, calObj) => {
-    const dayTasks = sortDayTasks(tasksToDisplay.filter((t) => t.date === formatYMD(currentDate)))
+    const tasksByDate = buildTasksByDateMap(tasksToDisplay)
+    const dayTasks = tasksByDate.get(formatYMD(currentDate)) || []
     const timedTasks = dayTasks.filter((t) => t.time && !t.isAllDay)
     const allDayTasks = dayTasks.filter((t) => !t.time || t.isAllDay)
+    const weekDays = getWeekDays(currentDate)
 
     return (
       <div className="flex flex-col w-full">
@@ -2616,9 +2662,9 @@ export default function CalendarPage() {
           </div>
           {/* Tira Horizontal de Días de la Semana estilo Apple */}
           <div className="flex items-center gap-1.5 bg-surface-muted/70 p-1.5 rounded-2xl overflow-x-auto scrollbar-none w-full sm:w-auto">
-            {getWeekDays(currentDate).map((d) => {
+            {weekDays.map((d) => {
               const isSel = d.ymd === formatYMD(currentDate)
-              const count = tasksToDisplay.filter((t) => t.date === d.ymd).length
+              const count = (tasksByDate.get(d.ymd) || []).length
               return (
                 <button
                   key={d.ymd}
@@ -2764,9 +2810,7 @@ export default function CalendarPage() {
             </div>
           ))}
 
-          {tasksToDisplay
-            .filter((t) => t.date === formatYMD(currentDate) && t.time && !t.isAllDay)
-            .map((task) => {
+          {timedTasks.map((task) => {
               const top = timeToTop(task.time)
               const durMins = getEventDurationMinutes(task)
               const cardHeight = Math.max(48, durMins - 2)
@@ -3591,11 +3635,7 @@ export default function CalendarPage() {
             </button>
 
             {categories.map((cat) => {
-              const count = getUniqueTaskCount(
-                globalTasks.filter(
-                  (t) => t.context === cat.name || t.context === cat.id || t.context === cat.label
-                )
-              )
+              const count = categoryCounts[cat.id] || 0
               const isSelected = selectedFilter === cat.name
               return (
                 <button

@@ -28,6 +28,7 @@ export function isChunkLoadError(error) {
 /**
  * Wraps dynamic component imports with React.lazy and automatic retry/reload logic
  * when a stale chunk fails to load after a deployment.
+ * Eagerly pre-fetches and caches chunk modules so tab switching is instantaneous (0ms delay).
  *
  * @param {Function} componentImportFn - Dynamic import function, e.g. () => import('./pages/MyHubPage')
  * @param {string|object} [nameOrOptions] - Chunk name string or configuration options
@@ -40,9 +41,27 @@ export function lazyWithRetry(componentImportFn, nameOrOptions = {}) {
   const chunkName = options.chunkName || 'chunk'
   const cooldownMs = options.cooldownMs || CHUNK_RELOAD_COOLDOWN_MS
 
-  return lazy(async () => {
+  let cachedPromise = null
+  const loadModule = () => {
+    if (!cachedPromise) {
+      cachedPromise = componentImportFn().catch((err) => {
+        cachedPromise = null // Clear cache so subsequent retry or reload can trigger
+        throw err
+      })
+    }
+    return cachedPromise
+  }
+
+  // Pre-fetch immediately in non-blocking background task
+  if (typeof window !== 'undefined') {
+    setTimeout(() => {
+      loadModule().catch(() => {})
+    }, 20)
+  }
+
+  const LazyComponent = lazy(async () => {
     try {
-      return await componentImportFn()
+      return await loadModule()
     } catch (error) {
       console.warn(`[lazyWithRetry] Error loading chunk "${chunkName}":`, error)
 
@@ -68,6 +87,9 @@ export function lazyWithRetry(componentImportFn, nameOrOptions = {}) {
       throw error
     }
   })
+
+  LazyComponent.preload = loadModule
+  return LazyComponent
 }
 
 export default lazyWithRetry
