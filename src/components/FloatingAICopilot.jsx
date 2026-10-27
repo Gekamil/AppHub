@@ -3,7 +3,7 @@ import { chatWithAICopilot, applyAIActions } from '../services/aiOrganizer'
 import { getCurrentUser, isGuestUser, getUserCalendars } from '../services/firebase'
 import AIBotIcon from './AIBotIcon'
 
-export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) {
+export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks, navPosition = 'top' }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState(() => {
     const cur = getCurrentUser()
@@ -278,6 +278,9 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) 
     return <p className="whitespace-pre-line">{msg.text}</p>
   }
 
+  const mobileBottomClass = navPosition === 'top' ? 'bottom-[72px] right-3.5' : 'bottom-4 right-4'
+  const mobileWindowBottomClass = navPosition === 'top' ? 'bottom-36 right-3' : 'bottom-20 right-3'
+
   return (
     <>
       {/* Botón Flotante Global: El Logo Es Todo El Botón (Fondo Blanco, Silueta Azul, Sombra Elevada) */}
@@ -286,10 +289,10 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) 
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label="Abrir Asistente IA"
         title={isOpen ? 'Cerrar Copiloto IA' : 'Copiloto IA (Control Total)'}
-        className={`fixed z-40 transition-all duration-300 shadow-xl flex items-center justify-center group cursor-pointer ${
+        className={`fixed z-40 transition-all duration-300 shadow-xl flex items-center justify-center group cursor-pointer ${mobileBottomClass} sm:bottom-6 sm:right-6 ${
           isOpen
-            ? 'bottom-[72px] right-3.5 sm:bottom-6 sm:right-6 bg-white dark:bg-[#16181f] text-on-surface border border-slate-300 dark:border-slate-700 scale-95 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl'
-            : 'bottom-[72px] right-3.5 sm:bottom-6 sm:right-6 bg-white dark:bg-[#16181f] text-on-surface border border-slate-200/90 dark:border-slate-800 hover:border-primary/50 active:scale-95 hover:shadow-2xl w-12 h-12 sm:w-14 sm:h-14 rounded-2xl'
+            ? 'bg-white dark:bg-[#16181f] text-on-surface border border-slate-300 dark:border-slate-700 scale-95 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl'
+            : 'bg-white dark:bg-[#16181f] text-on-surface border border-slate-200/90 dark:border-slate-800 hover:border-primary/50 active:scale-95 hover:shadow-2xl w-12 h-12 sm:w-14 sm:h-14 rounded-2xl'
         } backdrop-blur-md`}
       >
         <div className="relative flex items-center justify-center">
@@ -319,7 +322,7 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) 
       {/* Ventana Flotante del Asistente */}
       {isOpen && (
         <div
-          className="fixed bottom-36 right-3 sm:bottom-22 sm:right-6 z-50 w-[94vw] sm:w-[420px] h-[550px] max-h-[82vh] bg-surface-pure/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-outline-variant/40 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
+          className={`fixed ${mobileWindowBottomClass} sm:bottom-22 sm:right-6 z-50 w-[94vw] sm:w-[420px] h-[550px] max-h-[82vh] bg-surface-pure/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-outline-variant/40 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200`}
         >
           {/* Cabecera del Copiloto */}
           <div className="px-4 py-3 border-b border-surface-muted bg-surface-subtle/70 flex items-center justify-between shrink-0">

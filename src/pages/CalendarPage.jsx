@@ -2106,52 +2106,6 @@ export default function CalendarPage() {
     })
   }
 
-  // Soporte de gestos táctiles (Swipe 1 dedo: periodo anterior/siguiente)
-  const touchStateRef = useRef({ active: false, startX: 0, startY: 0, maxFingers: 1 })
-
-  const handleTouchStart = (e) => {
-    if (!e.touches || e.touches.length === 0) return
-    const count = e.touches.length
-    if (!touchStateRef.current.active) {
-      touchStateRef.current = {
-        active: true,
-        startX: e.touches[0].clientX,
-        startY: e.touches[0].clientY,
-        maxFingers: count,
-      }
-    } else {
-      touchStateRef.current.maxFingers = Math.max(touchStateRef.current.maxFingers, count)
-    }
-  }
-
-  const handleTouchMove = (e) => {
-    if (touchStateRef.current.active && e.touches) {
-      touchStateRef.current.maxFingers = Math.max(touchStateRef.current.maxFingers, e.touches.length)
-    }
-  }
-
-  const handleTouchEnd = (e) => {
-    if (!touchStateRef.current.active) return
-    const touch = (e.changedTouches && e.changedTouches[0]) || null
-    const endX = touch ? touch.clientX : touchStateRef.current.startX
-    const endY = touch ? touch.clientY : touchStateRef.current.startY
-    const deltaX = endX - touchStateRef.current.startX
-    const deltaY = endY - touchStateRef.current.startY
-    const maxFingers = touchStateRef.current.maxFingers
-
-    if (e.touches && e.touches.length > 0) return
-    touchStateRef.current.active = false
-
-    // Si es gesto de 1 dedo, navegar periodo del calendario
-    if (maxFingers === 1 && Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
-      if (deltaX < 0) {
-        handleNextPeriod()
-      } else {
-        handlePrevPeriod()
-      }
-    }
-  }
-
   const getPeriodTitle = () => {
     const month = MONTH_NAMES_ES[currentDate.getMonth()]
     const year = currentDate.getFullYear()
@@ -3690,14 +3644,8 @@ export default function CalendarPage() {
 
       {/* Main Grid & Sidebar Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg xl:gap-space-xl items-start">
-        {/* Main View Area (Modo Único vs Modo Cascada Organizado con soporte táctil Swipe) */}
-        <div
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          style={{ touchAction: 'pan-y' }}
-          className="xl:col-span-9 flex flex-col gap-6"
-        >
+        {/* Main View Area (Modo Único vs Modo Cascada Organizado) */}
+        <div className="xl:col-span-9 flex flex-col gap-6">
           {calendarMode === 'single' ? (
             <div
               className="bg-white dark:bg-[#161b26] rounded-3xl shadow-sm border overflow-hidden flex flex-col transition-all duration-300"

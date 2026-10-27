@@ -166,11 +166,17 @@ body {
   color: var(--color-on-surface);
   background-color: var(--color-surface-subtle);
   transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-x: clip;
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Rendimiento y aceleración para animaciones y scroll nativo a 60 FPS */
 html {
   -webkit-tap-highlight-color: transparent;
+  overflow-x: clip;
+  touch-action: pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Transición fluida para modo claro / oscuro sin penalizar rendimiento de layout */

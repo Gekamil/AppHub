@@ -366,11 +366,11 @@ export default function Header({
           {navPosition === 'top' && (
             <nav
               ref={navContainerRef}
-              className="hidden md:flex items-center gap-1 bg-surface-muted/80 dark:bg-[#111214] p-1 rounded-2xl border border-slate-200/80 dark:border-[#27272a] shadow-2xs relative app-no-drag"
+              className="hidden md:flex items-center gap-1.5 bg-surface-muted/80 dark:bg-[#111214] p-1.5 rounded-2xl border border-slate-200/80 dark:border-[#27272a] shadow-2xs relative app-no-drag"
             >
               {/* Pastilla Deslizante con acento dinámico GPU acelerado */}
               <div
-                className="absolute top-1 bottom-1 left-0 rounded-xl shadow-xs pointer-events-none will-change-transform"
+                className="absolute top-1.5 bottom-1.5 left-0 rounded-xl shadow-xs pointer-events-none will-change-transform"
                 style={{
                   width: `${indicatorStyle.width}px`,
                   opacity: indicatorStyle.opacity,
@@ -404,7 +404,7 @@ export default function Header({
                         })
                       }
                     }}
-                    className={`relative z-10 px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-colors duration-200 cursor-pointer ${
+                    className={`relative z-10 px-4 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-colors duration-200 cursor-pointer ${
                       isActive && indicatorStyle.opacity > 0
                         ? 'text-white font-bold'
                         : 'text-secondary hover:text-on-surface'
@@ -545,47 +545,49 @@ export default function Header({
         </div>
       </header>
 
-      {/* BARRA INFERIOR DE NAVEGACIÓN MÓVIL PRINCIPAL (DISEÑO NATIVO, MODERNO Y LIMPIO SIN BOTÓN DESCARGAR) */}
-      <nav
-        aria-label="Barra de navegación móvil"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-14 px-1 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[env(safe-area-inset-bottom,0px)]"
-      >
-        {currentNavItems.map((item) => {
-          const isActive =
-            ((item.to === '/app' || item.to === '/') &&
-              (location.pathname === '/app' || location.pathname === '/' || location.pathname === '/auto-organizer')) ||
-            (item.to !== '/app' && item.to !== '/' && location.pathname.startsWith(item.to))
+      {/* BARRA INFERIOR DE NAVEGACIÓN MÓVIL PRINCIPAL (SOLO VISIBLE CUANDO LA ORGANIZACIÓN ES "BARRA") */}
+      {navPosition === 'top' && (
+        <nav
+          aria-label="Barra de navegación móvil"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-14.5 px-2 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[env(safe-area-inset-bottom,0px)]"
+        >
+          {currentNavItems.map((item) => {
+            const isActive =
+              ((item.to === '/app' || item.to === '/') &&
+                (location.pathname === '/app' || location.pathname === '/' || location.pathname === '/auto-organizer')) ||
+              (item.to !== '/app' && item.to !== '/' && location.pathname.startsWith(item.to))
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/app' || item.to === '/'}
-              onMouseEnter={() => preloadNavRoute(item.to)}
-              onTouchStart={() => preloadNavRoute(item.to)}
-              className={`flex-1 py-1 px-0.5 rounded-xl flex flex-col items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 ${
-                isActive ? 'text-primary' : 'text-slate-500 dark:text-slate-400 hover:text-on-surface'
-              }`}
-              title={item.name}
-            >
-              <div
-                className={`w-10 h-6.5 rounded-xl flex items-center justify-center transition-all ${
-                  isActive ? 'bg-primary/12 text-primary font-bold shadow-2xs' : ''
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/app' || item.to === '/'}
+                onMouseEnter={() => preloadNavRoute(item.to)}
+                onTouchStart={() => preloadNavRoute(item.to)}
+                className={`flex-1 py-1 px-0.5 rounded-xl flex flex-col items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 ${
+                  isActive ? 'text-primary' : 'text-slate-500 dark:text-slate-400 hover:text-on-surface'
                 }`}
+                title={item.name}
               >
-                <span className="material-symbols-outlined text-[20px] leading-none">
-                  {item.icon}
+                <div
+                  className={`w-11 h-7 rounded-xl flex items-center justify-center transition-all ${
+                    isActive ? 'bg-primary/12 text-primary font-bold shadow-2xs' : ''
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[20px] leading-none">
+                    {item.icon}
+                  </span>
+                </div>
+                <span className={`text-[10px] tracking-tight truncate max-w-full text-center leading-none mt-1 ${
+                  isActive ? 'font-bold text-primary' : 'font-medium'
+                }`}>
+                  {item.shortName || item.name}
                 </span>
-              </div>
-              <span className={`text-[10px] tracking-tight truncate max-w-full text-center leading-none mt-1 ${
-                isActive ? 'font-bold text-primary' : 'font-medium'
-              }`}>
-                {item.shortName || item.name}
-              </span>
-            </NavLink>
-          )
-        })}
-      </nav>
+              </NavLink>
+            )
+          })}
+        </nav>
+      )}
 
       {/* CENTRO DE NOTIFICACIONES */}
       {isNotificationsOpen && (
@@ -1023,19 +1025,16 @@ export default function Header({
                   </div>
                 </div>
 
-                {/* Selector de Disposición de Navegación (Superior vs Lateral) */}
+                {/* Selector de Disposición de Navegación (Barra vs Barra Lateral) */}
                 <div className="flex flex-col gap-2">
                   <label className="font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">
-                    {language === 'es' ? 'Disposición del Menú' : 'Navigation Menu Position'}
+                    {language === 'es' ? 'Disposición de Navegación' : 'Navigation Layout'}
                   </label>
                   <div className="relative flex items-center bg-surface-subtle p-1 rounded-xl border border-outline-variant/30">
                     <div
-                      className="absolute z-0 top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
-                      style={{
-                        width: 'calc(50% - 4px)',
-                        left: '4px',
-                        transform: `translateX(${navPosition === 'top' ? '0%' : '100%'})`,
-                      }}
+                      className={`absolute z-0 top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none ${
+                        navPosition === 'top' ? 'left-1 translate-x-0' : 'left-1 translate-x-full'
+                      }`}
                     />
                     <button
                       type="button"
@@ -1046,8 +1045,8 @@ export default function Header({
                           : 'text-secondary hover:text-on-surface'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[18px]">vertical_align_top</span>
-                      <span>{language === 'es' ? 'Barra Superior' : 'Top Bar'}</span>
+                      <span className="material-symbols-outlined text-[18px]">view_headline</span>
+                      <span>{language === 'es' ? 'Barra' : 'Bar'}</span>
                     </button>
                     <button
                       type="button"

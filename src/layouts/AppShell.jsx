@@ -79,96 +79,6 @@ export default function AppShell() {
     localStorage.setItem('app_ai_assistant_mode', aiAssistantMode)
   }, [aiAssistantMode])
 
-  // Soporte Global de Navegación por Gestos:
-  // Móvil / Tablet: Deslizar con 2 dedos horizontalmente entre páginas (solo si no está en modo lateral)
-  // FILTRADO ESTRICTO: Solo permite navegar entre pestañas que estén actualmente activadas en visibleTabs
-  const touchStateRef = useRef({ active: false, startX: 0, startY: 0, maxFingers: 1 })
-
-  useEffect(() => {
-    // Si la navegación está en modo barra lateral, deshabilitar gestos de deslizamiento con 2 dedos
-    if (navPosition === 'sidebar') return
-
-    const candidateTabs = [
-      { id: '/calendar', path: '/calendar' },
-      { id: '/app', path: '/app' },
-      { id: '/notebooks', path: '/notebooks' },
-      ...(aiAssistantMode === 'tab' ? [{ id: '/ai-assistant', path: '/ai-assistant' }] : []),
-      { id: '/my-hub', path: '/my-hub' },
-      { id: '/news', path: '/news' },
-    ]
-
-    const currentTabs = candidateTabs
-      .filter((tab) => visibleTabs[tab.id] !== false && (tab.id !== '/app' || visibleTabs['/'] !== false))
-      .map((tab) => tab.path)
-
-    const getTabIndex = (path) => {
-      const normalized = (path === '/auto-organizer' || path === '/' || path === '') ? '/app' : path
-      const idx = currentTabs.findIndex((t) => t === normalized || (t !== '/app' && normalized.startsWith(t)))
-      return idx >= 0 ? idx : 0
-    }
-
-    const handleTouchStart = (e) => {
-      if (!e.touches || e.touches.length === 0) return
-      const count = e.touches.length
-      if (!touchStateRef.current.active) {
-        touchStateRef.current = {
-          active: true,
-          startX: e.touches[0].clientX,
-          startY: e.touches[0].clientY,
-          maxFingers: count,
-        }
-      } else {
-        touchStateRef.current.maxFingers = Math.max(touchStateRef.current.maxFingers, count)
-      }
-    }
-
-    const handleTouchMove = (e) => {
-      if (touchStateRef.current.active && e.touches) {
-        touchStateRef.current.maxFingers = Math.max(touchStateRef.current.maxFingers, e.touches.length)
-        if (e.touches.length >= 2 && e.cancelable) {
-          // Prevenir zoom o pellizco accidental al deslizar con 2 dedos
-          e.preventDefault()
-        }
-      }
-    }
-
-    const handleTouchEnd = (e) => {
-      if (!touchStateRef.current.active) return
-      const touch = (e.changedTouches && e.changedTouches[0]) || null
-      const endX = touch ? touch.clientX : touchStateRef.current.startX
-      const endY = touch ? touch.clientY : touchStateRef.current.startY
-      const deltaX = endX - touchStateRef.current.startX
-      const deltaY = endY - touchStateRef.current.startY
-      const maxFingers = touchStateRef.current.maxFingers
-
-      // Solo finalizar cuando se han levantado todos los dedos
-      if (e.touches && e.touches.length > 0) return
-      touchStateRef.current.active = false
-
-      // Gestos con 2 o más dedos en pantalla táctil (móvil, tablet, pantalla táctil de portátil)
-      if (maxFingers >= 2 && Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-        const currentIdx = getTabIndex(location.pathname)
-        // Gesto hacia la izquierda (deltaX < 0) => avanza a la página de la derecha
-        if (deltaX < 0 && currentIdx < currentTabs.length - 1) {
-          navigate(currentTabs[currentIdx + 1])
-        } else if (deltaX > 0 && currentIdx > 0) {
-          // Gesto hacia la derecha (deltaX > 0) => retrocede a la página de la izquierda
-          navigate(currentTabs[currentIdx - 1])
-        }
-      }
-    }
-
-    window.addEventListener('touchstart', handleTouchStart, { passive: true })
-    window.addEventListener('touchmove', handleTouchMove, { passive: true })
-    window.addEventListener('touchend', handleTouchEnd, { passive: true })
-
-    return () => {
-      window.removeEventListener('touchstart', handleTouchStart)
-      window.removeEventListener('touchmove', handleTouchMove)
-      window.removeEventListener('touchend', handleTouchEnd)
-    }
-  }, [location.pathname, navigate, navPosition, aiAssistantMode, visibleTabs])
-
   const [globalTasks, setGlobalTasks] = useState(() => {
     const user = getCurrentUser()
     return getUserTasks(user)
@@ -596,7 +506,7 @@ export default function AppShell() {
   ])
 
   return (
-    <div className="bg-surface-subtle font-body-md text-on-surface min-h-screen overflow-x-hidden">
+    <div className="bg-surface-subtle font-body-md text-on-surface min-h-screen overflow-x-clip">
       {showSidebar && (
         <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={() => setIsSidebarOpen(false)} />
       )}
@@ -615,13 +525,17 @@ export default function AppShell() {
         />
         <main
           className={`w-full ${
-            navPosition === 'top' ? 'pt-16 md:pt-22' : 'pt-16 md:pt-16'
-          } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 pb-20 md:pb-margin-lg bg-surface-subtle min-h-screen`}
+            navPosition === 'top' ? 'pt-16 md:pt-22 pb-20 md:pb-margin-lg' : 'pt-16 md:pt-16 pb-6 md:pb-margin-lg'
+          } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 bg-surface-subtle min-h-screen`}
         >
           <Outlet context={outletContextValue} />
         </main>
         {aiAssistantMode === 'floating' && (
-          <FloatingAICopilot globalTasks={globalTasks} setGlobalTasks={setGlobalTasks} />
+          <FloatingAICopilot
+            globalTasks={globalTasks}
+            setGlobalTasks={setGlobalTasks}
+            navPosition={navPosition}
+          />
         )}
 
         {/* Modal / Widget Desplegable de Voz con IA */}
