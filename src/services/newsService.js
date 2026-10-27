@@ -24,6 +24,60 @@ export const CATEGORY_METADATA = {
 }
 
 /**
+ * Decodifica entidades HTML tanto numéricas decimales/hexadecimales (&#039;, &#x27;) como nombradas (&quot;, &amp;).
+ */
+export function decodeHtmlEntities(str = '') {
+  if (!str) return ''
+  return str
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&#0*(\d+);/g, (_, dec) => {
+      try {
+        const code = parseInt(dec, 10)
+        return code > 0 && code < 65536 ? String.fromCharCode(code) : _
+      } catch (e) {
+        return _
+      }
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        const code = parseInt(hex, 16)
+        return code > 0 && code < 65536 ? String.fromCharCode(code) : _
+      } catch (e) {
+        return _
+      }
+    })
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&iexcl;/g, '¡')
+    .replace(/&iquest;/g, '¿')
+    .replace(/&aacute;/g, 'á')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&iacute;/g, 'í')
+    .replace(/&oacute;/g, 'ó')
+    .replace(/&uacute;/g, 'ú')
+    .replace(/&ntilde;/g, 'ñ')
+    .replace(/&Aacute;/g, 'Á')
+    .replace(/&Eacute;/g, 'É')
+    .replace(/&Iacute;/g, 'Í')
+    .replace(/&Oacute;/g, 'Ó')
+    .replace(/&Uacute;/g, 'Ú')
+    .replace(/&Ntilde;/g, 'Ñ')
+    .replace(/&hellip;/g, '...')
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/&laquo;/g, '«')
+    .replace(/&raquo;/g, '»')
+    .replace(/&bull;/g, '•')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+}
+
+/**
  * 6 Base fallback news for backwards compatibility with baseline tests.
  */
 export const FALLBACK_NEWS = [
@@ -859,7 +913,13 @@ export function getPersonalizedNews(articles = null, preferences = null) {
     list = generateDailyNews()
   }
 
-  const scored = list.map((article) => {
+  const scored = list.map((rawArticle) => {
+    const article = {
+      ...rawArticle,
+      title: decodeHtmlEntities(rawArticle.title || ''),
+      summary: decodeHtmlEntities(rawArticle.summary || rawArticle.content || ''),
+      content: decodeHtmlEntities(rawArticle.content || rawArticle.summary || ''),
+    }
     const cat = article.categoryKey || 'actualidad'
     const catWeight = weights[cat] !== undefined ? weights[cat] : 1.0
     const swipeStatus = swipes[article.id]
@@ -924,12 +984,18 @@ export async function getDailyNews(options = {}) {
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data) && data.length >= 6) {
+            const cleanData = data.map((item) => ({
+              ...item,
+              title: decodeHtmlEntities(item.title || ''),
+              summary: decodeHtmlEntities(item.summary || item.content || ''),
+              content: decodeHtmlEntities(item.content || item.summary || ''),
+            }))
             try {
               if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('studenthub_cached_daily_news', JSON.stringify(data))
+                localStorage.setItem('studenthub_cached_daily_news', JSON.stringify(cleanData))
               }
             } catch (e) {}
-            return data
+            return cleanData
           }
         }
       }

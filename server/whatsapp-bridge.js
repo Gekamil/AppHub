@@ -25,15 +25,53 @@ let lastLiveNewsFetch = 0
 const NEWS_CACHE_TTL = 15 * 60 * 1000 // 15 minutos de cache
 
 function cleanHtmlText(text = '') {
+  if (!text) return ''
   return text
-    .replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1')
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
     .replace(/<[^>]+>/g, '')
+    .replace(/&#0*(\d+);/g, (_, dec) => {
+      try {
+        const code = parseInt(dec, 10)
+        return code > 0 && code < 65536 ? String.fromCharCode(code) : _
+      } catch (e) {
+        return _
+      }
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        const code = parseInt(hex, 16)
+        return code > 0 && code < 65536 ? String.fromCharCode(code) : _
+      } catch (e) {
+        return _
+      }
+    })
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
+    .replace(/&iexcl;/g, '¡')
+    .replace(/&iquest;/g, '¿')
+    .replace(/&aacute;/g, 'á')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&iacute;/g, 'í')
+    .replace(/&oacute;/g, 'ó')
+    .replace(/&uacute;/g, 'ú')
+    .replace(/&ntilde;/g, 'ñ')
+    .replace(/&Aacute;/g, 'Á')
+    .replace(/&Eacute;/g, 'É')
+    .replace(/&Iacute;/g, 'Í')
+    .replace(/&Oacute;/g, 'Ó')
+    .replace(/&Uacute;/g, 'Ú')
+    .replace(/&Ntilde;/g, 'Ñ')
+    .replace(/&hellip;/g, '...')
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/&laquo;/g, '«')
+    .replace(/&raquo;/g, '»')
+    .replace(/&bull;/g, '•')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .trim()
 }
 
@@ -210,32 +248,28 @@ export async function fetchLiveAggregatedNews() {
     })
   )
 
-  // Merge liveArticles with base12 to ensure full 12-category coverage
+  // Collect all 12 items directly from live feeds of today
   const result = []
-  const usedKeys = new Set()
+  const seenUrls = new Set()
+  const seenTitles = new Set()
 
   for (const art of liveArticles) {
-    if (!usedKeys.has(art.categoryKey)) {
+    const normTitle = (art.title || '').toLowerCase().slice(0, 40)
+    if (!seenUrls.has(art.url) && !seenTitles.has(normTitle)) {
+      seenUrls.add(art.url)
+      seenTitles.add(normTitle)
       result.push(art)
-      usedKeys.add(art.categoryKey)
     }
     if (result.length >= 12) break
   }
 
-  // Fill in any missing domains from base12
-  for (const b of base12) {
-    if (result.length >= 12) break
-    if (!usedKeys.has(b.categoryKey)) {
-      result.push(b)
-      usedKeys.add(b.categoryKey)
-    }
-  }
-
-  // If still under 12, fill from remaining base12
-  for (const b of base12) {
-    if (result.length >= 12) break
-    if (!result.some((r) => r.id === b.id)) {
-      result.push(b)
+  // Only fill missing items from base12 if feeds did not reach 12 articles
+  if (result.length < 12) {
+    for (const b of base12) {
+      if (result.length >= 12) break
+      if (!result.some((r) => r.id === b.id || r.title === b.title)) {
+        result.push(b)
+      }
     }
   }
 

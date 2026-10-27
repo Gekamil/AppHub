@@ -7,6 +7,7 @@ import {
   toggleArticleLike,
   toggleArticleDislike,
   CATEGORY_METADATA,
+  decodeHtmlEntities,
 } from '../services/newsService'
 import NewsSwipePersonalizer from '../components/news/NewsSwipePersonalizer'
 
@@ -46,7 +47,12 @@ export default function NewsPage() {
     setIsLoading(true)
     try {
       const data = await getDailyNews({ useLiveProxy: true, timeoutMs: 3500 })
-      setRawNews(Array.isArray(data) && data.length > 0 ? data : FALLBACK_NEWS)
+      const clean = (Array.isArray(data) && data.length > 0 ? data : FALLBACK_NEWS).map((item) => ({
+        ...item,
+        title: decodeHtmlEntities(item.title || ''),
+        summary: decodeHtmlEntities(item.summary || item.content || ''),
+      }))
+      setRawNews(clean)
     } catch (err) {
       setRawNews(FALLBACK_NEWS)
     } finally {

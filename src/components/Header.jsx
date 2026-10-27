@@ -7,6 +7,9 @@ import AIBotIcon from './AIBotIcon'
 import { getCurrentUser, isGuestUser } from '../services/firebase'
 import { APP_THEMES, getAppTheme, setAppTheme } from '../services/appTheme'
 import { getVisibleNavTabs, setVisibleNavTab, NAV_TAB_DEFINITIONS } from '../services/navSettings'
+import { CURRENT_VERSION, APP_CHANGELOG } from '../services/updateService'
+
+const CHANGELOG_STORAGE_KEY = `studenthub_seen_changelog_v${CURRENT_VERSION.replace(/\./g, '_')}`
 
 const mobileNavItems = [
   { name: 'Calendario', shortName: 'Agenda', to: '/calendar', icon: 'calendar_today' },
@@ -33,6 +36,13 @@ export default function Header({
   const [accountModalTab, setAccountModalTab] = useState('profile')
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [hasUnreadChangelog, setHasUnreadChangelog] = useState(() => {
+    try {
+      return !localStorage.getItem(CHANGELOG_STORAGE_KEY)
+    } catch (e) {
+      return false
+    }
+  })
   const [theme, setTheme] = useState(() => localStorage.getItem('app_theme') || 'light')
   const [language, setLanguage] = useState(() => localStorage.getItem('app_language') || 'es')
   const [currentAppTheme, setCurrentAppTheme] = useState(() => getAppTheme())
@@ -265,28 +275,49 @@ export default function Header({
     localStorage.setItem('app_language', language)
   }, [language])
 
+  const handleDismissChangelog = () => {
+    try {
+      localStorage.setItem(CHANGELOG_STORAGE_KEY, 'true')
+    } catch (e) {}
+    setHasUnreadChangelog(false)
+  }
+
+  const handleToggleNotifications = () => {
+    setIsNotificationsOpen((prev) => {
+      const next = !prev
+      if (prev && hasUnreadChangelog) {
+        handleDismissChangelog()
+      }
+      return next
+    })
+  }
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (isSettingsOpen) setIsSettingsOpen(false)
         if (isInstallModalOpen) setIsInstallModalOpen(false)
         if (isProfileOpen) setIsProfileOpen(false)
-        if (isNotificationsOpen) setIsNotificationsOpen(false)
+        if (isNotificationsOpen) {
+          if (hasUnreadChangelog) handleDismissChangelog()
+          setIsNotificationsOpen(false)
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSettingsOpen, isInstallModalOpen, isProfileOpen, isNotificationsOpen])
+  }, [isSettingsOpen, isInstallModalOpen, isProfileOpen, isNotificationsOpen, hasUnreadChangelog])
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (isNotificationsOpen && notifRef.current && !notifRef.current.contains(e.target)) {
+        if (hasUnreadChangelog) handleDismissChangelog()
         setIsNotificationsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
-  }, [isNotificationsOpen])
+  }, [isNotificationsOpen, hasUnreadChangelog])
 
   return (
     <>
@@ -390,12 +421,14 @@ export default function Header({
             <button
               type="button"
               data-notif-button
-              onClick={() => setIsNotificationsOpen((prev) => !prev)}
+              onClick={handleToggleNotifications}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-muted hover:text-on-surface transition-colors cursor-pointer app-no-drag relative"
               title="Centro de notificaciones"
             >
               <span className="material-symbols-outlined text-[18px]">notifications</span>
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              {hasUnreadChangelog && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-white dark:ring-[#161b26] animate-pulse"></span>
+              )}
             </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
@@ -515,14 +548,16 @@ export default function Header({
         <button
           type="button"
           data-notif-button
-          onClick={() => setIsNotificationsOpen((prev) => !prev)}
+          onClick={handleToggleNotifications}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative active:scale-95 ${
             isNotificationsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
           }`}
           title="Centro de notificaciones"
         >
           <span className="material-symbols-outlined text-[22px]">notifications</span>
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500"></span>
+          {hasUnreadChangelog && (
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary ring-2 ring-white dark:ring-[#161b26] animate-pulse"></span>
+          )}
         </button>
 
         {/* Ajustes de la Aplicación */}
@@ -595,22 +630,75 @@ export default function Header({
           className={`fixed z-50 ${
             isMobile
               ? 'bottom-16 right-3 left-3 w-auto max-w-sm ml-auto shadow-[0_-8px_30px_rgba(0,0,0,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-150'
-              : 'top-14 right-4 sm:right-6 md:right-16 w-72 shadow-xl animate-in fade-in zoom-in-95 duration-150'
+              : 'top-14 right-4 sm:right-6 md:right-16 w-80 shadow-xl animate-in fade-in zoom-in-95 duration-150'
           } bg-white dark:bg-[#161b26] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3.5 text-left select-none`}
         >
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
             <span className="font-bold text-xs text-on-surface">Notificaciones</span>
-            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-              Al día
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+              hasUnreadChangelog
+                ? 'text-primary bg-primary/10 font-bold'
+                : 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+            }`}>
+              {hasUnreadChangelog ? APP_CHANGELOG.badge || 'Novedades' : 'Al día'}
             </span>
           </div>
-          <div className="py-4 flex flex-col items-center justify-center text-center gap-1.5">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+
+          {hasUnreadChangelog ? (
+            <div className="py-2.5 flex flex-col gap-2.5">
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="material-symbols-outlined text-[16px]">published_with_changes</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {APP_CHANGELOG.title}
+                    </h4>
+                    <span className="text-[10px] text-slate-400 shrink-0">{APP_CHANGELOG.date}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                    {APP_CHANGELOG.description}
+                  </p>
+                </div>
+              </div>
+
+              {APP_CHANGELOG.features && APP_CHANGELOG.features.length > 0 && (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {APP_CHANGELOG.features.slice(0, 3).map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                      <span className="material-symbols-outlined text-[14px] text-primary shrink-0 mt-0.5">
+                        {feat.icon || 'check_circle'}
+                      </span>
+                      <span>
+                        <strong className="text-slate-900 dark:text-white font-semibold">{feat.title}:</strong>{' '}
+                        {feat.description}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={handleDismissChangelog}
+                  className="w-full py-1.5 px-3 rounded-lg bg-primary hover:bg-primary/95 text-white text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-98"
+                >
+                  <span className="material-symbols-outlined text-[14px]">done_all</span>
+                  <span>Marcar como leído</span>
+                </button>
+              </div>
             </div>
-            <p className="text-xs font-semibold text-on-surface">Todo sincronizado</p>
-            <p className="text-[11px] text-secondary">No tienes tareas atrasadas ni avisos pendientes.</p>
-          </div>
+          ) : (
+            <div className="py-4 flex flex-col items-center justify-center text-center gap-1.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+              </div>
+              <p className="text-xs font-semibold text-on-surface">Todo sincronizado</p>
+              <p className="text-[11px] text-secondary">No tienes tareas atrasadas ni avisos pendientes.</p>
+            </div>
+          )}
         </div>
       )}
 

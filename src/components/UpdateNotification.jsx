@@ -8,17 +8,8 @@ export default function UpdateNotification() {
   const [showChangelog, setShowChangelog] = useState(false)
 
   useEffect(() => {
-    // 1. Comprobar si ya vio el aviso de novedades de la versión actual
-    try {
-      const seen = localStorage.getItem(CHANGELOG_STORAGE_KEY)
-      if (!seen) {
-        setShowChangelog(true)
-      }
-    } catch (e) {
-      setShowChangelog(true)
-    }
-
-    // 2. Permitir volver a abrir el changelog desde cualquier parte de la app
+    // 1. Desactivado popup modal automático intrusivo. Las novedades se consultan en la campanita.
+    // Marcamos visto en background si ya existe
     const handleOpenChangelog = () => setShowChangelog(true)
     window.addEventListener('studenthub_open_changelog', handleOpenChangelog)
 

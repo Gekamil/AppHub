@@ -223,15 +223,53 @@ function newsRssPlugin() {
   const CACHE_TTL = 10 * 60 * 1000 // 10 minutes de cache
 
   const cleanText = (str = '') => {
+    if (!str) return ''
     return str
-      .replace(/<!\[CDATA\[(.*?)\]\]>/gi, '$1')
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')
       .replace(/<[^>]+>/g, '')
+      .replace(/&#0*(\d+);/g, (_, dec) => {
+        try {
+          const code = parseInt(dec, 10)
+          return code > 0 && code < 65536 ? String.fromCharCode(code) : _
+        } catch (e) {
+          return _
+        }
+      })
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+        try {
+          const code = parseInt(hex, 16)
+          return code > 0 && code < 65536 ? String.fromCharCode(code) : _
+        } catch (e) {
+          return _
+        }
+      })
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
       .replace(/&nbsp;/g, ' ')
+      .replace(/&iexcl;/g, '¡')
+      .replace(/&iquest;/g, '¿')
+      .replace(/&aacute;/g, 'á')
+      .replace(/&eacute;/g, 'é')
+      .replace(/&iacute;/g, 'í')
+      .replace(/&oacute;/g, 'ó')
+      .replace(/&uacute;/g, 'ú')
+      .replace(/&ntilde;/g, 'ñ')
+      .replace(/&Aacute;/g, 'Á')
+      .replace(/&Eacute;/g, 'É')
+      .replace(/&Iacute;/g, 'Í')
+      .replace(/&Oacute;/g, 'Ó')
+      .replace(/&Uacute;/g, 'Ú')
+      .replace(/&Ntilde;/g, 'Ñ')
+      .replace(/&hellip;/g, '...')
+      .replace(/&mdash;/g, '—')
+      .replace(/&ndash;/g, '–')
+      .replace(/&laquo;/g, '«')
+      .replace(/&raquo;/g, '»')
+      .replace(/&bull;/g, '•')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
       .trim()
   }
 
