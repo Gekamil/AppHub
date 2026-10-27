@@ -643,8 +643,14 @@ export default function CalendarPage() {
   useEffect(() => {
     const handleRemoteCalendarsUpdated = (e) => {
       if (e.detail && Array.isArray(e.detail) && e.detail.length > 0) {
-        isRemoteCalendarSyncRef.current = true
-        setCalendars(e.detail)
+        setCalendars((prev) => {
+          const prevJson = JSON.stringify(prev || [])
+          const remoteJson = JSON.stringify(e.detail)
+          if (prevJson === remoteJson) return prev
+          isRemoteCalendarSyncRef.current = true
+          lastSyncedCalendarsJsonRef.current = remoteJson
+          return e.detail
+        })
       }
     }
     window.addEventListener('studenthub_calendars_updated', handleRemoteCalendarsUpdated)
@@ -654,24 +660,25 @@ export default function CalendarPage() {
   // Sincronizar calendarios de forma aislada para la cuenta activa, en la nube Firestore y con el puente WhatsApp
   useEffect(() => {
     const curUser = getCurrentUser()
+    const curJson = JSON.stringify(calendars || [])
+
+    // Guardar en la caché local del dispositivo
     saveUserCalendars(calendars, curUser)
 
-    const curJson = JSON.stringify(calendars || [])
     if (isRemoteCalendarSyncRef.current) {
       isRemoteCalendarSyncRef.current = false
       lastSyncedCalendarsJsonRef.current = curJson
       return
     }
 
+    if (isGuestUser(curUser)) return
     if (lastSyncedCalendarsJsonRef.current === curJson) return
 
     const timer = setTimeout(() => {
       lastSyncedCalendarsJsonRef.current = curJson
-      if (!isGuestUser(curUser)) {
-        syncCalendarsToCloud(calendars).catch(() => {})
-      }
+      syncCalendarsToCloud(calendars).catch(() => {})
       syncBaileysCalendars(calendars).catch(() => {})
-    }, 1200)
+    }, 1500)
 
     return () => clearTimeout(timer)
   }, [calendars])

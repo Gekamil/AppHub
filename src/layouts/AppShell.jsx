@@ -106,22 +106,26 @@ export default function AppShell() {
       // 1. Carga inicial inmediata desde la nube para que el móvil tenga siempre los datos reales de la web
       loadUserDataFromCloud().then((data) => {
         if (!isMounted || !data || !Array.isArray(data.tasks)) return
-        isRemoteSyncRef.current = true
         setGlobalTasks((prev) => {
           const prevJson = JSON.stringify(prev || [])
           const remoteJson = JSON.stringify(data.tasks)
-          return prevJson === remoteJson ? prev : data.tasks
+          if (prevJson === remoteJson) return prev
+          isRemoteSyncRef.current = true
+          lastPushedTasksJsonRef.current = remoteJson
+          return data.tasks
         })
       }).catch(() => {})
 
       // 2. Suscripción viva multicanal (SSE + Firestore)
       unsub = subscribeToUserCloudData(curUser, (data) => {
         if (!isMounted || !data || !Array.isArray(data.tasks)) return
-        isRemoteSyncRef.current = true
         setGlobalTasks((prev) => {
           const prevJson = JSON.stringify(prev || [])
           const remoteJson = JSON.stringify(data.tasks)
-          return prevJson === remoteJson ? prev : data.tasks
+          if (prevJson === remoteJson) return prev
+          isRemoteSyncRef.current = true
+          lastPushedTasksJsonRef.current = remoteJson
+          return data.tasks
         })
       })
     }
@@ -256,12 +260,12 @@ export default function AppShell() {
 
     if (lastPushedTasksJsonRef.current === currentJson) return
 
-    // Debounce de 1200ms para evitar bucles de escritura continua en Firestore y Baileys
+    // Debounce de 1500ms para evitar bucles de escritura continua en Firestore y Baileys
     const timer = setTimeout(() => {
       lastPushedTasksJsonRef.current = currentJson
       syncTasksToCloud(globalTasks).catch(() => {})
       syncBaileysTasks(globalTasks).catch(() => {})
-    }, 1200)
+    }, 1500)
 
     return () => clearTimeout(timer)
   }, [globalTasks])

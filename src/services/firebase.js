@@ -792,8 +792,6 @@ export const saveUserCalendars = (calendars, user = getCurrentUser()) => {
       accounts[idx].calendars = calendars
       saveAllAccounts(accounts)
     }
-    // Sincronizar automáticamente en la nube Firestore
-    syncCalendarsToCloud(calendars).catch(() => {})
   } catch (e) {
     console.warn('Error guardando calendarios de usuario:', e)
   }
@@ -975,23 +973,34 @@ export const subscribeToUserCloudData = (user, onUpdate) => {
           const data = JSON.parse(event.data)
           if (data?.type === 'user_cloud_sync' && data.user) {
             const cloudUser = data.user
+            let hasChanged = false
             if (cloudUser.tasks && Array.isArray(cloudUser.tasks)) {
-              localStorage.setItem('app_global_tasks', JSON.stringify(cloudUser.tasks))
-              localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(cloudUser.tasks))
+              const currentTasksJson = localStorage.getItem('app_global_tasks') || ''
+              const incomingTasksJson = JSON.stringify(cloudUser.tasks)
+              if (currentTasksJson !== incomingTasksJson) {
+                hasChanged = true
+                localStorage.setItem('app_global_tasks', incomingTasksJson)
+                localStorage.setItem(`studenthub_tasks_${user.uid}`, incomingTasksJson)
+              }
             }
             if (cloudUser.calendars && Array.isArray(cloudUser.calendars) && cloudUser.calendars.length > 0) {
-              localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(cloudUser.calendars))
-              const accounts = getAllAccounts()
-              const idx = accounts.findIndex((a) => a.uid === user.uid)
-              if (idx >= 0) {
-                accounts[idx].calendars = cloudUser.calendars
-                saveAllAccounts(accounts)
-              }
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudUser.calendars }))
+              const currentCalJson = localStorage.getItem(`studenthub_calendars_${user.uid}`) || ''
+              const incomingCalJson = JSON.stringify(cloudUser.calendars)
+              if (currentCalJson !== incomingCalJson) {
+                hasChanged = true
+                localStorage.setItem(`studenthub_calendars_${user.uid}`, incomingCalJson)
+                const accounts = getAllAccounts()
+                const idx = accounts.findIndex((a) => a.uid === user.uid)
+                if (idx >= 0) {
+                  accounts[idx].calendars = cloudUser.calendars
+                  saveAllAccounts(accounts)
+                }
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudUser.calendars }))
+                }
               }
             }
-            if (typeof onUpdate === 'function') {
+            if (hasChanged && typeof onUpdate === 'function') {
               onUpdate({
                 tasks: cloudUser.tasks || null,
                 calendars: cloudUser.calendars || null,
@@ -1013,23 +1022,34 @@ export const subscribeToUserCloudData = (user, onUpdate) => {
           if (isClosed) return
           if (snap.exists()) {
             const cloudData = snap.data() || {}
+            let hasChanged = false
             if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
-              localStorage.setItem('app_global_tasks', JSON.stringify(cloudData.tasks))
-              localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(cloudData.tasks))
+              const currentTasksJson = localStorage.getItem('app_global_tasks') || ''
+              const incomingTasksJson = JSON.stringify(cloudData.tasks)
+              if (currentTasksJson !== incomingTasksJson) {
+                hasChanged = true
+                localStorage.setItem('app_global_tasks', incomingTasksJson)
+                localStorage.setItem(`studenthub_tasks_${user.uid}`, incomingTasksJson)
+              }
             }
             if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
-              localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(cloudData.calendars))
-              const accounts = getAllAccounts()
-              const idx = accounts.findIndex((a) => a.uid === user.uid)
-              if (idx >= 0) {
-                accounts[idx].calendars = cloudData.calendars
-                saveAllAccounts(accounts)
-              }
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
+              const currentCalJson = localStorage.getItem(`studenthub_calendars_${user.uid}`) || ''
+              const incomingCalJson = JSON.stringify(cloudData.calendars)
+              if (currentCalJson !== incomingCalJson) {
+                hasChanged = true
+                localStorage.setItem(`studenthub_calendars_${user.uid}`, incomingCalJson)
+                const accounts = getAllAccounts()
+                const idx = accounts.findIndex((a) => a.uid === user.uid)
+                if (idx >= 0) {
+                  accounts[idx].calendars = cloudData.calendars
+                  saveAllAccounts(accounts)
+                }
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
+                }
               }
             }
-            if (typeof onUpdate === 'function') {
+            if (hasChanged && typeof onUpdate === 'function') {
               onUpdate({
                 tasks: cloudData.tasks || null,
                 calendars: cloudData.calendars || null,

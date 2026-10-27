@@ -3168,11 +3168,19 @@ export function handleBaileysApiRoute(req, res) {
           updatedAt: new Date().toISOString(),
         }
 
+        const existingTasksJson = JSON.stringify(existing.tasks || [])
+        const mergedTasksJson = JSON.stringify(mergedTasks)
+        const existingCalsJson = JSON.stringify(existing.calendars || [])
+        const mergedCalsJson = JSON.stringify(mergedCalendars)
+        const hasChanged = existingTasksJson !== mergedTasksJson || existingCalsJson !== mergedCalsJson
+
         cloudAccountsMap[cleanEmail] = updatedUser
         saveCloudAccountsStore(cloudAccountsMap)
 
-        // Difundir actualización en tiempo real a todos los dispositivos (móvil, PC, web)
-        broadcastUserCloudUpdate(cleanEmail, updatedUser)
+        // Difundir actualización en tiempo real a otros dispositivos solo si los datos han cambiado efectivamente
+        if (hasChanged) {
+          broadcastUserCloudUpdate(cleanEmail, updatedUser)
+        }
 
         // Respaldo en segundo plano a Firestore sin bloquear ni fallar si quota fue superada
         try {
