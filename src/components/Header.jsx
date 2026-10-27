@@ -487,164 +487,113 @@ export default function Header({
               </button>
             )}
           </div>
-        </div>
 
-        {/* Fila 2 solo en Móvil cuando navPosition === 'top' con Pastilla Deslizante Fluida que entra 100% en la pantalla */}
-        {navPosition === 'top' && (
-          <div className="md:hidden pb-2 pt-1 px-1 app-no-drag">
-            <div
-              ref={mobileNavContainerRef}
-              className="w-full bg-surface-muted/80 dark:bg-[#111214] p-1 rounded-2xl border border-slate-200/80 dark:border-[#27272a] relative"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${Math.max(currentNavItems.length, 1)}, minmax(0, 1fr))`,
-              }}
+          {/* Controles para Móvil en la barra superior (Notificaciones, Ajustes y Perfil) */}
+          <div className="flex md:hidden items-center gap-1 app-no-drag">
+            <button
+              type="button"
+              data-notif-button
+              onClick={handleToggleNotifications}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative active:scale-95 ${
+                isNotificationsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
+              }`}
+              title="Centro de notificaciones"
             >
-              {/* Pastilla Deslizante Móvil Proporcional */}
-              {(() => {
-                const currentPath = location.pathname
-                const activeIdx = currentNavItems.findIndex((item) =>
-                  (item.to === '/app' || item.to === '/')
-                    ? currentPath === '/app' || currentPath === '/' || currentPath === '/auto-organizer'
-                    : currentPath.startsWith(item.to)
-                )
-                const validIdx = activeIdx >= 0 ? activeIdx : 0
-                const count = Math.max(currentNavItems.length, 1)
-
-                return (
-                  <div
-                    className="absolute top-1 bottom-1 rounded-xl shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
-                    style={{
-                      left: '4px',
-                      width: `calc((100% - 8px) / ${count})`,
-                      transform: `translateX(${validIdx * 100}%)`,
-                      opacity: activeIdx >= 0 ? 1 : 0,
-                      backgroundColor: 'var(--app-accent-color, #0071E3)',
-                    }}
-                  />
-                )
-              })()}
-
-              {currentNavItems.map((item) => {
-                const isActive = ((item.to === '/app' || item.to === '/') && (location.pathname === '/app' || location.pathname === '/' || location.pathname === '/auto-organizer')) || (item.to !== '/app' && item.to !== '/' && location.pathname.startsWith(item.to))
-                return (
-                  <NavLink
-                    key={item.to}
-                    ref={(el) => { mobileItemRefs.current[item.to] = el }}
-                    to={item.to}
-                    end={item.to === '/app' || item.to === '/'}
-                    onMouseEnter={() => preloadNavRoute(item.to)}
-                    onTouchStart={() => preloadNavRoute(item.to)}
-                    className={`relative z-10 py-1 px-0.5 rounded-xl flex flex-col items-center justify-center transition-colors duration-200 cursor-pointer ${
-                      isActive
-                        ? 'text-white font-bold'
-                        : 'text-secondary hover:text-on-surface'
-                    }`}
-                    title={item.name}
-                  >
-                    <span className="material-symbols-outlined text-[17px] leading-none mb-0.5">{item.icon}</span>
-                    <span className="text-[9px] font-semibold tracking-tight truncate max-w-full text-center leading-none">
-                      {item.shortName || item.name}
-                    </span>
-                  </NavLink>
-                )
-              })}
-            </div>
+              <span className="material-symbols-outlined text-[20px]">notifications</span>
+              {hasUnreadChangelog && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-white dark:ring-[#161b26] animate-pulse"></span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 ${
+                isSettingsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
+              }`}
+              title="Ajustes de la aplicación"
+            >
+              <span className="material-symbols-outlined text-[20px]">settings</span>
+            </button>
+            {isGuest ? (
+              <button
+                ref={mobileProfileButtonRef}
+                type="button"
+                onClick={() => setIsProfileOpen((prev) => !prev)}
+                className="relative w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center ml-0.5 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                title="Modo Invitado • Pulsa para abrir menú"
+              >
+                <span className="material-symbols-outlined text-[18px]">person</span>
+              </button>
+            ) : (
+              <button
+                ref={mobileProfileButtonRef}
+                type="button"
+                onClick={() => setIsProfileOpen((prev) => !prev)}
+                className="relative w-8 h-8 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-[10.5px] tracking-tight ml-0.5 cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
+                title={`Conectado como ${user.displayName || 'Usuario'}`}
+              >
+                {user.displayName
+                  ? user.displayName.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+                  : 'U'}
+                <span
+                  className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-[#161b26]"
+                  title="Sesión activa"
+                />
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </header>
 
-      {/* BARRA INFERIOR EXCLUSIVA PARA MÓVIL (PERFIL, AJUSTES, CAMPANITA) */}
+      {/* BARRA INFERIOR DE NAVEGACIÓN MÓVIL PRINCIPAL (DISEÑO NATIVO, MODERNO Y LIMPIO SIN BOTÓN DESCARGAR) */}
       <nav
-        aria-label="Barra de herramientas móvil"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 backdrop-blur-xl border-t border-outline-variant/30 py-1.5 px-6 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)] app-no-drag"
+        aria-label="Barra de navegación móvil"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-14 px-1 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[env(safe-area-inset-bottom,0px)]"
       >
-        {/* Campanita Notificaciones */}
-        <button
-          type="button"
-          data-notif-button
-          onClick={handleToggleNotifications}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative active:scale-95 ${
-            isNotificationsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
-          }`}
-          title="Centro de notificaciones"
-        >
-          <span className="material-symbols-outlined text-[22px]">notifications</span>
-          {hasUnreadChangelog && (
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary ring-2 ring-white dark:ring-[#161b26] animate-pulse"></span>
-          )}
-        </button>
+        {currentNavItems.map((item) => {
+          const isActive =
+            ((item.to === '/app' || item.to === '/') &&
+              (location.pathname === '/app' || location.pathname === '/' || location.pathname === '/auto-organizer')) ||
+            (item.to !== '/app' && item.to !== '/' && location.pathname.startsWith(item.to))
 
-        {/* Ajustes de la Aplicación */}
-        <button
-          type="button"
-          onClick={() => setIsSettingsOpen(true)}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer active:scale-95 ${
-            isSettingsOpen ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-muted hover:text-on-surface'
-          }`}
-          title="Ajustes del Sistema"
-        >
-          <span className="material-symbols-outlined text-[22px]">settings</span>
-        </button>
-
-        {/* Instalar App (Solo si no es app instalada nativa/PWA) */}
-        {!isStandaloneApp && (
-          <button
-            type="button"
-            onClick={() => setIsInstallModalOpen(true)}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-primary bg-primary/10 hover:bg-primary/20 transition-all cursor-pointer shadow-2xs active:scale-95"
-            title="Instalar App en el dispositivo"
-          >
-            <span className="material-symbols-outlined text-[20px]">install_mobile</span>
-          </button>
-        )}
-
-        {/* Perfil de Usuario */}
-        {isGuest ? (
-          <button
-            ref={mobileProfileButtonRef}
-            type="button"
-            onClick={() => setIsProfileOpen((prev) => !prev)}
-            className="relative w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
-            title="Modo Invitado • Pulsa para abrir menú de cuenta"
-          >
-            <span className="material-symbols-outlined text-[20px]">person</span>
-            <span
-              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white dark:border-[#161b26]"
-              title="Sin sesión iniciada"
-            />
-          </button>
-        ) : (
-          <button
-            ref={mobileProfileButtonRef}
-            type="button"
-            onClick={() => setIsProfileOpen((prev) => !prev)}
-            className="relative w-9 h-9 rounded-full bg-slate-900 text-white font-medium flex items-center justify-center text-xs tracking-tight cursor-pointer hover:ring-2 hover:ring-primary/40 active:scale-95 transition-all shadow-xs shrink-0"
-            title={`Conectado como ${user.displayName || 'Usuario'}`}
-          >
-            {user.displayName
-              ? user.displayName
-                  .split(' ')
-                  .map((n) => n[0])
-                  .slice(0, 2)
-                  .join('')
-                  .toUpperCase()
-              : 'U'}
-            <span
-              className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#161b26]"
-              title="Sesión activa"
-            />
-          </button>
-        )}
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/app' || item.to === '/'}
+              onMouseEnter={() => preloadNavRoute(item.to)}
+              onTouchStart={() => preloadNavRoute(item.to)}
+              className={`flex-1 py-1 px-0.5 rounded-xl flex flex-col items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 ${
+                isActive ? 'text-primary' : 'text-slate-500 dark:text-slate-400 hover:text-on-surface'
+              }`}
+              title={item.name}
+            >
+              <div
+                className={`w-10 h-6.5 rounded-xl flex items-center justify-center transition-all ${
+                  isActive ? 'bg-primary/12 text-primary font-bold shadow-2xs' : ''
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px] leading-none">
+                  {item.icon}
+                </span>
+              </div>
+              <span className={`text-[10px] tracking-tight truncate max-w-full text-center leading-none mt-1 ${
+                isActive ? 'font-bold text-primary' : 'font-medium'
+              }`}>
+                {item.shortName || item.name}
+              </span>
+            </NavLink>
+          )
+        })}
       </nav>
 
-      {/* CENTRO DE NOTIFICACIONES (RESPONSIVE: ARRIBA EN PC, HACIA ARRIBA DESDE LA BARRA EN MÓVIL) */}
+      {/* CENTRO DE NOTIFICACIONES */}
       {isNotificationsOpen && (
         <div
           ref={notifRef}
           className={`fixed z-50 ${
             isMobile
-              ? 'bottom-16 right-3 left-3 w-auto max-w-sm ml-auto shadow-[0_-8px_30px_rgba(0,0,0,0.15)] animate-in fade-in slide-in-from-bottom-2 duration-150'
+              ? 'top-15 right-3 left-3 w-auto max-w-sm ml-auto shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150'
               : 'top-14 right-4 sm:right-6 md:right-16 w-80 shadow-xl animate-in fade-in zoom-in-95 duration-150'
           } bg-white dark:bg-[#161b26] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3.5 text-left select-none`}
         >
@@ -1155,6 +1104,35 @@ export default function Header({
                     </button>
                   </div>
                 </div>
+
+                {/* OPCIÓN PARA DESCARGAR O INSTALAR APP (DENTRO DE AJUSTES) */}
+                {!isStandaloneApp && (
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-subtle border border-outline-variant/30 mt-1">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[19px]">install_mobile</span>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-semibold text-on-surface block truncate">
+                          {language === 'es' ? 'Instalar o Descargar App' : 'Install or Download App'}
+                        </span>
+                        <span className="text-[10.5px] text-secondary block truncate">
+                          {language === 'es' ? 'APK Android, Windows o acceso directo PWA' : 'Android APK, Windows or PWA shortcut'}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSettingsOpen(false)
+                        setIsInstallModalOpen(true)
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-xs shrink-0 ml-2"
+                    >
+                      {language === 'es' ? 'Instalar' : 'Install'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1180,7 +1158,7 @@ export default function Header({
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         anchorRef={isMobile ? mobileProfileButtonRef : profileButtonRef}
-        placement={isMobile ? 'bottom-bar' : 'header'}
+        placement="header"
         onOpenAccountModal={(tab) => {
           setAccountModalTab(tab)
           setIsAccountModalOpen(true)

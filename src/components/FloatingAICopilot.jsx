@@ -288,8 +288,8 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks }) 
         title={isOpen ? 'Cerrar Copiloto IA' : 'Copiloto IA (Control Total)'}
         className={`fixed z-40 transition-all duration-300 shadow-xl flex items-center justify-center group cursor-pointer ${
           isOpen
-            ? 'bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white dark:bg-[#16181f] text-on-surface border border-slate-300 dark:border-slate-700 scale-95 w-12 h-12 rounded-2xl'
-            : 'bottom-20 right-4 sm:bottom-6 sm:right-6 bg-white dark:bg-[#16181f] text-on-surface border border-slate-200/90 dark:border-slate-800 hover:border-primary/50 active:scale-95 hover:shadow-2xl w-14 h-14 rounded-2xl'
+            ? 'bottom-[72px] right-3.5 sm:bottom-6 sm:right-6 bg-white dark:bg-[#16181f] text-on-surface border border-slate-300 dark:border-slate-700 scale-95 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl'
+            : 'bottom-[72px] right-3.5 sm:bottom-6 sm:right-6 bg-white dark:bg-[#16181f] text-on-surface border border-slate-200/90 dark:border-slate-800 hover:border-primary/50 active:scale-95 hover:shadow-2xl w-12 h-12 sm:w-14 sm:h-14 rounded-2xl'
         } backdrop-blur-md`}
       >
         <div className="relative flex items-center justify-center">

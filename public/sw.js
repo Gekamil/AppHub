@@ -1,5 +1,5 @@
 // Service Worker de AppHub para funcionamiento offline y actualizaciones automáticas (OTA)
-const CACHE_NAME = 'apphub-cache-v9'
+const CACHE_NAME = 'apphub-cache-v10'
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

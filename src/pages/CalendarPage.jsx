@@ -3669,11 +3669,11 @@ export default function CalendarPage() {
             <button
               type="button"
               onClick={() => setIsCategoryModalOpen(true)}
-              className="px-2.5 py-1 rounded-xl bg-white/60 hover:bg-white dark:bg-slate-800/60 dark:hover:bg-slate-800 text-secondary hover:text-on-surface text-label-sm font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+              className="p-1 sm:px-2.5 sm:py-1 rounded-xl bg-white/60 hover:bg-white dark:bg-slate-800/60 dark:hover:bg-slate-800 text-secondary hover:text-on-surface text-label-sm font-medium flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
               title="Personalizar actividades y categorías"
             >
               <span className="material-symbols-outlined text-[15px]">tune</span>
-              <span>Editar</span>
+              <span className="hidden sm:inline">Editar</span>
             </button>
             {selectedFilter !== 'All' && (
               <button
