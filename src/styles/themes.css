@@ -57,7 +57,7 @@ html[data-theme-style="glassify"]:not(.dark) body {
   color: #0f172a !important;
 }
 
-/* Contenedores y tarjetas en MODO OSCURO: Cristal esmerilado translúcido real (Azul espacial profundo) */
+/* Contenedores y tarjetas en MODO OSCURO: Estilo Apple Cupertino con superficies limpias y fluidas */
 html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-surface-pure"],
 html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-white"],
 html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-slate-50"],
@@ -65,34 +65,35 @@ html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#
 html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
 html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-slate-900"],
 html[data-theme-style="glassify"].dark div[class*="rounded-2xl"][class*="border"],
-html[data-theme-style="glassify"].dark section[class*="rounded-"],
-html[data-theme-style="glassify"].dark header[class*="border"] {
-  background: rgba(14, 23, 44, 0.75) !important;
-  background-color: rgba(14, 23, 44, 0.75) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
-  backdrop-filter: blur(14px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.16) !important;
-  color: #f8fafc !important;
-  transform: translateZ(0);
+html[data-theme-style="glassify"].dark section[class*="rounded-"] {
+  background-color: rgba(17, 24, 39, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Contenedores y tarjetas en MODO CLARO: Cristal de hielo puro translúcido con refracción óptica real */
+/* Barra de navegacion superior: Cristal esmerilado Apple unificado (solo en header para 60 FPS) */
+html[data-theme-style="glassify"].dark header[class*="border"] {
+  background-color: rgba(14, 23, 44, 0.8) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Contenedores y tarjetas en MODO CLARO: Superficie translucida cristalina de alto contraste */
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-surface-pure"],
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-white"],
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"][class*="border"],
-html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"],
+html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"] {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
+}
+
 html[data-theme-style="glassify"]:not(.dark) header[class*="border"] {
-  background: rgba(255, 255, 255, 0.8) !important;
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
-  backdrop-filter: blur(14px) saturate(140%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.8) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.98) !important;
-  box-shadow: 0 12px 36px -4px rgba(15, 23, 42, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95) !important;
-  color: #0f172a !important;
-  transform: translateZ(0);
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95) !important;
 }
 
 /* Prevenir apilamiento de backdrop-filters en elementos anidados (elimina lag de renderizado) */
@@ -192,21 +193,17 @@ html[data-theme-style="glassify"].dark button[class*="bg-slate-50"]:not([class*=
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
 }
 
 html[data-theme-style="glassify"]:not(.dark) button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
 html[data-theme-style="glassify"]:not(.dark) button[class*="bg-slate-50"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
-  background: rgba(255, 255, 255, 0.78) !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
   color: #0f172a !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
 }
 
-/* Botón de limpiar tareas importadas (Rosa suave translúcido en lugar de caja blanca) */
+/* Boton de limpiar tareas importadas */
 html[data-theme-style="glassify"].dark button[class*="Limpiar"],
 html[data-theme-style="glassify"].dark button:has([class*="delete_sweep"]),
 html[data-theme-style="glassify"].dark .border-pink-200 {
@@ -222,40 +219,22 @@ html[data-theme-style="glassify"]:not(.dark) button:has([class*="delete_sweep"])
   color: #e11d48 !important;
 }
 
-/* Textos de alto contraste en Glassify Oscuro */
+/* Textos principales en Glassify */
 html[data-theme-style="glassify"].dark h1,
 html[data-theme-style="glassify"].dark h2,
 html[data-theme-style="glassify"].dark h3,
-html[data-theme-style="glassify"].dark h4,
-html[data-theme-style="glassify"].dark [class*="text-slate-900"],
-html[data-theme-style="glassify"].dark [class*="text-on-surface"],
-html[data-theme-style="glassify"].dark .text-on-surface {
+html[data-theme-style="glassify"].dark h4 {
   color: #ffffff !important;
 }
 
-html[data-theme-style="glassify"].dark p,
-html[data-theme-style="glassify"].dark [class*="text-secondary"],
-html[data-theme-style="glassify"].dark [class*="text-slate-500"],
-html[data-theme-style="glassify"].dark [class*="text-slate-600"] {
-  color: #94a3b8 !important;
-}
-
-/* Textos de alto contraste en Glassify Claro */
 html[data-theme-style="glassify"]:not(.dark) h1,
 html[data-theme-style="glassify"]:not(.dark) h2,
 html[data-theme-style="glassify"]:not(.dark) h3,
-html[data-theme-style="glassify"]:not(.dark) h4,
-html[data-theme-style="glassify"]:not(.dark) [class*="text-slate-900"] {
+html[data-theme-style="glassify"]:not(.dark) h4 {
   color: #0f172a !important;
 }
 
-html[data-theme-style="glassify"]:not(.dark) p,
-html[data-theme-style="glassify"]:not(.dark) [class*="text-secondary"],
-html[data-theme-style="glassify"]:not(.dark) [class*="text-slate-600"] {
-  color: #475569 !important;
-}
-
-/* Botones principales con acento dinámico y brillo Apple */
+/* Botones principales con acento dinamico y brillo Apple */
 html[data-theme-style="glassify"] button[class*="bg-primary"],
 html[data-theme-style="glassify"] button[class*="bg-primary-container"],
 html[data-theme-style="glassify"] .apple-btn-blue {
@@ -267,23 +246,21 @@ html[data-theme-style="glassify"] .apple-btn-blue {
   color: #ffffff !important;
 }
 
-/* Inputs, Textareas y Selects en Glassify sin fondo blanco plano */
+/* Inputs, Textareas y Selects en Glassify: Suaves y sin lag */
 html[data-theme-style="glassify"].dark input,
 html[data-theme-style="glassify"].dark textarea,
 html[data-theme-style="glassify"].dark select {
-  background: rgba(15, 25, 48, 0.75) !important;
+  background: rgba(15, 25, 48, 0.85) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 12px !important;
   color: #ffffff !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  backdrop-filter: blur(16px) !important;
 }
 
 html[data-theme-style="glassify"]:not(.dark) input,
 html[data-theme-style="glassify"]:not(.dark) textarea,
 html[data-theme-style="glassify"]:not(.dark) select {
-  background: rgba(255, 255, 255, 0.82) !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03) !important;
   border-radius: 12px !important;
   color: #0f172a !important;
@@ -374,18 +351,16 @@ html[data-theme-style="glassify"]:not(.dark) [class*="fixed"][class*="z-50"] div
 }
 
 /* --------------------------------------------------------------------------
-   Animación lateral cinematográfica al cambiar de tema
+   Transicion cinematografica ligera al cambiar de tema (GPU pura, sin blur)
    -------------------------------------------------------------------------- */
 @keyframes themeSwitchSweep {
   0% {
-    opacity: 0.88;
-    transform: scale(0.995);
-    filter: blur(1.5px);
+    opacity: 0.94;
+    transform: scale(0.998);
   }
   100% {
     opacity: 1;
     transform: scale(1);
-    filter: blur(0px);
   }
 }
 

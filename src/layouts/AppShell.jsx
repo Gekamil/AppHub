@@ -27,6 +27,7 @@ import {
 } from '../services/baileysBridge'
 import { getVisibleNavTabs } from '../services/navSettings'
 import { syncWidgetData, checkInitialWidgetRoute, listenWidgetRoute } from '../services/widgetBridge'
+import { getDailyNews } from '../services/newsService'
 
 const DEFAULT_TASKS = []
 
@@ -159,23 +160,24 @@ export default function AppShell() {
       }
     }
 
-    // Gestos de trackpad de portátil con 2 dedos (evento wheel horizontal)
+    // Gestos de trackpad de portatil con 2 dedos (evento wheel horizontal intencional)
     const handleWheel = (e) => {
-      if (e.ctrlKey) return // Ignorar zoom de página
-      if (Math.abs(e.deltaX) < 35) return
-      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.1) return
+      if (e.ctrlKey) return // Ignorar zoom de pagina
+      if (Math.abs(e.deltaX) < 85) return // Umbral alto para evitar cambios involuntarios al hacer scroll vertical
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.8) return // Exige direccion predominantemente horizontal
+      if (e.target && e.target.closest && e.target.closest('pre, code, table, [data-horizontal-scroll]')) return
 
       const now = Date.now()
-      if (now - lastWheelTimeRef.current < 500) return // Cooldown suave
+      if (now - lastWheelTimeRef.current < 650) return // Cooldown suave
 
       const currentIdx = getTabIndex(location.pathname)
 
-      // En trackpad: mover 2 dedos a la izquierda genera deltaX > 0 => avanza a la página de la derecha
+      // En trackpad: mover 2 dedos a la izquierda genera deltaX > 0 => avanza a la pagina de la derecha
       if (e.deltaX > 0 && currentIdx < currentTabs.length - 1) {
         lastWheelTimeRef.current = now
         navigate(currentTabs[currentIdx + 1])
       } else if (e.deltaX < 0 && currentIdx > 0) {
-        // Mover 2 dedos a la derecha genera deltaX < 0 => retrocede a la página de la izquierda
+        // Mover 2 dedos a la derecha genera deltaX < 0 => retrocede a la pagina de la izquierda
         lastWheelTimeRef.current = now
         navigate(currentTabs[currentIdx - 1])
       }
@@ -198,6 +200,11 @@ export default function AppShell() {
     const user = getCurrentUser()
     return getUserTasks(user)
   })
+
+  // Precarga silenciosa en segundo plano de las 12 noticias del dia para que la IA disponga de los titulares reales
+  useEffect(() => {
+    getDailyNews().catch(() => {})
+  }, [])
 
   // Sincronización en tiempo real bidireccional con Firestore Cloud (Web <-> Móvil <-> Escritorio)
   useEffect(() => {

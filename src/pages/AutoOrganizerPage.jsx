@@ -1194,7 +1194,9 @@ export default function AutoOrganizerPage() {
         <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-              {themeTokens?.labels?.autoOrganizer || 'Organizador Semanal'}
+              {themeTokens?.labels?.autoOrganizer && !themeTokens.labels.autoOrganizer.includes('Esmerilada')
+                ? themeTokens.labels.autoOrganizer
+                : 'Organizador de Tareas'}
             </h1>
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium flex-wrap">
               <span>{todayInfo.headerDateStr}</span>
@@ -1305,43 +1307,6 @@ export default function AutoOrganizerPage() {
           <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-medium animate-in fade-in duration-200">
             <span className="material-symbols-outlined text-[15px]">check_circle</span>
             <span>{aiNotification}</span>
-          </div>
-        )}
-
-        {/* Alertas de Anticipación Inteligente & Deporte (Sin contarse como tareas pendientes) */}
-        {anticipationAlerts && anticipationAlerts.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
-              <span className="material-symbols-outlined text-[16px] text-amber-500">notifications_active</span>
-              <span>Avisos de Actividades y Radar</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {anticipationAlerts.slice(0, 3).map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`px-3.5 py-2.5 rounded-2xl border flex items-center justify-between gap-2.5 shadow-2xs ${alert.color}`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-white/80 dark:bg-black/30 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-[17px]">
-                        {alert.type === 'sport' ? 'fitness_center' : alert.type === 'exam' ? 'school' : 'flag'}
-                      </span>
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold truncate text-slate-900 dark:text-white">
-                        {alert.taskTitle}
-                      </span>
-                      <span className="text-[11px] opacity-90 truncate">
-                        {alert.message}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/80 dark:bg-black/40 shrink-0">
-                    {alert.badge}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
@@ -2207,7 +2172,7 @@ export default function AutoOrganizerPage() {
                   </div>
 
                   {(globalTasks || []).filter((t) => t.date === selectedRadarDate).length > 0 ? (
-                    <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    <div className="space-y-1.5">
                       {(globalTasks || []).filter((t) => t.date === selectedRadarDate).map((t) => {
                         const roleMatch = roles.find((r) => r.name === t.context || r.id === t.context)
                         return (
@@ -2475,6 +2440,43 @@ export default function AutoOrganizerPage() {
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* Alertas de Anticipacion Inteligente y Radar de Actividades */}
+          {anticipationAlerts && anticipationAlerts.length > 0 && (
+            <div className="pt-2 pb-1 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 px-1">
+                <span className="material-symbols-outlined text-[16px] text-amber-500">notifications_active</span>
+                <span>Avisos de Actividades y Radar</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {anticipationAlerts.slice(0, 3).map((alert) => (
+                  <div
+                    key={alert.id}
+                    className={`px-3.5 py-2.5 rounded-2xl border flex items-center justify-between gap-2.5 shadow-2xs ${alert.color}`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-white/80 dark:bg-black/30 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[17px]">
+                          {alert.type === 'sport' ? 'fitness_center' : alert.type === 'exam' ? 'school' : 'flag'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold truncate text-slate-900 dark:text-white">
+                          {alert.taskTitle}
+                        </span>
+                        <span className="text-[11px] opacity-90 truncate">
+                          {alert.message}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white/80 dark:bg-black/40 shrink-0">
+                      {alert.badge}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

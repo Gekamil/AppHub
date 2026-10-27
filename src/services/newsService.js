@@ -902,33 +902,44 @@ export function getCachedDailyNews() {
 
 /**
  * Fetches daily news with dual-tier reliability:
- * 1. Attempts live aggregation endpoint (/api/news or /api/proxy-rss?feed=daily).
- * 2. Falls back to generating 12 diverse daily news items for today across all domains.
+ * 1. Attempts local /api/news or live proxy /api/proxy-rss.
+ * 2. Attempts production Render backend https://freestudentapphub.onrender.com/api/news.
+ * 3. Falls back to generating 12 diverse daily news items for today across all Spanish domains.
  */
 export async function getDailyNews(options = {}) {
-  try {
-    if (typeof fetch !== 'undefined') {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 2500)
-      
-      const endpoint = options.useLiveProxy ? '/api/proxy-rss?feed=daily' : '/api/news'
-      const res = await fetch(endpoint, { signal: controller.signal })
-      clearTimeout(timeoutId)
-      
-      if (res.ok) {
-        const data = await res.json()
-        if (Array.isArray(data) && data.length > 0) {
-          try {
-            if (typeof localStorage !== 'undefined') {
-              localStorage.setItem('studenthub_cached_daily_news', JSON.stringify(data))
-            }
-          } catch (e) {}
-          return data
+  const endpoints = [
+    options.useLiveProxy ? '/api/proxy-rss?feed=daily' : '/api/news',
+    'https://freestudentapphub.onrender.com/api/news',
+  ]
+
+  for (const endpoint of endpoints) {
+    try {
+      if (typeof fetch !== 'undefined') {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 3000)
+        
+        const res = await fetch(endpoint, { signal: controller.signal })
+        clearTimeout(timeoutId)
+        
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data) && data.length >= 6) {
+            try {
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('studenthub_cached_daily_news', JSON.stringify(data))
+              }
+            } catch (e) {}
+            return data
+          }
         }
       }
+    } catch (e) {
+      // Continue to next endpoint or fallback
     }
-  } catch (err) {
-    // Graceful offline fallback: return dynamic 12 daily articles or FALLBACK_NEWS
+  }
+
+  // Graceful offline fallback: return dynamic 12 daily articles or FALLBACK_NEWS
+  try {
     const dynamicItems = generateDailyNews()
     if (dynamicItems && dynamicItems.length >= 12) {
       try {
@@ -938,8 +949,10 @@ export async function getDailyNews(options = {}) {
       } catch (e) {}
       return dynamicItems
     }
+  } catch (err) {
     return FALLBACK_NEWS
   }
+
   const daily = generateDailyNews()
   if (daily && daily.length >= 12) {
     try {

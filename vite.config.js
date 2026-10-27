@@ -217,10 +217,205 @@ function baileysBridgePlugin() {
   }
 }
 
+function newsRssPlugin() {
+  let cachedNews = null
+  let lastFetch = 0
+  const CACHE_TTL = 10 * 60 * 1000 // 10 minutes de cache
+
+  const cleanText = (str = '') => {
+    return str
+      .replace(/<!\[CDATA\[(.*?)\]\]>/gi, '$1')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .trim()
+  }
+
+  const handler = async (req, res, next) => {
+    const rawUrl = req.url || ''
+    if (rawUrl.startsWith('/api/news') || rawUrl.startsWith('/api/proxy-rss')) {
+      const now = Date.now()
+      if (cachedNews && Array.isArray(cachedNews) && cachedNews.length >= 10 && (now - lastFetch) < CACHE_TTL) {
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.end(JSON.stringify(cachedNews))
+        return
+      }
+
+      try {
+        const feeds = [
+          {
+            source: 'El País',
+            category: 'Actualidad',
+            categoryKey: 'actualidad',
+            icon: 'public',
+            url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
+          },
+          {
+            source: 'RTVE',
+            category: 'España',
+            categoryKey: 'actualidad',
+            icon: 'public',
+            url: 'https://www.rtve.es/api/noticias.rss',
+          },
+          {
+            source: 'El Mundo',
+            category: 'Actualidad',
+            categoryKey: 'actualidad',
+            icon: 'public',
+            url: 'https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml',
+          },
+          {
+            source: 'Marca',
+            category: 'Deportes',
+            categoryKey: 'sports',
+            icon: 'sports_soccer',
+            url: 'https://e00-marca.uecdn.es/rss/portada.xml',
+          },
+          {
+            source: '20 Minutos',
+            category: 'Sociedad',
+            categoryKey: 'society',
+            icon: 'people',
+            url: 'https://www.20minutos.es/rss/',
+          },
+          {
+            source: 'Xataka',
+            category: 'Tecnología',
+            categoryKey: 'tech',
+            icon: 'devices',
+            url: 'https://feeds.weblogssl.com/xataka2',
+          },
+        ]
+
+        const collected = []
+        await Promise.allSettled(
+          feeds.map(async (f) => {
+            try {
+              const controller = new AbortController()
+              const timer = setTimeout(() => controller.abort(), 3500)
+              const resp = await fetch(f.url, {
+                signal: controller.signal,
+                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StudentHub/1.0)' },
+              })
+              clearTimeout(timer)
+              if (!resp.ok) return
+              const xml = await resp.text()
+              const items = xml.match(/<item>([\s\S]*?)<\/item>/gi) || []
+              let count = 0
+              for (const itemXml of items) {
+                if (count >= 3) break
+                const titleM = itemXml.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i)
+                const linkM = itemXml.match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i)
+                const descM = itemXml.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i)
+                const imgM = itemXml.match(/<media:content[^>]+url=["']([^"']+)["']/i) ||
+                  itemXml.match(/<enclosure[^>]+url=["']([^"']+)["']/i) ||
+                  itemXml.match(/<img[^>]+src=["']([^"']+)["']/i)
+
+                const title = cleanText(titleM ? titleM[1] : '')
+                const summary = cleanText(descM ? descM[1] : '').slice(0, 240)
+                const url = (linkM ? linkM[1] : '').trim()
+
+                if (title && url && title.length > 10) {
+                  let catKey = f.categoryKey
+                  let catName = f.category
+                  let icon = f.icon
+
+                  if (f.source === 'Xataka') {
+                    if (/\b(inteligencia artificial|chatgpt|openai|gemini|llm|deep learning|ia generativa)\b/i.test(title)) {
+                      catKey = 'ai'
+                      catName = 'Inteligencia Artificial'
+                      icon = 'smart_toy'
+                    }
+                  } else if (f.source !== 'Marca') {
+                    if (/\b(bce|inflaci[oó]n|hipotecas?|tipos de inter[eé]s|salarios?|ibex|bolsa|fondos europeos|econom[ií]a)\b/i.test(title)) {
+                      catKey = 'economy'
+                      catName = 'Economía'
+                      icon = 'trending_up'
+                    } else if (/\b(cine|festival de cine|conciertos?|teatro|premios? goya|museos?|literatura|novela|cultura)\b/i.test(title)) {
+                      catKey = 'culture'
+                      catName = 'Cultura'
+                      icon = 'theater_comedy'
+                    } else if (/\b(sanidad|m[eé]dicos|vacunas?|hospital|alzheimer|c[aá]ncer|enfermedad|dieta mediterr[aá]nea|salud)\b/i.test(title)) {
+                      catKey = 'health'
+                      catName = 'Salud'
+                      icon = 'favorite'
+                    } else if (/\b(universidad|erasmus|estudiantes universitarios|selectividad|evau|campus universitario|becas?)\b/i.test(title)) {
+                      catKey = 'university'
+                      catName = 'Universidad'
+                      icon = 'school'
+                    }
+                  }
+
+                  collected.push({
+                    id: `live-es-${catKey}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                    title,
+                    summary: summary || title,
+                    category: catName,
+                    categoryKey: catKey,
+                    icon,
+                    source: f.source,
+                    sourceName: f.source,
+                    url,
+                    sourceUrl: url,
+                    imageUrl: imgM ? imgM[1] : 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80',
+                    publishedAt: 'Hoy',
+                    readTime: '3 min',
+                    readingTime: '3 min',
+                  })
+                  count++
+                }
+              }
+            } catch (err) {}
+          })
+        )
+
+        if (collected.length >= 6) {
+          cachedNews = collected.slice(0, 12)
+          lastFetch = Date.now()
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.end(JSON.stringify(cachedNews))
+          return
+        }
+      } catch (err) {}
+
+      try {
+        const { generateDailyNews } = await import('./src/services/newsService.js')
+        const fallback = generateDailyNews()
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.end(JSON.stringify(fallback))
+        return
+      } catch (e) {
+        next()
+      }
+    }
+    next()
+  }
+
+  return {
+    name: 'news-rss-plugin',
+    configureServer(server) {
+      server.middlewares.use(handler)
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(handler)
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
-  plugins: [react(), tailwindcss(), downloadMiddlewarePlugin(), icsProxyPlugin(), whatsappWebhookPlugin(), baileysBridgePlugin()],
+  plugins: [react(), tailwindcss(), downloadMiddlewarePlugin(), icsProxyPlugin(), whatsappWebhookPlugin(), baileysBridgePlugin(), newsRssPlugin()],
   server: {
     host: true,
     allowedHosts: true,
