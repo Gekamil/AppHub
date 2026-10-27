@@ -603,6 +603,7 @@ export default function CalendarPage() {
 
   // Sistema de Múltiples Calendarios con Persistencia y Aislamiento por Cuenta
   const isRemoteCalendarSyncRef = useRef(true)
+  const lastSyncedCalendarsJsonRef = useRef('')
   const [calendars, setCalendars] = useState(() => {
     return getUserCalendars(getCurrentUser())
   })
@@ -634,14 +635,25 @@ export default function CalendarPage() {
   useEffect(() => {
     const curUser = getCurrentUser()
     saveUserCalendars(calendars, curUser)
-    if (!isRemoteCalendarSyncRef.current) {
+
+    const curJson = JSON.stringify(calendars || [])
+    if (isRemoteCalendarSyncRef.current) {
+      isRemoteCalendarSyncRef.current = false
+      lastSyncedCalendarsJsonRef.current = curJson
+      return
+    }
+
+    if (lastSyncedCalendarsJsonRef.current === curJson) return
+
+    const timer = setTimeout(() => {
+      lastSyncedCalendarsJsonRef.current = curJson
       if (!isGuestUser(curUser)) {
         syncCalendarsToCloud(calendars).catch(() => {})
       }
       syncBaileysCalendars(calendars).catch(() => {})
-    } else {
-      isRemoteCalendarSyncRef.current = false
-    }
+    }, 1200)
+
+    return () => clearTimeout(timer)
   }, [calendars])
 
   // Cargar datos remotos de calendarios al iniciar sin sobreescribir ni borrar los calendarios locales
@@ -842,6 +854,7 @@ export default function CalendarPage() {
 
   // Sincronización saliente hacia calendarios compartidos cuando se modifican sus eventos
   const isInitialSyncMount = useRef(true)
+  const lastPublishedSharedJsonRef = useRef('')
   useEffect(() => {
     if (isInitialSyncMount.current) {
       isInitialSyncMount.current = false
@@ -850,12 +863,20 @@ export default function CalendarPage() {
     const sharedCals = (calendars || []).filter((c) => c.isShared && c.shareCode)
     if (sharedCals.length === 0) return
 
+    const currentData = sharedCals.map((cal) => ({
+      shareCode: cal.shareCode,
+      events: (globalTasks || []).filter((t) => t.calendarId === cal.id),
+    }))
+    const currentJson = JSON.stringify(currentData)
+    if (lastPublishedSharedJsonRef.current === currentJson) return
+
     const timer = setTimeout(() => {
+      lastPublishedSharedJsonRef.current = currentJson
       for (const cal of sharedCals) {
         const eventsForCal = (globalTasks || []).filter((t) => t.calendarId === cal.id)
         publishSharedCalendarUpdate(cal.shareCode, cal, eventsForCal).catch(() => {})
       }
-    }, 350)
+    }, 1200)
 
     return () => clearTimeout(timer)
   }, [globalTasks, calendars])

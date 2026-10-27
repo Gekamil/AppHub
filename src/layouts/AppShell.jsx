@@ -331,8 +331,10 @@ export default function AppShell() {
     syncWidgetData({ tasks: globalTasks, calendars: userCals, calendarColor: primaryColor })
 
     // Si la actualización procedió de una sincronización remota (Firestore o SSE), no rebotar hacia la nube
+    const currentJson = JSON.stringify(globalTasks || [])
     if (isRemoteSyncRef.current) {
       isRemoteSyncRef.current = false
+      lastPushedTasksJsonRef.current = currentJson
       return
     }
 
@@ -341,16 +343,14 @@ export default function AppShell() {
       return
     }
 
-    syncTasksToCloud(globalTasks)
-
-    const currentJson = JSON.stringify(globalTasks)
     if (lastPushedTasksJsonRef.current === currentJson) return
 
-    // Debounce de 300ms para enviar inmediatamente al puente en Render
+    // Debounce de 1200ms para evitar bucles de escritura continua en Firestore y Baileys
     const timer = setTimeout(() => {
       lastPushedTasksJsonRef.current = currentJson
+      syncTasksToCloud(globalTasks).catch(() => {})
       syncBaileysTasks(globalTasks).catch(() => {})
-    }, 300)
+    }, 1200)
 
     return () => clearTimeout(timer)
   }, [globalTasks])
