@@ -38,6 +38,7 @@ html[data-theme-style="glassify"].dark body {
               radial-gradient(at 50% 100%, rgba(10, 28, 65, 0.8) 0px, transparent 55%),
               linear-gradient(180deg, #0e172e 0%, #070e20 100%) !important;
   background-color: #080f22 !important;
+  background-attachment: fixed !important;
   color: #f1f5f9 !important;
 }
 
@@ -54,6 +55,7 @@ html[data-theme-style="glassify"]:not(.dark) body {
               radial-gradient(at 0% 100%, rgba(195, 240, 255, 0.65) 0px, transparent 50%),
               linear-gradient(135deg, #eef4fc 0%, #e0ecf8 100%) !important;
   background-color: #e8f1fa !important;
+  background-attachment: fixed !important;
   color: #0f172a !important;
 }
 
@@ -292,61 +294,49 @@ html[data-theme-style="glassify"]:not(.dark) [data-calendar-view-toggle] button:
   font-weight: 600 !important;
 }
 
-/* Modales, dropdowns, ajustes del sistema y selectores flotantes en Glassify: CERO backdrop-filter para eliminar el lag */
-html[data-theme-style="glassify"] [role="dialog"],
-html[data-theme-style="glassify"] [role="dialog"] *,
-html[data-theme-style="glassify"] [data-floating-menu],
-html[data-theme-style="glassify"] [data-floating-menu] *,
-html[data-theme-style="glassify"] .modal-content,
-html[data-theme-style="glassify"] .modal-content *,
-html[data-theme-style="glassify"] [role="menu"],
-html[data-theme-style="glassify"] [role="menu"] *,
-html[data-theme-style="glassify"] [role="listbox"],
-html[data-theme-style="glassify"] [role="listbox"] *,
-html[data-theme-style="glassify"] [class*="fixed"][class*="z-50"] *,
-html[data-theme-style="glassify"] [class*="fixed"][class*="z-50"] div {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
-html[data-theme-style="glassify"].dark div[data-floating-menu],
-html[data-theme-style="glassify"].dark [data-floating-menu],
-html[data-theme-style="glassify"].dark [role="dialog"],
-html[data-theme-style="glassify"].dark .modal-content,
-html[data-theme-style="glassify"].dark [role="menu"],
-html[data-theme-style="glassify"].dark [role="listbox"],
-html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class*="bg-white"],
-html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class*="dark:bg-"],
-html[data-theme-style="glassify"].dark [class*="fixed"][class*="z-50"] div[class*="bg-surface-pure"] {
-  background: #111827 !important;
-  background-color: #111827 !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  opacity: 1 !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
-  color: #f8fafc !important;
-  z-index: 99999 !important;
-}
-
-html[data-theme-style="glassify"]:not(.dark) div[data-floating-menu],
-html[data-theme-style="glassify"]:not(.dark) [data-floating-menu],
+/* Modales, dropdowns y ajustes del sistema en Glassify: Autentico Liquid Glass Apple */
 html[data-theme-style="glassify"]:not(.dark) [role="dialog"],
 html[data-theme-style="glassify"]:not(.dark) .modal-content,
-html[data-theme-style="glassify"]:not(.dark) [role="menu"],
-html[data-theme-style="glassify"]:not(.dark) [role="listbox"],
-html[data-theme-style="glassify"]:not(.dark) [class*="fixed"][class*="z-50"] div[class*="bg-white"],
-html[data-theme-style="glassify"]:not(.dark) [class*="fixed"][class*="z-50"] div[class*="bg-surface-pure"] {
-  background: #ffffff !important;
-  background-color: #ffffff !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  opacity: 1 !important;
-  border: 1px solid rgba(203, 213, 225, 0.95) !important;
-  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+html[data-theme-style="glassify"]:not(.dark) div[data-floating-menu="true"] {
+  background: rgba(255, 255, 255, 0.86) !important;
+  background-color: rgba(255, 255, 255, 0.86) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
   color: #0f172a !important;
-  z-index: 99999 !important;
+}
+
+html[data-theme-style="glassify"].dark [role="dialog"],
+html[data-theme-style="glassify"].dark .modal-content,
+html[data-theme-style="glassify"].dark div[data-floating-menu="true"] {
+  background: rgba(22, 27, 38, 0.90) !important;
+  background-color: rgba(22, 27, 38, 0.90) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+}
+
+/* Pastillas deslizantes en controles segmentados de modales: siempre en capa de fondo (z-index: 0) */
+html[data-theme-style="glassify"] [role="dialog"] .pointer-events-none.absolute,
+html[data-theme-style="glassify"] [data-floating-menu] .pointer-events-none.absolute {
+  z-index: 0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+html[data-theme-style="glassify"].dark [role="dialog"] .pointer-events-none.absolute,
+html[data-theme-style="glassify"].dark [data-floating-menu] .pointer-events-none.absolute {
+  z-index: 0 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme-style="glassify"] [role="dialog"] button.relative.z-10,
+html[data-theme-style="glassify"] [data-floating-menu] button.relative.z-10 {
+  z-index: 10 !important;
 }
 
 /* --------------------------------------------------------------------------

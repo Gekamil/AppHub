@@ -839,7 +839,7 @@ export default function Header({
                   </label>
                   <div className="relative flex items-center bg-surface-subtle p-1 rounded-xl border border-outline-variant/30">
                     <div
-                      className="absolute top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                      className="absolute z-0 top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                       style={{
                         width: 'calc(50% - 4px)',
                         left: '4px',
@@ -952,7 +952,7 @@ export default function Header({
                   </label>
                   <div className="relative flex items-center bg-surface-subtle p-1 rounded-xl border border-outline-variant/30">
                     <div
-                      className="absolute top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                      className="absolute z-0 top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                       style={{
                         width: 'calc(50% - 4px)',
                         left: '4px',
@@ -1066,7 +1066,7 @@ export default function Header({
                   </label>
                   <div className="relative flex items-center bg-surface-subtle p-1 rounded-xl border border-outline-variant/30">
                     <div
-                      className="absolute top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                      className="absolute z-0 top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                       style={{
                         width: 'calc(50% - 4px)',
                         left: '4px',
@@ -1107,7 +1107,7 @@ export default function Header({
                   </label>
                   <div className="relative flex items-center bg-surface-subtle p-1 rounded-xl border border-outline-variant/30">
                     <div
-                      className="absolute top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                      className="absolute z-0 top-1 bottom-1 rounded-lg bg-surface-pure shadow-xs transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
                       style={{
                         width: 'calc(50% - 4px)',
                         left: '4px',

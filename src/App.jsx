@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { createBrowserRouter, createHashRouter, RouterProvider, Navigate, useRouteError } from 'react-router-dom'
 import AppShell from './layouts/AppShell'
 import UpdateNotification from './components/UpdateNotification'
@@ -11,6 +11,27 @@ const AIAssistantPage = lazyWithRetry(() => import('./pages/AIAssistantPage'), '
 const MyHubPage = lazyWithRetry(() => import('./pages/MyHubPage'), 'MyHubPage')
 const NewsPage = lazyWithRetry(() => import('./pages/NewsPage'), 'NewsPage')
 const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'), 'LandingPage')
+
+function preloadAppRoutes() {
+  const preload = () => {
+    try {
+      import('./pages/AutoOrganizerPage')
+      import('./pages/NotebooksPage')
+      import('./pages/CalendarPage')
+      import('./pages/AIAssistantPage')
+      import('./pages/MyHubPage')
+      import('./pages/NewsPage')
+    } catch (e) {}
+  }
+
+  if (typeof window !== 'undefined') {
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => preload(), { timeout: 2500 })
+    } else {
+      setTimeout(preload, 1000)
+    }
+  }
+}
 
 function PageFallback() {
   return (
@@ -192,6 +213,10 @@ const router = createRouter([
 ])
 
 export default function App() {
+  useEffect(() => {
+    preloadAppRoutes()
+  }, [])
+
   return (
     <>
       <RouterProvider router={router} />

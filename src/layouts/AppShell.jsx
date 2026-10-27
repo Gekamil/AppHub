@@ -80,11 +80,9 @@ export default function AppShell() {
   }, [aiAssistantMode])
 
   // Soporte Global de Navegación por Gestos:
-  // 1. Móvil / Tablet: Deslizar con 2 dedos horizontalmente entre páginas (solo si no está en modo lateral)
-  // 2. Ordenador (Trackpad / Touchpad): Deslizar con 2 dedos horizontalmente (solo si no está en modo lateral)
+  // Móvil / Tablet: Deslizar con 2 dedos horizontalmente entre páginas (solo si no está en modo lateral)
   // FILTRADO ESTRICTO: Solo permite navegar entre pestañas que estén actualmente activadas en visibleTabs
   const touchStateRef = useRef({ active: false, startX: 0, startY: 0, maxFingers: 1 })
-  const lastWheelTimeRef = useRef(0)
 
   useEffect(() => {
     // Si la navegación está en modo barra lateral, deshabilitar gestos de deslizamiento con 2 dedos
@@ -160,39 +158,14 @@ export default function AppShell() {
       }
     }
 
-    // Gestos de trackpad de portatil con 2 dedos (evento wheel horizontal intencional)
-    const handleWheel = (e) => {
-      if (e.ctrlKey) return // Ignorar zoom de pagina
-      if (Math.abs(e.deltaX) < 85) return // Umbral alto para evitar cambios involuntarios al hacer scroll vertical
-      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.8) return // Exige direccion predominantemente horizontal
-      if (e.target && e.target.closest && e.target.closest('pre, code, table, [data-horizontal-scroll]')) return
-
-      const now = Date.now()
-      if (now - lastWheelTimeRef.current < 650) return // Cooldown suave
-
-      const currentIdx = getTabIndex(location.pathname)
-
-      // En trackpad: mover 2 dedos a la izquierda genera deltaX > 0 => avanza a la pagina de la derecha
-      if (e.deltaX > 0 && currentIdx < currentTabs.length - 1) {
-        lastWheelTimeRef.current = now
-        navigate(currentTabs[currentIdx + 1])
-      } else if (e.deltaX < 0 && currentIdx > 0) {
-        // Mover 2 dedos a la derecha genera deltaX < 0 => retrocede a la pagina de la izquierda
-        lastWheelTimeRef.current = now
-        navigate(currentTabs[currentIdx - 1])
-      }
-    }
-
     window.addEventListener('touchstart', handleTouchStart, { passive: true })
     window.addEventListener('touchmove', handleTouchMove, { passive: true })
     window.addEventListener('touchend', handleTouchEnd, { passive: true })
-    window.addEventListener('wheel', handleWheel, { passive: true })
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
-      window.removeEventListener('wheel', handleWheel)
     }
   }, [location.pathname, navigate, navPosition, aiAssistantMode, visibleTabs])
 
@@ -643,7 +616,7 @@ export default function AppShell() {
         <main
           className={`w-full ${
             navPosition === 'top' ? 'pt-28 md:pt-22' : 'pt-20 md:pt-16'
-          } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 pb-20 md:pb-margin-lg bg-surface-subtle min-h-screen transition-all`}
+          } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 pb-20 md:pb-margin-lg bg-surface-subtle min-h-screen`}
         >
           <Outlet context={outletContextValue} />
         </main>
