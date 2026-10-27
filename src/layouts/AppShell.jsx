@@ -89,57 +89,58 @@ export default function AppShell() {
     getDailyNews().catch(() => {})
   }, [])
 
-  // Sincronización en tiempo real bidireccional con Firestore Cloud (Web <-> Móvil <-> Escritorio)
+  // Sincronización en tiempo real bidireccional con Cloud (Web <-> Móvil <-> Escritorio)
   useEffect(() => {
-    const curUser = getCurrentUser()
-    if (!curUser || isGuestUser(curUser)) return
-
     let isMounted = true
+    let unsub = () => {}
 
-    // 1. Carga inicial inmediata desde la nube para que el móvil tenga siempre los datos reales de la web
-    loadUserDataFromCloud().then((data) => {
-      if (!isMounted || !data || !Array.isArray(data.tasks)) return
-      isRemoteSyncRef.current = true
-      setGlobalTasks((prev) => {
-        const prevJson = JSON.stringify(prev || [])
-        const remoteJson = JSON.stringify(data.tasks)
-        return prevJson === remoteJson ? prev : data.tasks
-      })
-    }).catch(() => {})
+    const setupUserCloudSync = () => {
+      if (typeof unsub === 'function') {
+        try { unsub() } catch (e) {}
+        unsub = () => {}
+      }
 
-    // 2. Suscripción viva a Firestore onSnapshot
-    const unsub = subscribeToUserCloudData(curUser, (data) => {
-      if (!isMounted || !data || !Array.isArray(data.tasks)) return
-      isRemoteSyncRef.current = true
-      setGlobalTasks((prev) => {
-        const prevJson = JSON.stringify(prev || [])
-        const remoteJson = JSON.stringify(data.tasks)
-        return prevJson === remoteJson ? prev : data.tasks
+      const curUser = getCurrentUser()
+      if (!curUser || isGuestUser(curUser)) return
+
+      // 1. Carga inicial inmediata desde la nube para que el móvil tenga siempre los datos reales de la web
+      loadUserDataFromCloud().then((data) => {
+        if (!isMounted || !data || !Array.isArray(data.tasks)) return
+        isRemoteSyncRef.current = true
+        setGlobalTasks((prev) => {
+          const prevJson = JSON.stringify(prev || [])
+          const remoteJson = JSON.stringify(data.tasks)
+          return prevJson === remoteJson ? prev : data.tasks
+        })
+      }).catch(() => {})
+
+      // 2. Suscripción viva multicanal (SSE + Firestore)
+      unsub = subscribeToUserCloudData(curUser, (data) => {
+        if (!isMounted || !data || !Array.isArray(data.tasks)) return
+        isRemoteSyncRef.current = true
+        setGlobalTasks((prev) => {
+          const prevJson = JSON.stringify(prev || [])
+          const remoteJson = JSON.stringify(data.tasks)
+          return prevJson === remoteJson ? prev : data.tasks
+        })
       })
-    })
+    }
+
+    setupUserCloudSync()
+
+    const handleAuthChange = () => {
+      const user = getCurrentUser()
+      setGlobalTasks(getUserTasks(user))
+      setupUserCloudSync()
+    }
+
+    window.addEventListener('studenthub_auth_changed', handleAuthChange)
 
     return () => {
       isMounted = false
       if (typeof unsub === 'function') unsub()
+      window.removeEventListener('studenthub_auth_changed', handleAuthChange)
     }
-  }, [])
-
-  // Escuchar cambios de autenticación (login, logout, cambio de usuario)
-  useEffect(() => {
-    const handleAuthChange = () => {
-      const user = getCurrentUser()
-      setGlobalTasks(getUserTasks(user))
-      if (user && !isGuestUser(user)) {
-        loadUserDataFromCloud().then((data) => {
-          if (data && Array.isArray(data.tasks)) {
-            isRemoteSyncRef.current = true
-            setGlobalTasks(data.tasks)
-          }
-        }).catch(() => {})
-      }
-    }
-    window.addEventListener('studenthub_auth_changed', handleAuthChange)
-    return () => window.removeEventListener('studenthub_auth_changed', handleAuthChange)
   }, [])
 
   // Control para evitar rebotes de sincronización remota
@@ -525,7 +526,7 @@ export default function AppShell() {
         />
         <main
           className={`w-full ${
-            navPosition === 'top' ? 'pt-16 md:pt-22 pb-20 md:pb-margin-lg' : 'pt-16 md:pt-16 pb-6 md:pb-margin-lg'
+            navPosition === 'top' ? 'pt-16 md:pt-22 pb-24 sm:pb-28 md:pb-margin-lg' : 'pt-16 md:pt-16 pb-6 md:pb-margin-lg'
           } px-3 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 bg-surface-subtle min-h-screen`}
         >
           <Outlet context={outletContextValue} />

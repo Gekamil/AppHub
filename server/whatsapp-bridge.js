@@ -310,6 +310,7 @@ const TASKS_FILE = path.resolve(process.cwd(), '.whatsapp_synced_tasks.json')
 const SHARED_CALENDARS_FILE = path.resolve(process.cwd(), '.whatsapp_shared_calendars.json')
 const BOT_SETTINGS_FILE = path.resolve(process.cwd(), '.whatsapp_bot_settings.json')
 const USER_CALENDARS_FILE = path.resolve(process.cwd(), '.whatsapp_user_calendars.json')
+const CLOUD_ACCOUNTS_FILE = path.resolve(process.cwd(), '.cloud_accounts_store.json')
 
 export const DEFAULT_USER_CALENDARS = [
   { id: 'cal-default', name: 'Personal & General', color: '#3b82f6', keywords: ['personal', 'general', 'casa', 'compra', 'quedada', 'cena', 'amigos'] },
@@ -532,6 +533,44 @@ function saveSharedCalendarsStore(store) {
 }
 
 let sharedCalendarsMap = loadSharedCalendarsStore()
+
+function loadCloudAccountsStore() {
+  try {
+    if (fs.existsSync(CLOUD_ACCOUNTS_FILE)) {
+      return JSON.parse(fs.readFileSync(CLOUD_ACCOUNTS_FILE, 'utf-8')) || {}
+    }
+  } catch (e) {}
+  return {}
+}
+
+function saveCloudAccountsStore(store) {
+  try {
+    fs.writeFileSync(CLOUD_ACCOUNTS_FILE, JSON.stringify(store, null, 2), 'utf-8')
+  } catch (e) {}
+}
+
+let cloudAccountsMap = loadCloudAccountsStore()
+const userCloudSseClients = new Map() // cleanEmail -> Set<res>
+
+function broadcastUserCloudUpdate(cleanEmail, user) {
+  if (!cleanEmail) return
+  const clients = userCloudSseClients.get(cleanEmail)
+  if (clients && clients.size > 0) {
+    const payload = JSON.stringify({
+      type: 'user_cloud_sync',
+      user,
+      timestamp: Date.now(),
+    })
+    const msg = `data: ${payload}\n\n`
+    for (const res of clients) {
+      try {
+        res.write(msg)
+      } catch (e) {
+        clients.delete(res)
+      }
+    }
+  }
+}
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyACDRKCK8O50w1FIoYhBMgqsM9yYUzX-io",
@@ -3032,6 +3071,131 @@ export function handleBaileysApiRoute(req, res) {
     return true
   }
 
+  // Canal SSE de sincronización en tiempo real por usuario (<50ms entre PC, Móvil y Web)
+  if (pathname === '/api/user/stream') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no',
+    })
+    res.write(': connected\n\n')
+
+    const rawEmail = parsedUrl.searchParams.get('email') || ''
+    const cleanEmail = rawEmail.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
+
+    if (cleanEmail) {
+      if (!userCloudSseClients.has(cleanEmail)) {
+        userCloudSseClients.set(cleanEmail, new Set())
+      }
+      userCloudSseClients.get(cleanEmail).add(res)
+
+      // Snapshot inmediato del usuario actual si existe
+      if (cloudAccountsMap[cleanEmail]) {
+        res.write(`data: ${JSON.stringify({
+          type: 'user_cloud_sync',
+          user: cloudAccountsMap[cleanEmail],
+          timestamp: Date.now(),
+        })}\n\n`)
+      }
+    }
+
+    req.on('close', () => {
+      if (cleanEmail && userCloudSseClients.has(cleanEmail)) {
+        userCloudSseClients.get(cleanEmail).delete(res)
+      }
+    })
+    return true
+  }
+
+  // Consulta de datos de usuario por email
+  if (pathname === '/api/user/data' && req.method === 'GET') {
+    const rawEmail = parsedUrl.searchParams.get('email') || ''
+    const cleanEmail = rawEmail.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
+    if (cleanEmail && cloudAccountsMap[cleanEmail]) {
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ success: true, user: cloudAccountsMap[cleanEmail] }))
+      return true
+    }
+    res.statusCode = 404
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ success: false, error: 'Usuario no encontrado' }))
+    return true
+  }
+
+  // Sincronización continua de datos de usuario (tareas, calendarios, notas, categorías)
+  if (pathname === '/api/user/sync' && req.method === 'POST') {
+    let body = ''
+    req.on('data', (chunk) => { body += chunk })
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body)
+        const email = payload.email || payload.user?.email
+        if (!email) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Falta email' }))
+          return
+        }
+        const cleanEmail = email.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
+        const existing = cloudAccountsMap[cleanEmail] || {}
+
+        // Fusión inteligente: preservar datos y fusionar tareas por ID
+        let mergedTasks = existing.tasks || []
+        if (Array.isArray(payload.tasks)) {
+          const taskMap = new Map()
+          mergedTasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+          payload.tasks.forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+          mergedTasks = Array.from(taskMap.values())
+        }
+
+        let mergedCalendars = payload.calendars || existing.calendars || DEFAULT_USER_CALENDARS
+        let mergedCategories = payload.categories || existing.categories || null
+        let mergedNotes = payload.notes || existing.notes || null
+
+        const updatedUser = {
+          ...existing,
+          uid: existing.uid || payload.uid || `user-${Date.now()}`,
+          email: email.trim().toLowerCase(),
+          displayName: payload.displayName || existing.displayName || email.split('@')[0],
+          password: payload.password || existing.password || '123456',
+          tasks: mergedTasks,
+          calendars: mergedCalendars,
+          categories: mergedCategories,
+          notes: mergedNotes,
+          updatedAt: new Date().toISOString(),
+        }
+
+        cloudAccountsMap[cleanEmail] = updatedUser
+        saveCloudAccountsStore(cloudAccountsMap)
+
+        // Difundir actualización en tiempo real a todos los dispositivos (móvil, PC, web)
+        broadcastUserCloudUpdate(cleanEmail, updatedUser)
+
+        // Respaldo en segundo plano a Firestore sin bloquear ni fallar si quota fue superada
+        try {
+          const db = await getBridgeFirestore()
+          if (db) {
+            const { doc, setDoc } = await import('firebase/firestore')
+            setDoc(doc(db, 'shared_calendars', `account_${cleanEmail}`), updatedUser, { merge: true }).catch(() => {})
+          }
+        } catch (e) {}
+
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true, user: updatedUser }))
+      } catch (e) {
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: e.message }))
+      }
+    })
+    return true
+  }
+
+  // Registro de cuenta de usuario con respaldo persistente en disco y Firestore
   if (pathname === '/api/auth/register' && req.method === 'POST') {
     let body = ''
     req.on('data', (chunk) => { body += chunk })
@@ -3046,14 +3210,76 @@ export function handleBaileysApiRoute(req, res) {
         }
         const cleanEmail = user.email.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
         const docId = `account_${cleanEmail}`
-        const db = await getBridgeFirestore()
-        if (db) {
-          const { doc, setDoc } = await import('firebase/firestore')
-          await setDoc(doc(db, 'shared_calendars', docId), user, { merge: true })
+
+        const existing = cloudAccountsMap[cleanEmail]
+        if (existing) {
+          // Si ya existe la cuenta en el servidor, fusionar inteligentemente sin clobber
+          const taskMap = new Map()
+          ;(existing.tasks || []).forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+          ;(user.tasks || []).forEach((t) => { if (t && t.id) taskMap.set(String(t.id), t) })
+
+          const calMap = new Map()
+          ;(existing.calendars || []).forEach((c) => { if (c && c.id) calMap.set(String(c.id), c) })
+          ;(user.calendars || []).forEach((c) => { if (c && c.id) calMap.set(String(c.id), c) })
+
+          const mergedUser = {
+            ...existing,
+            displayName: user.displayName || existing.displayName,
+            password: user.password || existing.password,
+            tasks: Array.from(taskMap.values()),
+            calendars: Array.from(calMap.values()),
+            categories: user.categories || existing.categories || null,
+            notes: user.notes || existing.notes || null,
+            updatedAt: new Date().toISOString(),
+          }
+
+          cloudAccountsMap[cleanEmail] = mergedUser
+          saveCloudAccountsStore(cloudAccountsMap)
+          broadcastUserCloudUpdate(cleanEmail, mergedUser)
+
+          try {
+            const db = await getBridgeFirestore()
+            if (db) {
+              const { doc, setDoc } = await import('firebase/firestore')
+              setDoc(doc(db, 'shared_calendars', docId), mergedUser, { merge: true }).catch(() => {})
+            }
+          } catch (e) {}
+
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ success: true, user: mergedUser }))
+          return
         }
+
+        // Cuenta nueva
+        const newUser = {
+          uid: user.uid || `user-${Date.now()}`,
+          displayName: user.displayName || user.email.split('@')[0],
+          email: user.email.trim().toLowerCase(),
+          password: user.password || '123456',
+          tasks: Array.isArray(user.tasks) ? user.tasks : [],
+          calendars: Array.isArray(user.calendars) && user.calendars.length > 0 ? user.calendars : DEFAULT_USER_CALENDARS,
+          categories: user.categories || null,
+          notes: user.notes || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+
+        cloudAccountsMap[cleanEmail] = newUser
+        saveCloudAccountsStore(cloudAccountsMap)
+        broadcastUserCloudUpdate(cleanEmail, newUser)
+
+        try {
+          const db = await getBridgeFirestore()
+          if (db) {
+            const { doc, setDoc } = await import('firebase/firestore')
+            setDoc(doc(db, 'shared_calendars', docId), newUser, { merge: true }).catch(() => {})
+          }
+        } catch (e) {}
+
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ success: true, user }))
+        res.end(JSON.stringify({ success: true, user: newUser }))
       } catch (e) {
         res.statusCode = 500
         res.setHeader('Content-Type', 'application/json')
@@ -3063,6 +3289,7 @@ export function handleBaileysApiRoute(req, res) {
     return true
   }
 
+  // Inicio de sesión con soporte multidispositivo garantizado
   if (pathname === '/api/auth/login' && req.method === 'POST') {
     let body = ''
     req.on('data', (chunk) => { body += chunk })
@@ -3077,27 +3304,42 @@ export function handleBaileysApiRoute(req, res) {
         }
         const cleanEmail = email.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')
         const docId = `account_${cleanEmail}`
-        const db = await getBridgeFirestore()
-        if (db) {
-          const { doc, getDoc } = await import('firebase/firestore')
-          const snap = await getDoc(doc(db, 'shared_calendars', docId))
-          if (snap.exists()) {
-            const user = snap.data()
-            if (password && user.password && user.password !== password) {
-              res.statusCode = 401
-              res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify({ error: 'Contraseña incorrecta' }))
-              return
+
+        // 1. Prioridad: Almacén en memoria y persistente del servidor
+        let targetUser = cloudAccountsMap[cleanEmail]
+
+        // 2. Si no está en memoria local del servidor, intentar recuperar desde Firestore
+        if (!targetUser) {
+          try {
+            const db = await getBridgeFirestore()
+            if (db) {
+              const { doc, getDoc } = await import('firebase/firestore')
+              const snap = await getDoc(doc(db, 'shared_calendars', docId))
+              if (snap.exists()) {
+                targetUser = snap.data()
+                cloudAccountsMap[cleanEmail] = targetUser
+                saveCloudAccountsStore(cloudAccountsMap)
+              }
             }
-            res.statusCode = 200
+          } catch (e) {}
+        }
+
+        if (targetUser) {
+          if (password && targetUser.password && targetUser.password !== password) {
+            res.statusCode = 401
             res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ success: true, user }))
+            res.end(JSON.stringify({ error: 'Contraseña incorrecta' }))
             return
           }
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ success: true, user: targetUser }))
+          return
         }
+
         res.statusCode = 404
         res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ error: 'No existe ninguna cuenta con ese correo electrónico' }))
+        res.end(JSON.stringify({ error: 'No existe ninguna cuenta registrada con ese correo electrónico' }))
       } catch (e) {
         res.statusCode = 500
         res.setHeader('Content-Type', 'application/json')

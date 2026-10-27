@@ -4,6 +4,7 @@
 
 import { db } from './firebaseConfig'
 import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
+import { API_BASE } from './baileysBridge'
 
 const ACCOUNTS_DB_KEY = 'studenthub_accounts_database'
 const ACTIVE_USER_KEY = 'studenthub_active_user'
@@ -191,18 +192,43 @@ export const loginUser = async (email, password) => {
   const docId = getAccountDocId(trimmedEmail)
   let cloudAccount = null
 
-  // 1. Consultar en la base de datos en la nube (Firestore) para soporte multidispositivo real
+  // 1. Consultar primero en el servidor Cloud de AppHub (persistencia multidispositivo universal inmune a cuotas)
   try {
-    if (db) {
-      const docRef = doc(db, 'shared_calendars', docId)
-      const snap = await getDoc(docRef)
-      if (snap.exists()) {
-        cloudAccount = snap.data()
-        console.log('[Cloud Auth]: Cuenta recuperada con éxito desde Firestore Cloud:', trimmedEmail)
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: trimmedEmail, password }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.user) {
+        cloudAccount = data.user
+        console.log('[Cloud Auth]: Cuenta recuperada con éxito desde el servidor cloud:', trimmedEmail)
       }
+    } else if (res.status === 401) {
+      throw new Error('Contraseña incorrecta. Por favor, revisa las mayúsculas y minúsculas.')
     }
-  } catch (cloudErr) {
-    console.warn('[Cloud Auth]: Aviso al consultar cuenta en Firestore:', cloudErr.message)
+  } catch (backendErr) {
+    if (backendErr.message?.includes('Contraseña incorrecta')) {
+      throw backendErr
+    }
+    console.warn('[Cloud Auth]: Backend auth fallback:', backendErr.message)
+  }
+
+  // 2. Si no se recuperó del servidor, consultar en Firestore Cloud
+  if (!cloudAccount) {
+    try {
+      if (db) {
+        const docRef = doc(db, 'shared_calendars', docId)
+        const snap = await getDoc(docRef)
+        if (snap.exists()) {
+          cloudAccount = snap.data()
+          console.log('[Cloud Auth]: Cuenta recuperada con éxito desde Firestore Cloud:', trimmedEmail)
+        }
+      }
+    } catch (cloudErr) {
+      console.warn('[Cloud Auth]: Aviso al consultar cuenta en Firestore:', cloudErr.message)
+    }
   }
 
   // 2. Buscar en la caché local del dispositivo
@@ -348,16 +374,29 @@ export const registerUser = async (email, password, displayName = '') => {
 
   const docId = getAccountDocId(trimmedEmail)
 
-  // 1. Comprobar si ya existe en la nube Firestore
+  // 1. Comprobar si ya existe en el servidor Cloud (para sincronización instantánea multidispositivo)
   let existingCloud = null
   try {
-    if (db) {
-      const snap = await getDoc(doc(db, 'shared_calendars', docId))
-      if (snap.exists()) {
-        existingCloud = snap.data()
+    const res = await fetch(`${API_BASE}/api/user/data?email=${encodeURIComponent(trimmedEmail)}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.user) {
+        existingCloud = data.user
       }
     }
   } catch (err) {}
+
+  // 2. Si no se encontró en el servidor, comprobar en Firestore Cloud
+  if (!existingCloud) {
+    try {
+      if (db) {
+        const snap = await getDoc(doc(db, 'shared_calendars', docId))
+        if (snap.exists()) {
+          existingCloud = snap.data()
+        }
+      }
+    } catch (err) {}
+  }
 
   // 2. Comprobar si ya existe en la caché local
   const accounts = getAllAccounts()
@@ -414,8 +453,13 @@ export const registerUser = async (email, password, displayName = '') => {
     }
 
     try {
+      fetch(`${API_BASE}/api/user/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mergedUser),
+      }).catch(() => {})
       if (db) {
-        await setDoc(doc(db, 'shared_calendars', docId), mergedUser, { merge: true })
+        setDoc(doc(db, 'shared_calendars', docId), mergedUser, { merge: true }).catch(() => {})
       }
     } catch (e) {}
 
@@ -492,10 +536,15 @@ export const registerUser = async (email, password, displayName = '') => {
     tasks: [],
   }
 
-  // Guardar en Firestore Cloud
+  // Guardar en Server Cloud y Firestore
   try {
+    fetch(`${API_BASE}/api/user/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newUser),
+    }).catch(() => {})
     if (db) {
-      await setDoc(doc(db, 'shared_calendars', docId), newUser)
+      setDoc(doc(db, 'shared_calendars', docId), newUser).catch(() => {})
       console.log('[Cloud Auth]: Nueva cuenta guardada en Firebase Firestore:', docId)
     }
   } catch (cloudErr) {
@@ -750,7 +799,7 @@ export const saveUserCalendars = (calendars, user = getCurrentUser()) => {
   }
 }
 
-// Sincronizar tareas del usuario activo con la nube (Firestore Cloud)
+// Sincronizar tareas del usuario activo con la nube (Server Cloud + Firestore)
 export const syncTasksToCloud = async (tasks) => {
   try {
     const current = getCurrentUser()
@@ -764,21 +813,31 @@ export const syncTasksToCloud = async (tasks) => {
       saveAllAccounts(accounts)
     }
 
-    // 2. Guardar en Firestore en la nube para sincronización en tiempo real
+    // 2. Sincronizar con el Server Cloud de AppHub (tiempo real multidispositivo inmune a cuotas)
+    fetch(`${API_BASE}/api/user/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: current.email,
+        tasks,
+      }),
+    }).catch(() => {})
+
+    // 3. Respaldo secundario en Firestore en la nube
     if (db) {
       const docId = getAccountDocId(current.email)
-      await setDoc(
+      setDoc(
         doc(db, 'shared_calendars', docId),
         { tasks, updatedAt: new Date().toISOString() },
         { merge: true }
-      )
+      ).catch(() => {})
     }
   } catch (e) {
     console.warn('Error sincronizando tareas en la nube:', e)
   }
 }
 
-// Sincronizar calendarios del usuario activo con la nube (Firestore Cloud)
+// Sincronizar calendarios del usuario activo con la nube (Server Cloud + Firestore)
 export const syncCalendarsToCloud = async (calendars) => {
   try {
     const current = getCurrentUser()
@@ -792,14 +851,24 @@ export const syncCalendarsToCloud = async (calendars) => {
       saveAllAccounts(accounts)
     }
 
-    // 2. Guardar en Firestore en la nube
+    // 2. Sincronizar con el Server Cloud de AppHub
+    fetch(`${API_BASE}/api/user/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: current.email,
+        calendars,
+      }),
+    }).catch(() => {})
+
+    // 3. Respaldo secundario en Firestore
     if (db) {
       const docId = getAccountDocId(current.email)
-      await setDoc(
+      setDoc(
         doc(db, 'shared_calendars', docId),
         { calendars, updatedAt: new Date().toISOString() },
         { merge: true }
-      )
+      ).catch(() => {})
     }
   } catch (e) {
     console.warn('Error sincronizando calendarios en la nube:', e)
@@ -812,7 +881,38 @@ export const loadUserDataFromCloud = async () => {
     const current = getCurrentUser()
     if (!current || isGuestUser(current) || !current.email) return null
 
-    // 1. Consultar Firestore Cloud
+    // 1. Prioridad: Consultar Server Cloud de AppHub
+    try {
+      const res = await fetch(`${API_BASE}/api/user/data?email=${encodeURIComponent(current.email)}`)
+      if (res.ok) {
+        const result = await res.json()
+        if (result?.user) {
+          const cloudData = result.user
+          if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
+            localStorage.setItem('app_global_tasks', JSON.stringify(cloudData.tasks))
+            localStorage.setItem(`studenthub_tasks_${current.uid}`, JSON.stringify(cloudData.tasks))
+          }
+          if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
+            localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(cloudData.calendars))
+            const accounts = getAllAccounts()
+            const idx = accounts.findIndex((a) => a.uid === current.uid)
+            if (idx >= 0) {
+              accounts[idx].calendars = cloudData.calendars
+              saveAllAccounts(accounts)
+            }
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
+            }
+          }
+          return {
+            tasks: cloudData.tasks || null,
+            calendars: cloudData.calendars || null,
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 2. Respaldo secundario en Firestore Cloud
     if (db) {
       const docId = getAccountDocId(current.email)
       const snap = await getDoc(doc(db, 'shared_calendars', docId))
@@ -823,8 +923,6 @@ export const loadUserDataFromCloud = async () => {
           localStorage.setItem(`studenthub_tasks_${current.uid}`, JSON.stringify(cloudData.tasks))
         }
         if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
-          // Si la nube ya contiene calendarios reales del usuario, esa es la fuente de verdad directa
-          // Evita contaminar con plantillas vacías por defecto
           localStorage.setItem(`studenthub_calendars_${current.uid}`, JSON.stringify(cloudData.calendars))
           const accounts = getAllAccounts()
           const idx = accounts.findIndex((a) => a.uid === current.uid)
@@ -843,7 +941,7 @@ export const loadUserDataFromCloud = async () => {
       }
     }
 
-    // 2. Fallback local
+    // 3. Fallback local
     const accounts = getAllAccounts()
     const found = accounts.find((a) => a.uid === current.uid)
     if (found) {
@@ -858,48 +956,105 @@ export const loadUserDataFromCloud = async () => {
   return null
 }
 
-// Suscripción en tiempo real a cambios de Firestore en cualquier dispositivo (Web <-> Móvil <-> Desktop)
+// Suscripción en tiempo real a cambios en cualquier dispositivo (Web <-> Móvil <-> Desktop)
 export const subscribeToUserCloudData = (user, onUpdate) => {
-  if (!db || !user || isGuestUser(user) || !user.email) return () => {}
+  if (!user || isGuestUser(user) || !user.email) return () => {}
+
+  let unsubFirestore = () => {}
+  let eventSource = null
+  let isClosed = false
+
+  // 1. Canal Server-Sent Events en tiempo real (<50ms multidispositivo)
   try {
-    const docId = getAccountDocId(user.email)
-    const unsub = onSnapshot(
-      doc(db, 'shared_calendars', docId),
-      (snap) => {
-        if (snap.exists()) {
-          const cloudData = snap.data() || {}
-          if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
-            localStorage.setItem('app_global_tasks', JSON.stringify(cloudData.tasks))
-            localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(cloudData.tasks))
-          }
-          if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
-            localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(cloudData.calendars))
-            const accounts = getAllAccounts()
-            const idx = accounts.findIndex((a) => a.uid === user.uid)
-            if (idx >= 0) {
-              accounts[idx].calendars = cloudData.calendars
-              saveAllAccounts(accounts)
+    if (typeof window !== 'undefined' && typeof window.EventSource !== 'undefined') {
+      const sseUrl = `${API_BASE}/api/user/stream?email=${encodeURIComponent(user.email)}`
+      eventSource = new EventSource(sseUrl)
+      eventSource.onmessage = (event) => {
+        if (isClosed) return
+        try {
+          const data = JSON.parse(event.data)
+          if (data?.type === 'user_cloud_sync' && data.user) {
+            const cloudUser = data.user
+            if (cloudUser.tasks && Array.isArray(cloudUser.tasks)) {
+              localStorage.setItem('app_global_tasks', JSON.stringify(cloudUser.tasks))
+              localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(cloudUser.tasks))
             }
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
+            if (cloudUser.calendars && Array.isArray(cloudUser.calendars) && cloudUser.calendars.length > 0) {
+              localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(cloudUser.calendars))
+              const accounts = getAllAccounts()
+              const idx = accounts.findIndex((a) => a.uid === user.uid)
+              if (idx >= 0) {
+                accounts[idx].calendars = cloudUser.calendars
+                saveAllAccounts(accounts)
+              }
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudUser.calendars }))
+              }
+            }
+            if (typeof onUpdate === 'function') {
+              onUpdate({
+                tasks: cloudUser.tasks || null,
+                calendars: cloudUser.calendars || null,
+              })
             }
           }
-          if (typeof onUpdate === 'function') {
-            onUpdate({
-              tasks: cloudData.tasks || null,
-              calendars: cloudData.calendars || null,
-            })
-          }
-        }
-      },
-      (err) => {
-        console.warn('[subscribeToUserCloudData] onSnapshot error:', err)
+        } catch (e) {}
       }
-    )
-    return unsub
-  } catch (err) {
-    console.warn('[subscribeToUserCloudData] error:', err)
-    return () => {}
+    }
+  } catch (e) {}
+
+  // 2. Respaldo secundario en Firestore onSnapshot
+  try {
+    if (db) {
+      const docId = getAccountDocId(user.email)
+      unsubFirestore = onSnapshot(
+        doc(db, 'shared_calendars', docId),
+        (snap) => {
+          if (isClosed) return
+          if (snap.exists()) {
+            const cloudData = snap.data() || {}
+            if (cloudData.tasks && Array.isArray(cloudData.tasks)) {
+              localStorage.setItem('app_global_tasks', JSON.stringify(cloudData.tasks))
+              localStorage.setItem(`studenthub_tasks_${user.uid}`, JSON.stringify(cloudData.tasks))
+            }
+            if (cloudData.calendars && Array.isArray(cloudData.calendars) && cloudData.calendars.length > 0) {
+              localStorage.setItem(`studenthub_calendars_${user.uid}`, JSON.stringify(cloudData.calendars))
+              const accounts = getAllAccounts()
+              const idx = accounts.findIndex((a) => a.uid === user.uid)
+              if (idx >= 0) {
+                accounts[idx].calendars = cloudData.calendars
+                saveAllAccounts(accounts)
+              }
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
+              }
+            }
+            if (typeof onUpdate === 'function') {
+              onUpdate({
+                tasks: cloudData.tasks || null,
+                calendars: cloudData.calendars || null,
+              })
+            }
+          }
+        },
+        (err) => {}
+      )
+    }
+  } catch (err) {}
+
+  return () => {
+    isClosed = true
+    if (eventSource) {
+      try {
+        eventSource.close()
+      } catch (e) {}
+      eventSource = null
+    }
+    if (typeof unsubFirestore === 'function') {
+      try {
+        unsubFirestore()
+      } catch (e) {}
+    }
   }
 }
 

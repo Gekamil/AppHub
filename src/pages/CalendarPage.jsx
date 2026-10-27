@@ -1117,11 +1117,21 @@ export default function CalendarPage() {
     }
   }, [calendarView, currentDate, activeCalendarId, calendarMode])
 
-  const getCatScheme = (catName) => {
-    const found = categories.find((c) => c.name === catName)
-    if (found) return found
+  const catSchemeMap = useMemo(() => {
+    const map = new Map()
+    for (let i = 0; i < categories.length; i++) {
+      const c = categories[i]
+      if (c && c.name) map.set(c.name, c)
+      if (c && c.id) map.set(c.id, c)
+      if (c && c.label) map.set(c.label, c)
+    }
+    return map
+  }, [categories])
+
+  const getCatScheme = useCallback((catName) => {
+    if (catName && catSchemeMap.has(catName)) return catSchemeMap.get(catName)
     return { bg: 'bg-blue-50 dark:bg-blue-950/60', text: 'text-blue-700 dark:text-blue-300', dot: 'bg-blue-500', hex: '#3b82f6' }
-  }
+  }, [catSchemeMap])
 
   // Filtrado de tareas según filtros categóricos (memoizado con useMemo)
   const filteredTasks = useMemo(() => {
@@ -1186,6 +1196,92 @@ export default function CalendarPage() {
   const currentCalendarTasks = useMemo(() => {
     return getTasksForCalendar(activeCalendar)
   }, [getTasksForCalendar, activeCalendar])
+
+  // Memoización centralizada de fechas y mapas para máximo rendimiento (60 FPS fluidos)
+  const monthDays = useMemo(() => getMonthDays(currentDate), [currentDate])
+  const miniMonthDays = useMemo(() => getMonthDays(miniDate), [miniDate])
+  const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate])
+
+  const tasksByDate = useMemo(() => {
+    return buildTasksByDateMap(currentCalendarTasks)
+  }, [currentCalendarTasks])
+
+  const upcomingDeadlines = useMemo(() => {
+    return currentCalendarTasks
+      .filter((t) => {
+        if (t.completed || t.done) return false
+        if (!t.date) return false
+        const taskYmd = String(t.date).slice(0, 10)
+        if (taskYmd < TODAY_YMD) return false
+        if (taskYmd === TODAY_YMD && isEventFinished(t, nowTicker)) return false
+        return true
+      })
+      .sort((a, b) => {
+        const da = String(a.date).slice(0, 10)
+        const db = String(b.date).slice(0, 10)
+        if (da !== db) return da.localeCompare(db)
+        return (a.time || '').localeCompare(b.time || '')
+      })
+  }, [currentCalendarTasks, nowTicker])
+
+  const allocationStats = useMemo(() => {
+    const getTaskHours = (task) => {
+      if (task.durationHours && !isNaN(task.durationHours)) return Number(task.durationHours)
+      if (task.durationMinutes && !isNaN(task.durationMinutes)) return Number(task.durationMinutes) / 60
+      if (task.startTime && task.endTime) {
+        const [sh, sm] = task.startTime.split(':').map(Number)
+        const [eh, em] = task.endTime.split(':').map(Number)
+        if (!isNaN(sh) && !isNaN(sm) && !isNaN(eh) && !isNaN(em)) {
+          const diff = (eh * 60 + em) - (sh * 60 + sm)
+          if (diff > 0) return diff / 60
+        }
+      }
+      if (task.effort === 'High') return 2.5
+      if (task.effort === 'Low') return 0.5
+      return 1.5
+    }
+
+    const baseDate = currentDate || new Date()
+    const d = new Date(baseDate)
+    const dayOfWeek = d.getDay()
+    const diffToMonday = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+    const monday = new Date(d.setDate(diffToMonday))
+    monday.setHours(0, 0, 0, 0)
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    sunday.setHours(23, 59, 59, 999)
+
+    const mondayYmd = formatYMD(monday)
+    const sundayYmd = formatYMD(sunday)
+
+    const weeklyTasks = currentCalendarTasks.filter((t) => {
+      const taskYmd = (t.date || '').slice(0, 10)
+      return taskYmd >= mondayYmd && taskYmd <= sundayYmd
+    })
+
+    const catStats = categories.map((cat) => {
+      const catTasks = weeklyTasks.filter((t) => t.context === cat.name)
+      const hours = catTasks.reduce((acc, t) => acc + getTaskHours(t), 0)
+      return {
+        ...cat,
+        count: catTasks.length,
+        hours: Math.round(hours * 10) / 10,
+      }
+    })
+
+    const totalHours = Math.round(catStats.reduce((acc, c) => acc + c.hours, 0) * 10) / 10
+    const totalCount = weeklyTasks.length
+    const maxCatHours = Math.max(...catStats.map((c) => c.hours), 0.1)
+
+    return {
+      monday,
+      sunday,
+      catStats,
+      totalHours,
+      totalCount,
+      maxCatHours,
+    }
+  }, [currentCalendarTasks, categories, currentDate])
 
   const pendingTasks = useMemo(() => {
     return currentCalendarTasks.filter((t) => !t.completed)
@@ -2143,7 +2239,6 @@ export default function CalendarPage() {
 
   // 1. Vista de Mes Continua (Líneas divisorias integradas continuas estilo Apple Calendar)
   const renderMonthView = (tasksToDisplay, calObj) => {
-    const tasksByDate = buildTasksByDateMap(tasksToDisplay)
     return (
       <div className="flex flex-col w-full overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#161b26]">
         {/* Month Header Days */}
@@ -2160,7 +2255,7 @@ export default function CalendarPage() {
         </div>
         {/* Month Grid Cells Continuas (Matriz continua sin cajas redondeadas flotantes) */}
         <div className="grid grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80">
-          {getMonthDays(currentDate).map((cell) => {
+          {monthDays.map((cell) => {
             const isToday = cell.ymd === TODAY_YMD
             const isSelected = cell.ymd === formatYMD(currentDate)
             const cellTasks = tasksByDate.get(cell.ymd) || []
@@ -2279,8 +2374,6 @@ export default function CalendarPage() {
 
   // 2. Vista Semanal Adaptable (Por defecto limpia sin desbordar horas, con botón Expandir / Comprimir 24h)
   const renderWeekView = (tasksToDisplay, calObj) => {
-    const tasksByDate = buildTasksByDateMap(tasksToDisplay)
-    const weekDays = getWeekDays(currentDate)
     const weekActivitiesCount = weekDays.reduce((acc, d) => acc + (tasksByDate.get(d.ymd)?.length || 0), 0)
     return (
     <div className="flex flex-col w-full overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#161b26]">
@@ -2311,7 +2404,7 @@ export default function CalendarPage() {
       {!showHourlyGrid ? (
         /* Vista Agenda Semanal Continua de 7 Columnas sin desbordamiento de horas vacías */
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80 min-h-[360px]">
-          {getWeekDays(currentDate).map((day) => {
+          {weekDays.map((day) => {
             const isToday = day.ymd === TODAY_YMD
             const dayTasks = tasksByDate.get(day.ymd) || []
 
@@ -2594,11 +2687,9 @@ export default function CalendarPage() {
 
   // 3. Vista de Día
   const renderDayView = (tasksToDisplay, calObj) => {
-    const tasksByDate = buildTasksByDateMap(tasksToDisplay)
     const dayTasks = tasksByDate.get(formatYMD(currentDate)) || []
     const timedTasks = dayTasks.filter((t) => t.time && !t.isAllDay)
     const allDayTasks = dayTasks.filter((t) => !t.time || t.isAllDay)
-    const weekDays = getWeekDays(currentDate)
 
     return (
       <div className="flex flex-col w-full">
@@ -2961,10 +3052,10 @@ export default function CalendarPage() {
         <span className="py-1">S</span>
         <span className="py-1">S</span>
 
-        {getMonthDays(miniDate).map((cell) => {
+        {miniMonthDays.map((cell) => {
           const isSelected = cell.ymd === formatYMD(currentDate)
           const isToday = cell.ymd === TODAY_YMD
-          const hasEvents = currentCalendarTasks.some((t) => t.date === cell.ymd)
+          const hasEvents = (tasksByDate.get(cell.ymd) || []).length > 0
 
           return (
             <button
@@ -2996,24 +3087,6 @@ export default function CalendarPage() {
 
   // Widget 3: Próximas Entregas (Solo eventos futuros o de hoy que no hayan finalizado)
   const renderDeadlinesWidget = () => {
-    const upcomingDeadlines = currentCalendarTasks
-      .filter((t) => {
-        if (t.completed || t.done) return false
-        if (!t.date) return false
-        const taskYmd = String(t.date).slice(0, 10)
-        // Ignorar eventos de fechas pasadas
-        if (taskYmd < TODAY_YMD) return false
-        // Si es de hoy, comprobar que no haya finalizado ya
-        if (taskYmd === TODAY_YMD && isEventFinished(t, nowTicker)) return false
-        return true
-      })
-      .sort((a, b) => {
-        const da = String(a.date).slice(0, 10)
-        const db = String(b.date).slice(0, 10)
-        if (da !== db) return da.localeCompare(db)
-        return (a.time || '').localeCompare(b.time || '')
-      })
-
     return (
       <div className="flex flex-col gap-space-md">
         <div className="flex items-center justify-between">
@@ -3061,7 +3134,7 @@ export default function CalendarPage() {
       clockMode={clockMode}
       setClockMode={setClockMode}
       activeCalendar={activeCalendar}
-      todayTasks={currentCalendarTasks.filter((t) => t.date === TODAY_YMD)}
+      todayTasks={tasksByDate.get(TODAY_YMD) || []}
       setSelectedDetailTask={setSelectedDetailTask}
       getCatScheme={getCatScheme}
     />
@@ -3069,54 +3142,7 @@ export default function CalendarPage() {
 
   // Widget 4: Distribución de Horas y Gráfica Proporcional Dinámica (Semanal)
   const renderAllocationWidget = () => {
-    const getTaskHours = (task) => {
-      if (task.durationHours && !isNaN(task.durationHours)) return Number(task.durationHours)
-      if (task.durationMinutes && !isNaN(task.durationMinutes)) return Number(task.durationMinutes) / 60
-      if (task.startTime && task.endTime) {
-        const [sh, sm] = task.startTime.split(':').map(Number)
-        const [eh, em] = task.endTime.split(':').map(Number)
-        if (!isNaN(sh) && !isNaN(sm) && !isNaN(eh) && !isNaN(em)) {
-          const diff = (eh * 60 + em) - (sh * 60 + sm)
-          if (diff > 0) return diff / 60
-        }
-      }
-      if (task.effort === 'High') return 2.5
-      if (task.effort === 'Low') return 0.5
-      return 1.5
-    }
-
-    // Filtrar estrictamente las actividades de la semana activa (Lunes a Domingo)
-    const baseDate = currentDate || new Date()
-    const d = new Date(baseDate)
-    const dayOfWeek = d.getDay()
-    const diffToMonday = d.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
-    const monday = new Date(d.setDate(diffToMonday))
-    monday.setHours(0, 0, 0, 0)
-    const sunday = new Date(monday)
-    sunday.setDate(monday.getDate() + 6)
-    sunday.setHours(23, 59, 59, 999)
-
-    const mondayYmd = formatYMD(monday)
-    const sundayYmd = formatYMD(sunday)
-
-    const weeklyTasks = currentCalendarTasks.filter((t) => {
-      const taskYmd = (t.date || '').slice(0, 10)
-      return taskYmd >= mondayYmd && taskYmd <= sundayYmd
-    })
-
-    const catStats = categories.map((cat) => {
-      const catTasks = weeklyTasks.filter((t) => t.context === cat.name)
-      const hours = catTasks.reduce((acc, t) => acc + getTaskHours(t), 0)
-      return {
-        ...cat,
-        count: catTasks.length,
-        hours: Math.round(hours * 10) / 10,
-      }
-    })
-
-    const totalHours = Math.round(catStats.reduce((acc, c) => acc + c.hours, 0) * 10) / 10
-    const totalCount = weeklyTasks.length
-    const maxCatHours = Math.max(...catStats.map((c) => c.hours), 0.1)
+    const { monday, sunday, catStats, totalHours, totalCount, maxCatHours } = allocationStats
 
     return (
       <div className="flex flex-col gap-3">

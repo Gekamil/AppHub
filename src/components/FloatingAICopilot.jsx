@@ -278,8 +278,8 @@ export default function FloatingAICopilot({ globalTasks = [], setGlobalTasks, na
     return <p className="whitespace-pre-line">{msg.text}</p>
   }
 
-  const mobileBottomClass = navPosition === 'top' ? 'bottom-[72px] right-3.5' : 'bottom-4 right-4'
-  const mobileWindowBottomClass = navPosition === 'top' ? 'bottom-36 right-3' : 'bottom-20 right-3'
+  const mobileBottomClass = navPosition === 'top' ? 'bottom-[80px] right-3.5' : 'bottom-4 right-4'
+  const mobileWindowBottomClass = navPosition === 'top' ? 'bottom-38 right-3' : 'bottom-20 right-3'
 
   return (
     <>

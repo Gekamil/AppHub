@@ -549,7 +549,7 @@ export default function Header({
       {navPosition === 'top' && (
         <nav
           aria-label="Barra de navegación móvil"
-          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-14.5 px-2 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[env(safe-area-inset-bottom,0px)]"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-16.5 sm:h-18 px-3 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[max(env(safe-area-inset-bottom,0px),6px)] pt-1"
         >
           {currentNavItems.map((item) => {
             const isActive =
@@ -570,15 +570,15 @@ export default function Header({
                 title={item.name}
               >
                 <div
-                  className={`w-11 h-7 rounded-xl flex items-center justify-center transition-all ${
+                  className={`w-12 h-7.5 sm:w-13 sm:h-8 rounded-xl flex items-center justify-center transition-all ${
                     isActive ? 'bg-primary/12 text-primary font-bold shadow-2xs' : ''
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[20px] leading-none">
+                  <span className="material-symbols-outlined text-[21px] leading-none">
                     {item.icon}
                   </span>
                 </div>
-                <span className={`text-[10px] tracking-tight truncate max-w-full text-center leading-none mt-1 ${
+                <span className={`text-[10.5px] sm:text-xs tracking-tight truncate max-w-full text-center leading-none mt-1 ${
                   isActive ? 'font-bold text-primary' : 'font-medium'
                 }`}>
                   {item.shortName || item.name}
