@@ -168,10 +168,9 @@ body {
   transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Rendimiento y aceleración para animaciones y scroll */
+/* Rendimiento y aceleración para animaciones y scroll nativo a 60 FPS */
 html {
   -webkit-tap-highlight-color: transparent;
-  scroll-behavior: smooth;
 }
 
 /* Transición fluida para modo claro / oscuro sin penalizar rendimiento de layout */
@@ -982,9 +981,8 @@ html[data-theme-style="executive"] .font-code-sm {
   perspective: 1000px;
 }
 
-/* Suavizado global de tipografia y scroll */
+/* Suavizado global de tipografia */
 html {
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

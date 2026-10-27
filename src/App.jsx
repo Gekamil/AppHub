@@ -25,10 +25,9 @@ function preloadAppRoutes() {
   }
 
   if (typeof window !== 'undefined') {
+    setTimeout(preload, 50)
     if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(() => preload(), { timeout: 2500 })
-    } else {
-      setTimeout(preload, 1000)
+      window.requestIdleCallback(() => preload(), { timeout: 1000 })
     }
   }
 }

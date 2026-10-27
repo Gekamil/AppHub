@@ -20,6 +20,17 @@ const mobileNavItems = [
   { name: 'Noticias', shortName: 'Noticias', to: '/news', icon: 'newspaper' },
 ]
 
+function preloadNavRoute(to) {
+  try {
+    if (to === '/calendar') import('../pages/CalendarPage')
+    else if (to === '/news') import('../pages/NewsPage')
+    else if (to === '/notebooks') import('../pages/NotebooksPage')
+    else if (to === '/ai-assistant') import('../pages/AIAssistantPage')
+    else if (to === '/my-hub') import('../pages/MyHubPage')
+    else if (to === '/app' || to === '/') import('../pages/AutoOrganizerPage')
+  } catch (e) {}
+}
+
 export default function Header({
   onToggleSidebar,
   isSidebarOpen = true,
@@ -379,6 +390,8 @@ export default function Header({
                     ref={(el) => { itemRefs.current[item.to] = el }}
                     to={item.to}
                     end={item.to === '/app' || item.to === '/'}
+                    onMouseEnter={() => preloadNavRoute(item.to)}
+                    onTouchStart={() => preloadNavRoute(item.to)}
                     onClick={() => {
                       const el = itemRefs.current[item.to]
                       if (el) {
@@ -520,6 +533,8 @@ export default function Header({
                     ref={(el) => { mobileItemRefs.current[item.to] = el }}
                     to={item.to}
                     end={item.to === '/app' || item.to === '/'}
+                    onMouseEnter={() => preloadNavRoute(item.to)}
+                    onTouchStart={() => preloadNavRoute(item.to)}
                     className={`relative z-10 py-1 px-0.5 rounded-xl flex flex-col items-center justify-center transition-colors duration-200 cursor-pointer ${
                       isActive
                         ? 'text-white font-bold'

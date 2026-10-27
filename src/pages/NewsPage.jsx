@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   FALLBACK_NEWS,
   getDailyNews,
+  getCachedDailyNews,
   getNewsPreferences,
   getPersonalizedNews,
   toggleArticleLike,
@@ -21,7 +22,7 @@ const EDITORIAL_FILTERS = [
 ]
 
 export default function NewsPage() {
-  const [rawNews, setRawNews] = useState([])
+  const [rawNews, setRawNews] = useState(() => getCachedDailyNews())
   const [preferences, setPreferences] = useState(() => getNewsPreferences())
   const [selectedFilter, setSelectedFilter] = useState('all')
   const [isPersonalizerOpen, setIsPersonalizerOpen] = useState(false)

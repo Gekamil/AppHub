@@ -81,16 +81,14 @@ html[data-theme-style="glassify"].dark header[class*="border"] {
   border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
 }
 
-/* Contenedores y tarjetas en MODO CLARO: Autentico Liquid Glass Apple esmerilado con alta translucidez y specular border */
+/* Contenedores y tarjetas en MODO CLARO: Superficies fluidas Apple translúcidas con specular border (optimizado a 60 FPS sin backdrop-filter en zonas de scroll) */
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-surface-pure"],
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-white"],
 html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"][class*="border"],
 html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"] {
-  background-color: rgba(255, 255, 255, 0.70) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.75) !important;
-  box-shadow: 0 8px 32px -4px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 html[data-theme-style="glassify"]:not(.dark) header[class*="border"] {

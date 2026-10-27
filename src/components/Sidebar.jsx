@@ -14,6 +14,17 @@ const DEFAULT_NAVIGATION = [
   { name: 'Noticias Diarias', to: '/news', icon: 'newspaper' },
 ]
 
+function preloadNavRoute(to) {
+  try {
+    if (to === '/calendar') import('../pages/CalendarPage')
+    else if (to === '/news') import('../pages/NewsPage')
+    else if (to === '/notebooks') import('../pages/NotebooksPage')
+    else if (to === '/ai-assistant') import('../pages/AIAssistantPage')
+    else if (to === '/my-hub') import('../pages/MyHubPage')
+    else if (to === '/app' || to === '/') import('../pages/AutoOrganizerPage')
+  } catch (e) {}
+}
+
 export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
   const [navItems, setNavItems] = useState(() => {
     try {
@@ -230,6 +241,8 @@ export default function Sidebar({ isSidebarOpen = true, onCloseSidebar }) {
                   <NavLink
                     to={item.to}
                     end={item.to === '/app' || item.to === '/'}
+                    onMouseEnter={() => preloadNavRoute(item.to)}
+                    onTouchStart={() => preloadNavRoute(item.to)}
                     onClick={(e) => {
                       if (isLongPressing) {
                         e.preventDefault()
