@@ -25,6 +25,7 @@ dist-ssr
 .whatsapp_auth
 .whatsapp_synced_tasks.json
 .whatsapp_shared_calendars.json
+.cloud_accounts_store.json
 .env
 .env.local
 !.env.example
