@@ -1158,35 +1158,39 @@ export default function AutoOrganizerPage() {
 
   return (
     <div className="relative min-h-screen text-on-surface">
-      {/* Halo de Fondo Luminoso Dinámico optimizado por GPU a 120 FPS (desactivado en móvil para máximo rendimiento) */}
+      {/* Halo de Fondo Luminoso Dinámico optimizado por GPU a 120 FPS (desactivado en móvil y omitido en glassify para máximo rendimiento) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0 contain-strict">
-        {/* Color 1 - Slot Superior Izquierdo */}
-        <div
-          className="hidden sm:block absolute -top-32 left-10 w-[550px] h-[550px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
-          style={{
-            background: slot0 ? `radial-gradient(circle, ${slot0.hex} 0%, transparent 68%)` : 'transparent',
-            opacity: slot0 ? 0.25 : 0,
-            transform: slot0 ? 'scale(1)' : 'scale(0.75)',
-          }}
-        />
-        {/* Color 2 - Slot Superior Derecho */}
-        <div
-          className="hidden sm:block absolute top-10 right-10 w-[520px] h-[520px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
-          style={{
-            background: slot1 ? `radial-gradient(circle, ${slot1.hex} 0%, transparent 68%)` : 'transparent',
-            opacity: slot1 ? 0.22 : 0,
-            transform: slot1 ? 'scale(1)' : 'scale(0.75)',
-          }}
-        />
-        {/* Color 3 - Slot Central Inferior */}
-        <div
-          className="hidden sm:block absolute top-1/2 left-1/4 w-[480px] h-[480px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
-          style={{
-            background: slot2 ? `radial-gradient(circle, ${slot2.hex} 0%, transparent 68%)` : 'transparent',
-            opacity: slot2 ? 0.20 : 0,
-            transform: slot2 ? 'scale(1)' : 'scale(0.75)',
-          }}
-        />
+        {appTheme !== 'glassify' && (
+          <>
+            {/* Color 1 - Slot Superior Izquierdo */}
+            <div
+              className="hidden sm:block absolute -top-32 left-10 w-[550px] h-[550px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
+              style={{
+                background: slot0 ? `radial-gradient(circle, ${slot0.hex} 0%, transparent 68%)` : 'transparent',
+                opacity: slot0 ? 0.25 : 0,
+                transform: slot0 ? 'scale(1)' : 'scale(0.75)',
+              }}
+            />
+            {/* Color 2 - Slot Superior Derecho */}
+            <div
+              className="hidden sm:block absolute top-10 right-10 w-[520px] h-[520px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
+              style={{
+                background: slot1 ? `radial-gradient(circle, ${slot1.hex} 0%, transparent 68%)` : 'transparent',
+                opacity: slot1 ? 0.22 : 0,
+                transform: slot1 ? 'scale(1)' : 'scale(0.75)',
+              }}
+            />
+            {/* Color 3 - Slot Central Inferior */}
+            <div
+              className="hidden sm:block absolute top-1/2 left-1/4 w-[480px] h-[480px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
+              style={{
+                background: slot2 ? `radial-gradient(circle, ${slot2.hex} 0%, transparent 68%)` : 'transparent',
+                opacity: slot2 ? 0.20 : 0,
+                transform: slot2 ? 'scale(1)' : 'scale(0.75)',
+              }}
+            />
+          </>
+        )}
       </div>
 
       <div className="relative z-10 flex flex-col w-full max-w-[2400px] 2xl:max-w-[2800px] mx-auto space-y-6 sm:space-y-8 pb-16 px-3 sm:px-6">

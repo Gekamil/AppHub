@@ -28,18 +28,55 @@ button.btn-accent,
 }
 
 /* ==========================================================================
-   GLASSIFY LIQUID PRO (Apple Keynote Frosted Glass)
+   GLASSIFY LIQUID PRO (Apple Keynote Frosted Glass - Optimizado 120 FPS)
    ========================================================================== */
 
-/* 1. MODO OSCURO (Luminoso, índigo/navy espacial, sin negro ciego y con cristal esmerilado real) */
-html[data-theme-style="glassify"].dark body {
+/* 1. LIENZO Y FONDO AMBIENTAL OPTIMIZADO POR GPU (Cero costo de repintado en scroll) */
+html[data-theme-style="glassify"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  contain: strict;
+  backface-visibility: hidden;
+}
+
+html[data-theme-style="glassify"].dark body::before {
   background: radial-gradient(at 0% 0%, rgba(24, 40, 80, 0.75) 0px, transparent 55%),
               radial-gradient(at 100% 0%, rgba(35, 25, 70, 0.65) 0px, transparent 55%),
               radial-gradient(at 50% 100%, rgba(10, 28, 65, 0.8) 0px, transparent 55%),
-              linear-gradient(180deg, #0e172e 0%, #070e20 100%) !important;
-  background-color: #080f22 !important;
-  background-attachment: fixed !important;
+              linear-gradient(180deg, #0e172e 0%, #070e20 100%);
+}
+
+html[data-theme-style="glassify"]:not(.dark) body::before {
+  background: radial-gradient(at 0% 0%, rgba(185, 220, 255, 0.75) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, rgba(220, 205, 255, 0.65) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, rgba(255, 215, 210, 0.6) 0px, transparent 50%),
+              radial-gradient(at 0% 100%, rgba(195, 240, 255, 0.65) 0px, transparent 50%),
+              linear-gradient(135deg, #eef4fc 0%, #e0ecf8 100%);
+}
+
+html[data-theme-style="glassify"].dark {
+  background-color: #080f22;
+}
+
+html[data-theme-style="glassify"]:not(.dark) {
+  background-color: #e8f1fa;
+}
+
+html[data-theme-style="glassify"] body {
+  background-color: transparent !important;
+}
+
+html[data-theme-style="glassify"].dark body {
   color: #f1f5f9 !important;
+}
+
+html[data-theme-style="glassify"]:not(.dark) body {
+  color: #0f172a !important;
 }
 
 html[data-theme-style="glassify"] .bg-surface-subtle,
@@ -47,114 +84,66 @@ html[data-theme-style="glassify"] main {
   background: transparent !important;
 }
 
-/* 2. MODO CLARO (Lienzo con halo ambiental pastel luminoso y cristal translúcido esmerilado perceptible) */
-html[data-theme-style="glassify"]:not(.dark) body {
-  background: radial-gradient(at 0% 0%, rgba(185, 220, 255, 0.75) 0px, transparent 50%),
-              radial-gradient(at 100% 0%, rgba(220, 205, 255, 0.65) 0px, transparent 50%),
-              radial-gradient(at 100% 100%, rgba(255, 215, 210, 0.6) 0px, transparent 50%),
-              radial-gradient(at 0% 100%, rgba(195, 240, 255, 0.65) 0px, transparent 50%),
-              linear-gradient(135deg, #eef4fc 0%, #e0ecf8 100%) !important;
-  background-color: #e8f1fa !important;
-  background-attachment: fixed !important;
-  color: #0f172a !important;
-}
-
 /* Contenedores y tarjetas en MODO OSCURO: Estilo Apple Cupertino con superficies limpias y fluidas */
-html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-slate-50"],
-html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
-html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-slate-900"],
-html[data-theme-style="glassify"].dark div[class*="rounded-2xl"][class*="border"],
-html[data-theme-style="glassify"].dark section[class*="rounded-"] {
-  background-color: rgba(17, 24, 39, 0.85) !important;
+html[data-theme-style="glassify"].dark .bg-surface-pure,
+html[data-theme-style="glassify"].dark .bg-white,
+html[data-theme-style="glassify"].dark .bg-slate-50,
+html[data-theme-style="glassify"].dark section {
+  background-color: rgba(17, 24, 39, 0.82) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
 }
 
-/* Barra de navegacion superior: Cristal esmerilado Apple unificado (solo en header para 60 FPS) */
-html[data-theme-style="glassify"].dark header[class*="border"] {
-  background-color: rgba(14, 23, 44, 0.8) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
-  backdrop-filter: blur(20px) saturate(160%) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+/* Barra de navegacion superior: Cristal esmerilado Apple unificado (optimizado para 120 FPS con blur sutil) */
+html[data-theme-style="glassify"].dark header {
+  background-color: rgba(14, 23, 44, 0.85) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(130%) !important;
+  backdrop-filter: blur(8px) saturate(130%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
-/* Contenedores y tarjetas en MODO CLARO: Superficies fluidas Apple translúcidas con specular border (optimizado a 60 FPS sin backdrop-filter en zonas de scroll) */
-html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-surface-pure"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-white"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"][class*="border"],
-html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"] {
-  background-color: rgba(255, 255, 255, 0.82) !important;
+/* Contenedores y tarjetas en MODO CLARO: Superficies fluidas Apple translúcidas con specular border */
+html[data-theme-style="glassify"]:not(.dark) .bg-surface-pure,
+html[data-theme-style="glassify"]:not(.dark) .bg-white,
+html[data-theme-style="glassify"]:not(.dark) section {
+  background-color: rgba(255, 255, 255, 0.88) !important;
   border: 1px solid rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05) !important;
 }
 
-html[data-theme-style="glassify"]:not(.dark) header[class*="border"] {
-  background-color: rgba(255, 255, 255, 0.72) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
+html[data-theme-style="glassify"]:not(.dark) header {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(130%) !important;
+  backdrop-filter: blur(8px) saturate(130%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
-  box-shadow: 0 1px 12px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.03) !important;
 }
 
-/* Prevenir apilamiento de backdrop-filters en elementos anidados (elimina lag de renderizado) */
-html[data-theme-style="glassify"] * [class*="rounded-"] [class*="rounded-"],
-html[data-theme-style="glassify"] * [class*="rounded-"] button,
-html[data-theme-style="glassify"] * [class*="rounded-"] input,
-html[data-theme-style="glassify"] * [class*="rounded-"] select,
-html[data-theme-style="glassify"] * [class*="rounded-"] article {
+/* Prevenir apilamiento de backdrop-filters en el contenido principal para evitar fill-rate drops */
+html[data-theme-style="glassify"] main * {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
 
-/* Contenedores y Vistas del Calendario en Glassify Oscuro (Optimizado sin backdrop-filter en zonas de scroll continuo) */
-html[data-theme-style="glassify"].dark [class*="min-h-"][class*="cursor-pointer"],
-html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="bg-white"],
-html[data-theme-style="glassify"].dark div[class*="min-h-"][class*="dark:bg-"],
-html[data-theme-style="glassify"].dark .bg-slate-100\/90,
-html[data-theme-style="glassify"].dark .bg-slate-100\/80,
-html[data-theme-style="glassify"].dark .bg-slate-100\/60,
-html[data-theme-style="glassify"].dark div[class*="h-\[1440px\]"],
-html[data-theme-style="glassify"].dark div[class*="overflow-y-scroll"] {
-  background: rgba(14, 23, 44, 0.72) !important;
-  background-color: rgba(14, 23, 44, 0.72) !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
-  color: #f1f5f9 !important;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-
-/* Celdas del Calendario Mensual (Optimizado sin backdrop-filter individual para evitar fill-rate exhaustion) */
-html[data-theme-style="glassify"].dark [class*="grid-cols-7"] > div {
-  background: rgba(14, 23, 44, 0.6) !important;
-  background-color: rgba(14, 23, 44, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+/* Contenedores y Vistas del Calendario en Glassify Oscuro (Optimizado para scroll y ratón fluidos a 120 FPS) */
+html[data-theme-style="glassify"].dark [data-calendar-column="true"],
+html[data-theme-style="glassify"].dark .calendar-timetable-column,
+html[data-theme-style="glassify"].dark .calendar-month-grid > div {
+  background: rgba(14, 23, 44, 0.68) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
   color: #f1f5f9 !important;
 }
 
-/* Contenedores y Vistas del Calendario en Glassify Claro: Alto contraste, fluido y sin lag de scroll */
-html[data-theme-style="glassify"]:not(.dark) [class*="min-h-"][class*="cursor-pointer"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="min-h-"][class*="bg-white"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="h-\[1440px\]"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="overflow-y-scroll"] {
-  background: rgba(255, 255, 255, 0.70) !important;
-  background-color: rgba(255, 255, 255, 0.70) !important;
-  border: 1px solid rgba(255, 255, 255, 0.70) !important;
-  color: #0f172a !important;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-
-html[data-theme-style="glassify"]:not(.dark) [class*="grid-cols-7"] > div {
-  background: rgba(255, 255, 255, 0.58) !important;
-  background-color: rgba(255, 255, 255, 0.58) !important;
-  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+/* Contenedores y Vistas del Calendario en Glassify Claro: Alto contraste, fluido y sin lag */
+html[data-theme-style="glassify"]:not(.dark) [data-calendar-column="true"],
+html[data-theme-style="glassify"]:not(.dark) .calendar-timetable-column,
+html[data-theme-style="glassify"]:not(.dark) .calendar-month-grid > div {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.70) !important;
   color: #0f172a !important;
 }
 
-/* Cabeceras de los Widgets Inferiores (Toolbar gris eliminado) */
+/* Cabeceras de los Widgets Inferiores */
 html[data-theme-style="glassify"].dark div[class*="bg-slate-50"][class*="border-b"],
 html[data-theme-style="glassify"].dark div[class*="border-b"][class*="text-secondary"] {
   background: rgba(255, 255, 255, 0.04) !important;
@@ -169,33 +158,16 @@ html[data-theme-style="glassify"]:not(.dark) div[class*="border-b"][class*="text
   color: #475569 !important;
 }
 
-/* Botones y elementos dentro de widgets inferiores (Mis Calendarios, Entregas, etc.) */
-html[data-theme-style="glassify"].dark div[class*="rounded-3xl"] div[class*="bg-white"],
-html[data-theme-style="glassify"].dark div[class*="rounded-3xl"] button[class*="bg-white"],
-html[data-theme-style="glassify"].dark div[class*="rounded-2xl"] div[class*="bg-white"] {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  color: #ffffff !important;
-}
-
-html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-3xl"] div[class*="bg-white"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-3xl"] button[class*="bg-white"],
-html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"] div[class*="bg-white"] {
-  background: rgba(255, 255, 255, 0.75) !important;
-  border: 1px solid rgba(255, 255, 255, 0.85) !important;
-  color: #0f172a !important;
-}
-
 /* Botones secundarios en Glassify (Auto-Organizar, Focus, WhatsApp, Avanzado, etc.) */
-html[data-theme-style="glassify"].dark button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
-html[data-theme-style="glassify"].dark button[class*="bg-slate-50"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
+html[data-theme-style="glassify"].dark button.bg-white:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
+html[data-theme-style="glassify"].dark button.bg-slate-50:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
 }
 
-html[data-theme-style="glassify"]:not(.dark) button[class*="bg-white"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
-html[data-theme-style="glassify"]:not(.dark) button[class*="bg-slate-50"]:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
+html[data-theme-style="glassify"]:not(.dark) button.bg-white:not([class*="bg-primary"]):not([class*="apple-btn-blue"]):not([class*="btn-accent"]),
+html[data-theme-style="glassify"]:not(.dark) button.bg-slate-50:not([class*="bg-primary"]):not([class*="apple-btn-blue"]) {
   background: rgba(255, 255, 255, 0.85) !important;
   border: 1px solid rgba(226, 232, 240, 0.9) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
@@ -296,10 +268,10 @@ html[data-theme-style="glassify"]:not(.dark) [data-calendar-view-toggle] button:
 html[data-theme-style="glassify"]:not(.dark) [role="dialog"],
 html[data-theme-style="glassify"]:not(.dark) .modal-content,
 html[data-theme-style="glassify"]:not(.dark) div[data-floating-menu="true"] {
-  background: rgba(255, 255, 255, 0.86) !important;
-  background-color: rgba(255, 255, 255, 0.86) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
+  background: rgba(255, 255, 255, 0.90) !important;
+  background-color: rgba(255, 255, 255, 0.90) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+  backdrop-filter: blur(14px) saturate(150%) !important;
   border: 1px solid rgba(255, 255, 255, 0.85) !important;
   box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
   color: #0f172a !important;
@@ -308,10 +280,10 @@ html[data-theme-style="glassify"]:not(.dark) div[data-floating-menu="true"] {
 html[data-theme-style="glassify"].dark [role="dialog"],
 html[data-theme-style="glassify"].dark .modal-content,
 html[data-theme-style="glassify"].dark div[data-floating-menu="true"] {
-  background: rgba(22, 27, 38, 0.90) !important;
-  background-color: rgba(22, 27, 38, 0.90) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
+  background: rgba(22, 27, 38, 0.92) !important;
+  background-color: rgba(22, 27, 38, 0.92) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+  backdrop-filter: blur(14px) saturate(150%) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
   color: #f8fafc !important;
@@ -362,15 +334,11 @@ html[data-theme-style="glassify"] [data-floating-menu] button.relative.z-10 {
    ========================================================================== */
 @media (max-width: 768px) {
   /* Desactivar backdrop-filter costoso en todas las tarjetas y secciones en movil */
-  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-surface-pure"],
-  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-white"],
-  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="bg-slate-50"],
-  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#161b26]"],
-  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-[#121620]"],
-  html[data-theme-style="glassify"].dark div[class*="rounded-"][class*="dark:bg-slate-900"],
-  html[data-theme-style="glassify"].dark div[class*="rounded-2xl"][class*="border"],
-  html[data-theme-style="glassify"].dark section[class*="rounded-"],
-  html[data-theme-style="glassify"].dark header[class*="border"],
+  html[data-theme-style="glassify"].dark .bg-surface-pure,
+  html[data-theme-style="glassify"].dark .bg-white,
+  html[data-theme-style="glassify"].dark .bg-slate-50,
+  html[data-theme-style="glassify"].dark section,
+  html[data-theme-style="glassify"].dark header,
   html[data-theme-style="glassify"].dark button,
   html[data-theme-style="glassify"].dark input,
   html[data-theme-style="glassify"].dark select,
@@ -380,14 +348,13 @@ html[data-theme-style="glassify"] [data-floating-menu] button.relative.z-10 {
     background: #111827 !important;
     background-color: #111827 !important;
     border-color: rgba(255, 255, 255, 0.12) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
   }
 
-  html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-surface-pure"],
-  html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-"][class*="bg-white"],
-  html[data-theme-style="glassify"]:not(.dark) div[class*="rounded-2xl"][class*="border"],
-  html[data-theme-style="glassify"]:not(.dark) section[class*="rounded-"],
-  html[data-theme-style="glassify"]:not(.dark) header[class*="border"],
+  html[data-theme-style="glassify"]:not(.dark) .bg-surface-pure,
+  html[data-theme-style="glassify"]:not(.dark) .bg-white,
+  html[data-theme-style="glassify"]:not(.dark) section,
+  html[data-theme-style="glassify"]:not(.dark) header,
   html[data-theme-style="glassify"]:not(.dark) button,
   html[data-theme-style="glassify"]:not(.dark) input,
   html[data-theme-style="glassify"]:not(.dark) select,
@@ -397,7 +364,7 @@ html[data-theme-style="glassify"] [data-floating-menu] button.relative.z-10 {
     background: #ffffff !important;
     background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
   }
 
   /* Fondo solido y ligero en movil sin calcular multiples radial-gradients pesados */

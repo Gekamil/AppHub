@@ -212,10 +212,10 @@ export default function PrecisionFocusModal({
       className="fixed inset-0 z-50 bg-[#F5F5F7] dark:bg-[#0D0E12] text-[#1D1D1F] dark:text-[#F5F5F7] font-sans antialiased flex flex-col justify-between overflow-y-auto transition-colors duration-300 animate-in fade-in duration-200"
     >
       {/* 1. Barra Superior macOS / WatchOS Minimal Precision */}
-      <header className="w-full px-6 lg:px-12 py-3.5 flex items-center justify-between sticky top-0 z-40 backdrop-blur-2xl bg-white/80 dark:bg-[#181a20]/80 border-b border-black/[0.05] dark:border-white/[0.08] transition-colors shrink-0">
+      <header className="w-full px-6 lg:px-12 py-3.5 flex items-center justify-between sticky top-0 z-40 backdrop-blur-md bg-white/80 dark:bg-[#181a20]/80 border-b border-black/[0.05] dark:border-white/[0.08] transition-colors shrink-0">
         {/* Izquierda: Dynamic Island Pill Session Status */}
         <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-3xl bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] shadow-xs">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] shadow-xs">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF9500] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF9500]"></span>
@@ -257,7 +257,7 @@ export default function PrecisionFocusModal({
             type="button"
             onClick={handleToggleTheme}
             aria-label="Cambiar tema"
-            className="flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-3xl bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] hover:bg-white dark:hover:bg-[#20232c] text-[#1D1D1F] dark:text-[#F5F5F7] transition shadow-xs cursor-pointer"
+            className="flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] hover:bg-white dark:hover:bg-[#20232c] text-[#1D1D1F] dark:text-[#F5F5F7] transition shadow-xs cursor-pointer"
           >
             {isDark ? (
               <span className="material-symbols-outlined text-[16px] text-amber-300">light_mode</span>
@@ -269,7 +269,7 @@ export default function PrecisionFocusModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full backdrop-blur-3xl bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] hover:bg-red-50 dark:hover:bg-red-950/30 text-[#86868B] dark:text-[#A1A1A6] hover:text-red-600 dark:hover:text-red-400 text-xs font-medium transition shadow-xs cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full backdrop-blur-md bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] hover:bg-red-50 dark:hover:bg-red-950/30 text-[#86868B] dark:text-[#A1A1A6] hover:text-red-600 dark:hover:text-red-400 text-xs font-medium transition shadow-xs cursor-pointer active:scale-95"
             title="Salir (Esc)"
           >
             <span className="material-symbols-outlined text-[15px]">close</span>
@@ -411,7 +411,7 @@ export default function PrecisionFocusModal({
           </div>
 
           {/* Dock Flotante de Transporte y Control (macOS Dynamic Island Dock) */}
-          <div className="mt-5 relative inline-flex items-center p-1.5 rounded-full backdrop-blur-3xl bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] shadow-2xl">
+          <div className="mt-5 relative inline-flex items-center p-1.5 rounded-full backdrop-blur-md bg-white/90 dark:bg-[#181b22]/90 border border-black/[0.07] dark:border-white/[0.1] shadow-2xl">
             <button
               type="button"
               onClick={() => {
@@ -440,7 +440,7 @@ export default function PrecisionFocusModal({
         </div>
 
         {/* 3. Tarjeta Modular 'Now Working On' (Estilo iOS 18 / Apple Reminders) */}
-        <section className="w-full max-w-xl backdrop-blur-3xl bg-white/90 dark:bg-[#16181f]/90 rounded-3xl p-5 sm:p-6 shadow-2xl border border-black/[0.06] dark:border-white/[0.08] mt-8 transition-all">
+        <section className="w-full max-w-xl backdrop-blur-md bg-white/90 dark:bg-[#16181f]/90 rounded-3xl p-5 sm:p-6 shadow-2xl border border-black/[0.06] dark:border-white/[0.08] mt-8 transition-all">
           {/* Fila Superior: Objetivo Diario & Botón Completar */}
           <div className="flex items-center justify-between pb-3.5 border-b border-black/[0.05] dark:border-white/[0.08]">
             {/* Progreso del Objetivo Diario */}
@@ -535,7 +535,7 @@ export default function PrecisionFocusModal({
       </main>
 
       {/* 4. Footer Dock Discreto */}
-      <footer className="w-full px-6 lg:px-12 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-2xl bg-white/80 dark:bg-[#181a20]/80 border-t border-black/[0.05] dark:border-white/[0.08] text-xs text-[#86868B] dark:text-[#A1A1A6] transition-colors shrink-0">
+      <footer className="w-full px-6 lg:px-12 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 backdrop-blur-md bg-white/80 dark:bg-[#181a20]/80 border-t border-black/[0.05] dark:border-white/[0.08] text-xs text-[#86868B] dark:text-[#A1A1A6] transition-colors shrink-0">
         <div className="flex items-center gap-2.5">
           <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#34C759]/15 text-[#34C759]">
             <span className="material-symbols-outlined text-[13px]">shield</span>

@@ -514,7 +514,7 @@ export default function AppShell() {
         <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={() => setIsSidebarOpen(false)} />
       )}
       <div
-        className={`transition-all duration-300 ${
+        className={`transition-[padding] duration-300 ${
           showSidebar && isSidebarOpen ? 'md:pl-60 pl-0' : 'pl-0'
         }`}
       >

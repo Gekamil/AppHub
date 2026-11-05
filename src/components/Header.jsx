@@ -329,7 +329,7 @@ export default function Header({
   return (
     <>
       <header
-        className={`fixed top-0 right-0 bg-surface-pure/90 dark:bg-[#040506]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-[#27272a] shadow-[0_1px_8px_rgba(0,0,0,0.03)] dark:shadow-none z-50 flex flex-col justify-center pt-[env(safe-area-inset-top,0px)] px-3 sm:px-gutter-lg pl-[max(env(safe-area-inset-left,0px),12px)] pr-[max(env(safe-area-inset-right,0px),12px)] ${isElectron ? 'md:pr-38' : ''} transition-all duration-300 left-0 app-drag-region ${
+        className={`fixed top-0 right-0 bg-surface-pure/90 dark:bg-[#040506]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-[#27272a] shadow-[0_1px_8px_rgba(0,0,0,0.03)] dark:shadow-none z-50 flex flex-col justify-center pt-[env(safe-area-inset-top,0px)] px-3 sm:px-gutter-lg pl-[max(env(safe-area-inset-left,0px),12px)] pr-[max(env(safe-area-inset-right,0px),12px)] ${isElectron ? 'md:pr-38' : ''} transition-[left,height] duration-300 left-0 app-drag-region ${
           navPosition === 'sidebar' && isSidebarOpen ? 'md:left-60' : 'md:left-0'
         }`}
       >
@@ -545,7 +545,7 @@ export default function Header({
       {navPosition === 'top' && (
         <nav
           aria-label="Barra de navegación móvil"
-          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-[#27272a] h-16.5 sm:h-18 px-3 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[max(env(safe-area-inset-bottom,0px),6px)] pt-1"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-pure/95 dark:bg-[#080b11]/95 backdrop-blur-md border-t border-slate-200/80 dark:border-[#27272a] h-16.5 sm:h-18 px-3 flex items-center justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.06)] app-no-drag pb-[max(env(safe-area-inset-bottom,0px),6px)] pt-1"
         >
           {currentNavItems.map((item) => {
             const isActive =

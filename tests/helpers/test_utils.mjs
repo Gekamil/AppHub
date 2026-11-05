@@ -71,32 +71,38 @@ export class MockStorage {
  * Fetch HTTP headers for a remote asset following redirects.
  */
 export async function probeRemoteAsset(url, options = {}) {
-  try {
-    const response = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'StudentHub-E2E-Verifier/1.0',
-        ...options.headers,
-      },
-      signal: AbortSignal.timeout(options.timeoutMs || 10000),
-    })
+  const timeoutMs = options.timeoutMs || 15000
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: 'HEAD',
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'StudentHub-E2E-Verifier/1.0',
+          ...options.headers,
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      })
 
-    return {
-      ok: response.ok,
-      status: response.status,
-      contentLength: parseInt(response.headers.get('content-length') || '0', 10),
-      contentType: response.headers.get('content-type') || '',
-      contentDisposition: response.headers.get('content-disposition') || '',
-      finalUrl: response.url,
-      headers: response.headers,
+      if (response.ok) {
+        return {
+          ok: response.ok,
+          status: response.status,
+          contentLength: parseInt(response.headers.get('content-length') || '0', 10),
+          contentType: response.headers.get('content-type') || '',
+          contentDisposition: response.headers.get('content-disposition') || '',
+          finalUrl: response.url,
+          headers: response.headers,
+        }
+      }
+    } catch {
+      // Retry on network jitter or CDN redirection timeout
     }
-  } catch (err) {
-    return {
-      ok: false,
-      status: 0,
-      contentLength: 0,
-      error: err.message,
-    }
+  }
+  return {
+    ok: false,
+    status: 0,
+    contentLength: 0,
+    error: 'Probe failed after retries',
   }
 }

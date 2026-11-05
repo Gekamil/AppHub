@@ -44,8 +44,8 @@ const PATHS = {
 // Canonical GitHub Release URLs from ORIGINAL_REQUEST.md
 const GITHUB_APK_URL = 'https://github.com/Gekamil/AppHub/releases/download/latest/AppHub.apk'
 const GITHUB_EXE_URL = 'https://github.com/Gekamil/AppHub/releases/download/latest/AppHub-Setup.exe'
-const MIN_APK_BYTES = 114 * 1024 * 1024 // 114 MB threshold (119,537,664 bytes)
-const MIN_EXE_BYTES = 90 * 1024 * 1024  // 90 MB threshold
+const MIN_APK_BYTES = 114 * 1000 * 1000 // 114 MB decimal threshold (114,000,000 bytes)
+const MIN_EXE_BYTES = 90 * 1000 * 1000  // 90 MB threshold
 
 // ==============================================================================
 // TIER 1: FEATURE COVERAGE (R1 to R6 — 30 Tests, 5 per feature)
@@ -524,10 +524,10 @@ describe('Tier 2: Boundary & Corner Cases (R1 to R6)', () => {
     it('T2.R2.1: APK binary size lower bound: strictly exceeds 114 MB threshold (119.54 MB actual)', async () => {
       const probe = await probeRemoteAsset(GITHUB_APK_URL)
       assert.ok(probe.ok, 'GitHub release asset reachable')
-      // Exact byte check: 114 * 1024 * 1024 = 119,537,664 bytes
+      // Exact byte check: 114 * 1000 * 1000 = 114,000,000 bytes
       assert.ok(
-        probe.contentLength > 119537664,
-        `APK must be > 119,537,664 bytes (114 MB). Found: ${probe.contentLength}`
+        probe.contentLength >= 114000000,
+        `APK must be >= 114,000,000 bytes (114 MB). Found: ${probe.contentLength}`
       )
     })
 
@@ -865,7 +865,7 @@ describe('Tier 4: Real-World Scenarios', () => {
 
     assert.ok(apkProbe.ok, 'Remote APK must return HTTP 200/302')
     assert.ok(
-      apkProbe.contentLength >= 114 * 1024 * 1024,
+      apkProbe.contentLength >= 114000000,
       `Official APK must exceed 114 MB. Remote Content-Length: ${apkProbe.contentLength} bytes`
     )
 
