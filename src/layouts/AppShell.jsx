@@ -31,7 +31,7 @@ import { getDailyNews } from '../services/newsService'
 
 const DEFAULT_TASKS = []
 
-const APP_TABS = ['/calendar', '/', '/notebooks', '/ai-assistant', '/my-hub', '/news']
+const APP_TABS = ['/calendar', '/', '/ai-assistant', '/news']
 
 export default function AppShell() {
   const location = useLocation()
@@ -55,15 +55,13 @@ export default function AppShell() {
     return () => window.removeEventListener('app_visible_tabs_changed', handleTabsChange)
   }, [])
 
-  // Si el usuario accede a una pestaña desactivada en ajustes, redirigir automáticamente a /calendar
+  // Si el usuario accede a una pestaña desactivada en ajustes o retirada, redirigir automáticamente
   useEffect(() => {
     const curPath = location.pathname
     const norm = (curPath === '/auto-organizer' || curPath === '') ? '/' : curPath
 
-    if (norm.startsWith('/notebooks') && visibleTabs['/notebooks'] === false) {
-      navigate('/calendar')
-    } else if (norm.startsWith('/my-hub') && visibleTabs['/my-hub'] === false) {
-      navigate('/calendar')
+    if (norm.startsWith('/notebooks') || norm.startsWith('/my-hub')) {
+      navigate('/app', { replace: true })
     } else if (norm.startsWith('/ai-assistant') && (visibleTabs['/ai-assistant'] === false || aiAssistantMode === 'floating')) {
       navigate('/calendar')
     } else if (norm.startsWith('/news') && visibleTabs['/news'] === false) {

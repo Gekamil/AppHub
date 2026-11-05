@@ -3268,27 +3268,27 @@ export default function CalendarPage() {
         
         {/* Aurora principal: color del calendario activo */}
         <div
-          className="hidden sm:block absolute -top-24 -left-20 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] rounded-full blur-[64px] sm:blur-[96px] opacity-30 dark:opacity-20 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
-          style={{ backgroundColor: bgCal1 }}
+          className="hidden sm:block absolute -top-24 -left-20 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] rounded-full blur-md opacity-35 dark:opacity-25 transition-[opacity,transform] duration-700 ease-out transform-gpu pointer-events-none"
+          style={{ background: `radial-gradient(circle, ${bgCal1} 0%, transparent 68%)` }}
         />
         
         {/* Aurora secundaria en cuadrante superior derecho: segundo calendario */}
         <div
-          className="hidden sm:block absolute top-1/6 -right-16 w-[400px] sm:w-[580px] h-[400px] sm:h-[580px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
-          style={{ backgroundColor: bgCal2 }}
+          className="hidden sm:block absolute top-1/6 -right-16 w-[400px] sm:w-[580px] h-[400px] sm:h-[580px] rounded-full blur-md opacity-25 dark:opacity-20 transition-[opacity,transform] duration-700 ease-out transform-gpu pointer-events-none"
+          style={{ background: `radial-gradient(circle, ${bgCal2} 0%, transparent 68%)` }}
         />
         
         {/* Resplandor terciario inferior: tercer calendario */}
         <div
-          className="hidden sm:block absolute -bottom-10 left-1/4 w-[380px] sm:w-[500px] h-[380px] sm:h-[500px] rounded-full blur-[70px] sm:blur-[100px] opacity-20 dark:opacity-15 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
-          style={{ backgroundColor: bgCal3 }}
+          className="hidden sm:block absolute -bottom-10 left-1/4 w-[380px] sm:w-[500px] h-[380px] sm:h-[500px] rounded-full blur-md opacity-25 dark:opacity-20 transition-[opacity,transform] duration-700 ease-out transform-gpu pointer-events-none"
+          style={{ background: `radial-gradient(circle, ${bgCal3} 0%, transparent 68%)` }}
         />
 
         {/* Resplandor cuaternario: cuarto calendario si existe */}
         {otherCalendars.length > 2 && (
           <div
-            className="hidden sm:block absolute bottom-1/4 -right-20 w-[350px] sm:w-[480px] h-[350px] sm:h-[480px] rounded-full blur-[70px] sm:blur-[100px] opacity-15 dark:opacity-10 transition-[background-color] duration-700 ease-out transform-gpu will-change-transform"
-            style={{ backgroundColor: bgCal4 }}
+            className="hidden sm:block absolute bottom-1/4 -right-20 w-[350px] sm:w-[480px] h-[350px] sm:h-[480px] rounded-full blur-md opacity-20 dark:opacity-15 transition-[opacity,transform] duration-700 ease-out transform-gpu pointer-events-none"
+            style={{ background: `radial-gradient(circle, ${bgCal4} 0%, transparent 68%)` }}
           />
         )}
       </div>

@@ -8,9 +8,7 @@ import { getVisibleNavTabs } from '../services/navSettings'
 const DEFAULT_NAVIGATION = [
   { name: 'Calendario', to: '/calendar', icon: 'calendar_today' },
   { name: 'Auto-Organizer', to: '/app', icon: 'checklist' },
-  { name: 'Notebooks', to: '/notebooks', icon: 'menu_book' },
   { name: 'AI Assistant', to: '/ai-assistant', icon: 'smart_toy' },
-  { name: 'My Hub (Links & Projects)', to: '/my-hub', icon: 'hub' },
   { name: 'Noticias Diarias', to: '/news', icon: 'newspaper' },
 ]
 
@@ -18,9 +16,7 @@ function preloadNavRoute(to) {
   try {
     if (to === '/calendar') import('../pages/CalendarPage')
     else if (to === '/news') import('../pages/NewsPage')
-    else if (to === '/notebooks') import('../pages/NotebooksPage')
     else if (to === '/ai-assistant') import('../pages/AIAssistantPage')
-    else if (to === '/my-hub') import('../pages/MyHubPage')
     else if (to === '/app' || to === '/') import('../pages/AutoOrganizerPage')
   } catch (e) {}
 }

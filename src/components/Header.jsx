@@ -14,9 +14,7 @@ const CHANGELOG_STORAGE_KEY = `studenthub_seen_changelog_v${CURRENT_VERSION.repl
 const mobileNavItems = [
   { name: 'Calendario', shortName: 'Agenda', to: '/calendar', icon: 'calendar_today' },
   { name: 'Tareas', shortName: 'Tareas', to: '/app', icon: 'checklist' },
-  { name: 'Notas', shortName: 'Notas', to: '/notebooks', icon: 'menu_book' },
   { name: 'Asistente IA', shortName: 'IA', to: '/ai-assistant', icon: 'smart_toy' },
-  { name: 'My Hub', shortName: 'Hub', to: '/my-hub', icon: 'hub' },
   { name: 'Noticias', shortName: 'Noticias', to: '/news', icon: 'newspaper' },
 ]
 
@@ -24,9 +22,7 @@ function preloadNavRoute(to) {
   try {
     if (to === '/calendar') import('../pages/CalendarPage')
     else if (to === '/news') import('../pages/NewsPage')
-    else if (to === '/notebooks') import('../pages/NotebooksPage')
     else if (to === '/ai-assistant') import('../pages/AIAssistantPage')
-    else if (to === '/my-hub') import('../pages/MyHubPage')
     else if (to === '/app' || to === '/') import('../pages/AutoOrganizerPage')
   } catch (e) {}
 }

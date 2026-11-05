@@ -5,10 +5,8 @@ import UpdateNotification from './components/UpdateNotification'
 import { lazyWithRetry, isChunkLoadError } from './utils/lazyWithRetry'
 
 const AutoOrganizerPage = lazyWithRetry(() => import('./pages/AutoOrganizerPage'), 'AutoOrganizerPage')
-const NotebooksPage = lazyWithRetry(() => import('./pages/NotebooksPage'), 'NotebooksPage')
 const CalendarPage = lazyWithRetry(() => import('./pages/CalendarPage'), 'CalendarPage')
 const AIAssistantPage = lazyWithRetry(() => import('./pages/AIAssistantPage'), 'AIAssistantPage')
-const MyHubPage = lazyWithRetry(() => import('./pages/MyHubPage'), 'MyHubPage')
 const NewsPage = lazyWithRetry(() => import('./pages/NewsPage'), 'NewsPage')
 const LandingPage = lazyWithRetry(() => import('./pages/LandingPage'), 'LandingPage')
 
@@ -16,10 +14,8 @@ function preloadAppRoutes() {
   const preload = () => {
     try {
       import('./pages/AutoOrganizerPage')
-      import('./pages/NotebooksPage')
       import('./pages/CalendarPage')
       import('./pages/AIAssistantPage')
-      import('./pages/MyHubPage')
       import('./pages/NewsPage')
     } catch (e) {}
   }
@@ -162,14 +158,7 @@ const router = createRouter([
         ),
       },
       { path: '/auto-organizer', element: <Navigate to="/app" replace /> },
-      {
-        path: '/notebooks',
-        element: (
-          <Suspense fallback={<PageFallback />}>
-            <NotebooksPage />
-          </Suspense>
-        ),
-      },
+      { path: '/notebooks', element: <Navigate to="/app" replace /> },
       {
         path: '/calendar',
         element: (
@@ -186,14 +175,7 @@ const router = createRouter([
           </Suspense>
         ),
       },
-      {
-        path: '/my-hub',
-        element: (
-          <Suspense fallback={<PageFallback />}>
-            <MyHubPage />
-          </Suspense>
-        ),
-      },
+      { path: '/my-hub', element: <Navigate to="/app" replace /> },
       {
         path: '/news',
         element: (

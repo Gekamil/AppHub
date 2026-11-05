@@ -1162,28 +1162,28 @@ export default function AutoOrganizerPage() {
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0 contain-strict">
         {/* Color 1 - Slot Superior Izquierdo */}
         <div
-          className="hidden sm:block absolute -top-32 left-10 w-[550px] h-[550px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
+          className="hidden sm:block absolute -top-32 left-10 w-[550px] h-[550px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
           style={{
-            backgroundColor: slot0 ? slot0.hex : 'transparent',
-            opacity: slot0 ? 0.16 : 0,
+            background: slot0 ? `radial-gradient(circle, ${slot0.hex} 0%, transparent 68%)` : 'transparent',
+            opacity: slot0 ? 0.25 : 0,
             transform: slot0 ? 'scale(1)' : 'scale(0.75)',
           }}
         />
         {/* Color 2 - Slot Superior Derecho */}
         <div
-          className="hidden sm:block absolute top-10 right-10 w-[520px] h-[520px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
+          className="hidden sm:block absolute top-10 right-10 w-[520px] h-[520px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
           style={{
-            backgroundColor: slot1 ? slot1.hex : 'transparent',
-            opacity: slot1 ? 0.15 : 0,
+            background: slot1 ? `radial-gradient(circle, ${slot1.hex} 0%, transparent 68%)` : 'transparent',
+            opacity: slot1 ? 0.22 : 0,
             transform: slot1 ? 'scale(1)' : 'scale(0.75)',
           }}
         />
         {/* Color 3 - Slot Central Inferior */}
         <div
-          className="hidden sm:block absolute top-1/2 left-1/4 w-[480px] h-[480px] rounded-full blur-[64px] sm:blur-[90px] transform-gpu pointer-events-none transition-[opacity,transform,background-color] duration-700 ease-out will-change-transform"
+          className="hidden sm:block absolute top-1/2 left-1/4 w-[480px] h-[480px] rounded-full blur-md transform-gpu pointer-events-none transition-[opacity,transform] duration-700 ease-out"
           style={{
-            backgroundColor: slot2 ? slot2.hex : 'transparent',
-            opacity: slot2 ? 0.13 : 0,
+            background: slot2 ? `radial-gradient(circle, ${slot2.hex} 0%, transparent 68%)` : 'transparent',
+            opacity: slot2 ? 0.20 : 0,
             transform: slot2 ? 'scale(1)' : 'scale(0.75)',
           }}
         />
@@ -1314,8 +1314,6 @@ export default function AutoOrganizerPage() {
         <section className={`p-3 sm:p-4 border transition-all ${
           appTheme === 'brutalista'
             ? 'rounded-none bg-white dark:bg-[#121212] border-2 border-black dark:border-white shadow-[4px_4px_0px_#000] dark:shadow-[4px_4px_0px_#fff]'
-            : appTheme === 'executive'
-            ? 'rounded-2xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-slate-800 shadow-2xs'
             : appTheme === 'aura'
             ? 'rounded-3xl bg-white dark:bg-[#1c1020] border border-pink-200/90 dark:border-pink-900/40 shadow-xs'
             : 'rounded-2xl bg-white dark:bg-[#161b26] border border-slate-200/80 dark:border-slate-800 shadow-xs'
@@ -3877,112 +3875,6 @@ const TaskCardItem = memo(function TaskCardItem({ task, onToggle, onEdit, onDele
               type="button"
               onClick={() => onDelete(task.id)}
               className="w-7 h-7 rounded-full flex items-center justify-center text-pink-400 hover:text-rose-600 hover:bg-pink-50 dark:hover:bg-pink-950/60 transition-colors cursor-pointer"
-              title="Eliminar"
-            >
-              <span className="material-symbols-outlined text-[15px]">delete</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // --- 2. EJECUTIVO BLACK & WHITE (SOBER CORPORATE DESK // LÍNEAS Y TONOS GRISES PROFESIONALES) ---
-  if (currentTheme === 'executive') {
-    return (
-      <div
-        className={`p-3.5 sm:p-4 rounded-xl bg-slate-50/70 dark:bg-[#151922] border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-slate-400 dark:border-l-slate-600 transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-3 group shadow-2xs hover:shadow-xs hover:border-slate-300 ${
-          task.completed
-            ? 'opacity-50 border-slate-200 bg-slate-100/40'
-            : ''
-        }`}
-      >
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={() => onToggle(task.id)}
-            className={`w-5 h-5 mt-0.5 rounded-sm flex items-center justify-center transition-all cursor-pointer shrink-0 border ${
-              task.completed
-                ? 'bg-slate-800 border-slate-800 text-white dark:bg-slate-200 dark:border-slate-200 dark:text-slate-900'
-                : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 hover:border-slate-600'
-            }`}
-            title={task.completed ? 'Marcar pendiente' : 'Marcar completado'}
-          >
-            {task.completed && (
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
-          </button>
-
-          <div className="flex flex-col gap-1 min-w-0 flex-1 font-sans">
-            <div className="flex items-center gap-1.5 flex-wrap text-xs">
-              <span className={`px-2 py-0.5 rounded-sm text-[11px] font-semibold tracking-wide border ${
-                task.effort === 'High'
-                  ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200'
-                  : task.effort === 'Medium'
-                  ? 'bg-white text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                  : 'bg-white text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-              }`}>
-                {task.effort === 'High' ? 'Prioridad Alta' : task.effort === 'Medium' ? 'Prioridad Media' : 'Prioridad Normal'}
-              </span>
-
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-2 py-0.5 rounded-sm border border-slate-200 dark:border-slate-700">
-                <span className="material-symbols-outlined text-[13px] text-slate-500">schedule</span>
-                <span>{task.time || '10:00'}{task.est ? ` · ${task.est}` : ''}</span>
-              </span>
-
-              <span className="px-2 py-0.5 rounded-sm text-[11px] font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                {task.context}
-              </span>
-
-              {isSportActivity(task) && (
-                <span className="px-2 py-0.5 rounded-sm text-[11px] font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[13px]">fitness_center</span>
-                  Deporte
-                </span>
-              )}
-            </div>
-
-            <h4 className={`font-semibold text-sm text-slate-900 dark:text-white leading-snug truncate ${isDoneOrFinished ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
-              {task.title}
-            </h4>
-
-            {task.description && (
-              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{task.description}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between sm:justify-end gap-2.5 self-stretch sm:self-center shrink-0">
-          {!task.completed ? (
-            <button
-              type="button"
-              onClick={() => onStartFocus(task)}
-              className="h-7.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[14px]">play_arrow</span>
-              <span>Enfocar</span>
-            </button>
-          ) : (
-            <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              Completado
-            </span>
-          )}
-
-          <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={() => onEdit(task)}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Editar"
-            >
-              <span className="material-symbols-outlined text-[15px]">edit</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(task.id)}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
               title="Eliminar"
             >
               <span className="material-symbols-outlined text-[15px]">delete</span>

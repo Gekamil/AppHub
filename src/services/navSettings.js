@@ -8,9 +8,7 @@ export const DEFAULT_VISIBLE_TABS = {
   '/calendar': true,
   '/app': true,
   '/': true,
-  '/notebooks': true,
   '/ai-assistant': true,
-  '/my-hub': true,
   '/news': true,
 }
 
@@ -30,13 +28,6 @@ export const NAV_TAB_DEFINITIONS = [
     canToggle: false, // Las tareas son troncales
   },
   {
-    id: '/notebooks',
-    label: 'Notas & Documentos',
-    desc: 'Editor enriquecido tipo Notion para asignaturas y proyectos',
-    icon: 'menu_book',
-    canToggle: true,
-  },
-  {
     id: '/ai-assistant',
     label: 'Asistente IA (Pestana)',
     desc: 'Chat conversacional a pantalla completa con el agente de IA',
@@ -44,17 +35,10 @@ export const NAV_TAB_DEFINITIONS = [
     canToggle: true,
   },
   {
-    id: '/my-hub',
-    label: 'My Hub (Recursos & Links)',
-    desc: 'Directorio de enlaces rapidos, archivos y marcadores',
-    icon: 'hub',
-    canToggle: true,
-  },
-  {
     id: '/news',
     label: 'Noticias',
     desc: 'Noticias y actualidad diaria',
-    icon: 'Newspaper',
+    icon: 'newspaper',
     canToggle: true,
   },
 ]
