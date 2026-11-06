@@ -3152,7 +3152,8 @@ export function handleBaileysApiRoute(req, res) {
         }
 
         let mergedCalendars = payload.calendars || existing.calendars || DEFAULT_USER_CALENDARS
-        let mergedCategories = payload.categories || existing.categories || null
+        let mergedRoles = payload.roles || payload.categories || existing.roles || existing.categories || null
+        let mergedCategories = mergedRoles
         let mergedNotes = payload.notes || existing.notes || null
 
         const updatedUser = {
@@ -3163,6 +3164,7 @@ export function handleBaileysApiRoute(req, res) {
           password: payload.password || existing.password || '123456',
           tasks: mergedTasks,
           calendars: mergedCalendars,
+          roles: mergedRoles,
           categories: mergedCategories,
           notes: mergedNotes,
           updatedAt: new Date().toISOString(),
@@ -3172,7 +3174,9 @@ export function handleBaileysApiRoute(req, res) {
         const mergedTasksJson = JSON.stringify(mergedTasks)
         const existingCalsJson = JSON.stringify(existing.calendars || [])
         const mergedCalsJson = JSON.stringify(mergedCalendars)
-        const hasChanged = existingTasksJson !== mergedTasksJson || existingCalsJson !== mergedCalsJson
+        const existingRolesJson = JSON.stringify(existing.roles || existing.categories || [])
+        const mergedRolesJson = JSON.stringify(mergedRoles || [])
+        const hasChanged = existingTasksJson !== mergedTasksJson || existingCalsJson !== mergedCalsJson || existingRolesJson !== mergedRolesJson
 
         cloudAccountsMap[cleanEmail] = updatedUser
         saveCloudAccountsStore(cloudAccountsMap)

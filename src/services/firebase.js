@@ -2,9 +2,9 @@
 // Sincronizado en tiempo real con Firebase Firestore entre todos los dispositivos (Android, iOS, PC y Web)
 // Con deduplicación automática, unificación estricta de cuentas por correo y preservación de tareas
 
-import { db } from './firebaseConfig'
+import { db } from './firebaseConfig.js'
 import { doc, getDoc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
-import { API_BASE } from './baileysBridge'
+import { API_BASE } from './baileysBridge.js'
 
 const ACCOUNTS_DB_KEY = 'studenthub_accounts_database'
 const ACTIVE_USER_KEY = 'studenthub_active_user'
@@ -282,12 +282,30 @@ export const loginUser = async (email, password) => {
     mergedTasks = []
   }
 
+  let mergedRoles = []
+  if (cloudAccount?.roles && Array.isArray(cloudAccount.roles) && cloudAccount.roles.length > 0) {
+    mergedRoles = cloudAccount.roles
+  } else if (cloudAccount?.categories && Array.isArray(cloudAccount.categories) && cloudAccount.categories.length > 0) {
+    mergedRoles = cloudAccount.categories
+  } else if (localAccount?.roles && Array.isArray(localAccount.roles) && localAccount.roles.length > 0) {
+    mergedRoles = localAccount.roles
+  } else if (localAccount?.categories && Array.isArray(localAccount.categories) && localAccount.categories.length > 0) {
+    mergedRoles = localAccount.categories
+  } else {
+    try {
+      const rawRoles = localStorage.getItem('app_shared_roles')
+      if (rawRoles) mergedRoles = JSON.parse(rawRoles)
+    } catch (e) {}
+  }
+
   const mergedUser = {
     ...baseAccount,
     displayName: cloudAccount?.displayName || localAccount?.displayName || baseAccount.displayName,
     password: cloudAccount?.password || localAccount?.password || baseAccount.password,
     tasks: mergedTasks,
     calendars: mergedCals,
+    roles: mergedRoles,
+    categories: mergedRoles,
     updatedAt: new Date().toISOString(),
   }
 
@@ -319,6 +337,12 @@ export const loginUser = async (email, password) => {
   if (mergedUser.calendars && Array.isArray(mergedUser.calendars)) {
     try {
       localStorage.setItem(`studenthub_calendars_${mergedUser.uid}`, JSON.stringify(mergedUser.calendars))
+    } catch (e) {}
+  }
+  if (mergedUser.roles && Array.isArray(mergedUser.roles) && mergedUser.roles.length > 0) {
+    try {
+      localStorage.setItem('app_shared_roles', JSON.stringify(mergedUser.roles))
+      window.dispatchEvent(new CustomEvent('shared_roles_updated', { detail: mergedUser.roles }))
     } catch (e) {}
   }
 
@@ -873,6 +897,46 @@ export const syncCalendarsToCloud = async (calendars) => {
   }
 }
 
+// Sincronizar roles y clasificaciones personalizadas del usuario activo con la nube
+export const syncRolesToCloud = async (roles) => {
+  try {
+    const current = getCurrentUser()
+    if (!current || isGuestUser(current) || !current.email) return
+
+    // 1. Guardar en caché local
+    const accounts = getAllAccounts()
+    const idx = accounts.findIndex((a) => a.uid === current.uid)
+    if (idx >= 0) {
+      accounts[idx].roles = roles
+      accounts[idx].categories = roles
+      saveAllAccounts(accounts)
+    }
+
+    // 2. Sincronizar con el Server Cloud de AppHub
+    fetch(`${API_BASE}/api/user/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: current.email,
+        roles,
+        categories: roles,
+      }),
+    }).catch(() => {})
+
+    // 3. Respaldo secundario en Firestore
+    if (db) {
+      const docId = getAccountDocId(current.email)
+      setDoc(
+        doc(db, 'shared_calendars', docId),
+        { roles, categories: roles, updatedAt: new Date().toISOString() },
+        { merge: true }
+      ).catch(() => {})
+    }
+  } catch (e) {
+    console.warn('Error sincronizando roles en la nube:', e)
+  }
+}
+
 // Cargar datos remotos del usuario activo desde la nube
 export const loadUserDataFromCloud = async () => {
   try {
@@ -902,9 +966,24 @@ export const loadUserDataFromCloud = async () => {
               window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
             }
           }
+          const loadedRoles = cloudData.roles || cloudData.categories
+          if (loadedRoles && Array.isArray(loadedRoles) && loadedRoles.length > 0) {
+            localStorage.setItem('app_shared_roles', JSON.stringify(loadedRoles))
+            const accounts = getAllAccounts()
+            const idx = accounts.findIndex((a) => a.uid === current.uid)
+            if (idx >= 0) {
+              accounts[idx].roles = loadedRoles
+              accounts[idx].categories = loadedRoles
+              saveAllAccounts(accounts)
+            }
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('shared_roles_updated', { detail: loadedRoles }))
+            }
+          }
           return {
             tasks: cloudData.tasks || null,
             calendars: cloudData.calendars || null,
+            roles: loadedRoles || null,
           }
         }
       }
@@ -932,9 +1011,24 @@ export const loadUserDataFromCloud = async () => {
             window.dispatchEvent(new CustomEvent('studenthub_calendars_updated', { detail: cloudData.calendars }))
           }
         }
+        const loadedRoles = cloudData.roles || cloudData.categories
+        if (loadedRoles && Array.isArray(loadedRoles) && loadedRoles.length > 0) {
+          localStorage.setItem('app_shared_roles', JSON.stringify(loadedRoles))
+          const accounts = getAllAccounts()
+          const idx = accounts.findIndex((a) => a.uid === current.uid)
+          if (idx >= 0) {
+            accounts[idx].roles = loadedRoles
+            accounts[idx].categories = loadedRoles
+            saveAllAccounts(accounts)
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('shared_roles_updated', { detail: loadedRoles }))
+          }
+        }
         return {
           tasks: cloudData.tasks || null,
           calendars: cloudData.calendars || null,
+          roles: loadedRoles || null,
         }
       }
     }
@@ -946,6 +1040,7 @@ export const loadUserDataFromCloud = async () => {
       return {
         tasks: found.tasks || null,
         calendars: found.calendars || null,
+        roles: found.roles || found.categories || null,
       }
     }
   } catch (e) {
@@ -1000,10 +1095,30 @@ export const subscribeToUserCloudData = (user, onUpdate) => {
                 }
               }
             }
+            const incomingRoles = cloudUser.roles || cloudUser.categories
+            if (incomingRoles && Array.isArray(incomingRoles) && incomingRoles.length > 0) {
+              const currentRolesJson = localStorage.getItem('app_shared_roles') || ''
+              const incomingRolesJson = JSON.stringify(incomingRoles)
+              if (currentRolesJson !== incomingRolesJson) {
+                hasChanged = true
+                localStorage.setItem('app_shared_roles', incomingRolesJson)
+                const accounts = getAllAccounts()
+                const idx = accounts.findIndex((a) => a.uid === user.uid)
+                if (idx >= 0) {
+                  accounts[idx].roles = incomingRoles
+                  accounts[idx].categories = incomingRoles
+                  saveAllAccounts(accounts)
+                }
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('shared_roles_updated', { detail: incomingRoles }))
+                }
+              }
+            }
             if (hasChanged && typeof onUpdate === 'function') {
               onUpdate({
                 tasks: cloudUser.tasks || null,
                 calendars: cloudUser.calendars || null,
+                roles: incomingRoles || null,
               })
             }
           }
@@ -1049,10 +1164,30 @@ export const subscribeToUserCloudData = (user, onUpdate) => {
                 }
               }
             }
+            const incomingRoles = cloudData.roles || cloudData.categories
+            if (incomingRoles && Array.isArray(incomingRoles) && incomingRoles.length > 0) {
+              const currentRolesJson = localStorage.getItem('app_shared_roles') || ''
+              const incomingRolesJson = JSON.stringify(incomingRoles)
+              if (currentRolesJson !== incomingRolesJson) {
+                hasChanged = true
+                localStorage.setItem('app_shared_roles', incomingRolesJson)
+                const accounts = getAllAccounts()
+                const idx = accounts.findIndex((a) => a.uid === user.uid)
+                if (idx >= 0) {
+                  accounts[idx].roles = incomingRoles
+                  accounts[idx].categories = incomingRoles
+                  saveAllAccounts(accounts)
+                }
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('shared_roles_updated', { detail: incomingRoles }))
+                }
+              }
+            }
             if (hasChanged && typeof onUpdate === 'function') {
               onUpdate({
                 tasks: cloudData.tasks || null,
                 calendars: cloudData.calendars || null,
+                roles: incomingRoles || null,
               })
             }
           }

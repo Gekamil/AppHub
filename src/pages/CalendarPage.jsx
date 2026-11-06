@@ -616,6 +616,33 @@ export default function CalendarPage() {
   const [selectedFilter, setSelectedFilter] = useState('All')
   const [isMobileWidgetsOpen, setIsMobileWidgetsOpen] = useState(false)
 
+  // Disposición en móvil para la vista semanal: 'lateral' (desplazamiento horizontal sin scroll vertical) o 'list' (apilada)
+  const [mobileWeekLayout, setMobileWeekLayout] = useState(() => {
+    try {
+      return localStorage.getItem('studenthub_mobile_week_layout') || 'lateral'
+    } catch (e) {
+      return 'lateral'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('studenthub_mobile_week_layout', mobileWeekLayout)
+    } catch (e) {}
+  }, [mobileWeekLayout])
+
+  useEffect(() => {
+    if (calendarView === 'week' && mobileWeekLayout === 'lateral') {
+      const timer = setTimeout(() => {
+        const todayEl = document.getElementById(`mobile-week-day-${TODAY_YMD}`)
+        if (todayEl) {
+          todayEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+        }
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [calendarView, mobileWeekLayout, currentDate])
+
   // Estados para reordenar calendarios por arrastre (drag-and-drop y táctil)
   const [draggedCalIdx, setDraggedCalIdx] = useState(null)
   const [dragOverCalIdx, setDragOverCalIdx] = useState(null)
@@ -1454,6 +1481,10 @@ export default function CalendarPage() {
     const cleanTitle = eventForm.title.trim()
     if (!cleanTitle) return
 
+    if (eventForm.context) {
+      findOrCreateSharedRole(eventForm.context, eventForm.icon || 'school')
+    }
+
     const targetCalId = eventForm.calendarId || activeCalendarId
     const durMinutes = eventForm.duration || 60
     const estLabel = durMinutes >= 60 ? `${Math.round(durMinutes / 60)}h` : `${durMinutes}m`
@@ -1478,6 +1509,7 @@ export default function CalendarPage() {
                 isAllDay: eventForm.isAllDay,
                 effort: eventForm.effort,
                 context: eventForm.context,
+                role: eventForm.context,
                 icon: eventForm.icon || 'event',
                 calendarId: targetCalId,
                 hasAlarm: Boolean(eventForm.hasAlarm),
@@ -1508,6 +1540,7 @@ export default function CalendarPage() {
             isAllDay: eventForm.isAllDay,
             effort: eventForm.effort,
             context: eventForm.context,
+            role: eventForm.context,
             icon: eventForm.icon || 'event',
             calendarId: targetCalId,
             hasAlarm: Boolean(eventForm.hasAlarm),
@@ -1540,6 +1573,7 @@ export default function CalendarPage() {
       isAllDay: eventForm.isAllDay,
       effort: eventForm.effort,
       context: eventForm.context,
+      role: eventForm.context,
       icon: eventForm.icon || 'event',
       hasAlarm: Boolean(eventForm.hasAlarm),
       recurrence: eventForm.recurrence,
@@ -2379,13 +2413,13 @@ export default function CalendarPage() {
     )
   }
 
-  // 2. Vista Semanal Adaptable (Por defecto limpia sin desbordar horas, con botón Expandir / Comprimir 24h)
+  // 2. Vista Semanal Adaptable (Por defecto limpia sin desbordar horas, con botón Expandir / Comprimir 24h y modo lateral para móvil)
   const renderWeekView = (tasksToDisplay, calObj) => {
     const weekActivitiesCount = weekDays.reduce((acc, d) => acc + (tasksByDate.get(d.ymd)?.length || 0), 0)
     return (
     <div className="flex flex-col w-full overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#161b26]">
-      {/* Barra de opciones de la Vista Semanal: Botón Expandir / Comprimir Horario 24h */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-[#141824]/90">
+      {/* Barra de opciones de la Vista Semanal: Botón Expandir / Comprimir Horario 24h + Selector móvil Lateral/Lista */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-[#141824]/90">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-on-surface uppercase tracking-wider">
             {getPeriodTitle()}
@@ -2394,23 +2428,95 @@ export default function CalendarPage() {
             · {weekActivitiesCount} actividades
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowHourlyGrid((prev) => !prev)}
-          className="px-3 py-1.5 rounded-xl bg-surface-pure hover:bg-surface-subtle text-on-surface text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs border border-outline-variant/30 cursor-pointer active:scale-95"
-          title={showHourlyGrid ? 'Ocultar horas y ver agenda semanal' : 'Ver cuadrícula horaria de 24 horas'}
-        >
-          <span className="material-symbols-outlined text-[15px] text-primary">
-            {showHourlyGrid ? 'vertical_align_center' : 'schedule'}
-          </span>
-          <span>{showHourlyGrid ? 'Comprimir horario (Vista Agenda)' : 'Expandir horario 24h'}</span>
-        </button>
+        <div className="flex items-center gap-1.5 ml-auto">
+          {/* Alternador de vista móvil: Lateral vs Lista */}
+          <div className="sm:hidden flex items-center bg-surface-subtle p-0.5 rounded-xl border border-outline-variant/30">
+            <button
+              type="button"
+              onClick={() => setMobileWeekLayout('lateral')}
+              className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                mobileWeekLayout === 'lateral'
+                  ? 'bg-primary text-white shadow-2xs'
+                  : 'text-secondary hover:text-on-surface'
+              }`}
+              title="Vista lateral deslizable sin scroll vertical"
+            >
+              Lateral ↔
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileWeekLayout('list')}
+              className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                mobileWeekLayout === 'list'
+                  ? 'bg-primary text-white shadow-2xs'
+                  : 'text-secondary hover:text-on-surface'
+              }`}
+              title="Vista vertical apilada"
+            >
+              Lista ↕
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowHourlyGrid((prev) => !prev)}
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-surface-pure hover:bg-surface-subtle text-on-surface text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs border border-outline-variant/30 cursor-pointer active:scale-95"
+            title={showHourlyGrid ? 'Ocultar horas y ver agenda semanal' : 'Ver cuadrícula horaria de 24 horas'}
+          >
+            <span className="material-symbols-outlined text-[15px] text-primary">
+              {showHourlyGrid ? 'vertical_align_center' : 'schedule'}
+            </span>
+            <span className="hidden sm:inline">{showHourlyGrid ? 'Comprimir horario (Vista Agenda)' : 'Expandir horario 24h'}</span>
+            <span className="sm:hidden">{showHourlyGrid ? 'Agenda' : '24h'}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Tira rápida lateral de los 7 días para móviles (visión de la semana completa de un vistazo sin scroll) */}
+      {!showHourlyGrid && mobileWeekLayout === 'lateral' && (
+        <div className="sm:hidden grid grid-cols-7 gap-1 p-1.5 bg-slate-100/90 dark:bg-[#121622] border-b border-slate-200/80 dark:border-slate-800">
+          {weekDays.map((day) => {
+            const isToday = day.ymd === TODAY_YMD
+            const dayTasks = tasksByDate.get(day.ymd) || []
+            return (
+              <button
+                key={`strip-${day.ymd}`}
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById(`mobile-week-day-${day.ymd}`)
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+                  }
+                }}
+                className={`py-1.5 px-0.5 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer ${
+                  isToday
+                    ? 'bg-primary text-white shadow-xs font-bold'
+                    : 'bg-white/80 dark:bg-slate-800/80 text-secondary hover:text-on-surface border border-slate-200/60 dark:border-slate-700/60'
+                }`}
+              >
+                <span className="text-[9px] font-bold uppercase tracking-wider">{day.dayShort}</span>
+                <span className={`text-xs font-bold ${isToday ? 'text-white' : 'text-on-surface'}`}>{day.dayNum}</span>
+                <span className="flex items-center gap-0.5 mt-0.5 h-1.5">
+                  {dayTasks.length > 0 ? (
+                    <span className={`w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-primary'}`} />
+                  ) : null}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* Contenido según showHourlyGrid */}
       {!showHourlyGrid ? (
-        /* Vista Agenda Semanal Continua de 7 Columnas sin desbordamiento de horas vacías */
-        <div className="grid grid-cols-1 sm:grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80 min-h-[360px]">
+        /* Vista Agenda Semanal Continua (Lateral deslizable o en Lista en móvil, 7 Columnas en escritorio) */
+        <div
+          className={`${
+            mobileWeekLayout === 'lateral'
+              ? 'flex sm:grid sm:grid-cols-7 overflow-x-auto snap-x snap-mandatory scrollbar-none gap-2 sm:gap-px p-2.5 sm:p-0 bg-slate-100 dark:bg-[#121620] sm:bg-slate-200/80 sm:dark:bg-slate-800/80 min-h-[360px]'
+              : 'grid grid-cols-1 sm:grid-cols-7 gap-px bg-slate-200/80 dark:bg-slate-800/80 min-h-[360px]'
+          }`}
+        >
           {weekDays.map((day) => {
             const isToday = day.ymd === TODAY_YMD
             const dayTasks = tasksByDate.get(day.ymd) || []
@@ -2418,11 +2524,16 @@ export default function CalendarPage() {
             return (
               <div
                 key={day.ymd}
+                id={`mobile-week-day-${day.ymd}`}
                 onClick={() => {
                   setCurrentDate(day.dateObj)
                   setCalendarView('day')
                 }}
                 className={`p-2.5 flex flex-col justify-between transition-colors cursor-pointer group ${
+                  mobileWeekLayout === 'lateral'
+                    ? 'w-[84vw] max-w-[340px] shrink-0 snap-center rounded-2xl sm:rounded-none border sm:border-0 border-slate-200/80 dark:border-slate-800 shadow-xs sm:shadow-none sm:w-auto sm:shrink sm:snap-none'
+                    : ''
+                } ${
                   isToday
                     ? 'bg-primary-fixed/15 dark:bg-primary-fixed/10'
                     : 'bg-white dark:bg-[#161b26] hover:bg-slate-50 dark:hover:bg-[#1a202c]'
@@ -2453,7 +2564,7 @@ export default function CalendarPage() {
                   </div>
 
                   {/* Lista de Eventos de la Jornada */}
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5 max-h-[50vh] sm:max-h-none overflow-y-auto sm:overflow-visible pr-0.5 scrollbar-thin">
                     {dayTasks.map((task) => {
                       const scheme = getCatScheme(task.context)
                       return (

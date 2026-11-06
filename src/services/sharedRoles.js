@@ -1,4 +1,5 @@
 // Servicio de Roles y Clasificaciones Personalizadas Compartidas (Memoria Compartida entre Auto-Organizer y Calendario)
+import { syncRolesToCloud } from './firebase.js'
 
 const STORAGE_KEY = 'app_shared_roles'
 
@@ -106,6 +107,10 @@ export function saveSharedRoles(roles) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(roles))
     window.dispatchEvent(new CustomEvent('shared_roles_updated', { detail: roles }))
+    // Sincronizar roles en la nube de forma asíncrona
+    try {
+      syncRolesToCloud(roles).catch(() => {})
+    } catch (e) {}
   } catch (e) {
     console.warn('Error saving shared roles to localStorage:', e)
   }
@@ -192,12 +197,20 @@ export function updateSharedRole(id, { name, hexColor, icon }) {
 }
 
 export function pruneOrphanImportedRoles(activeTasks = []) {
+  if (!activeTasks || !Array.isArray(activeTasks) || activeTasks.length === 0) {
+    return getSharedRoles()
+  }
   const current = getSharedRoles()
   const defaultRoleNames = new Set(['University', 'Projects', 'Personal', 'Health & Gym'])
 
   const updated = current.filter((r) => {
+    // Preservar siempre roles por defecto
     if (defaultRoleNames.has(r.name) || defaultRoleNames.has(r.id)) return true
-    const count = (activeTasks || []).filter(
+    // Preservar siempre roles creados por el usuario (no son de sincronización externa efímera)
+    if (!r.isExternalSync) return true
+
+    // Solo podar roles importados externamente si ya no queda ninguna tarea asociada
+    const count = activeTasks.filter(
       (t) => t.context === r.name || t.context === r.id || t.context === r.label
     ).length
     return count > 0
